@@ -66,3 +66,14 @@ string AddrIntToAbc(int addrInt, bool zeroBased=true) {
 
     return columnName;
 }
+
+string ConcatStringFromArray(string& strArray[], string delimiter = ";") {
+    int strCount = ArraySize(strArray);
+    
+    string finalString = "";
+    for(int i = 0; i < strCount; i++) {
+        finalString = StringConcatenate(finalString, strArray[i], delimiter);
+    }
+    
+    return finalString;
+}

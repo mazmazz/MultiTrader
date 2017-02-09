@@ -76,6 +76,11 @@ bool IsSymbolExcluded(string symName, string excludeSym, string &excludeCur[]) {
     return false;
 }
 
+#ifdef ExtLib_Symbols
+int GetAllSymbols(string &allSymBuffer[]) {
+    return Symbols(allSymBuffer);
+}
+#else
 int GetAllSymbols(string &allSymBuffer[]) {
     int count;
     
@@ -84,6 +89,7 @@ int GetAllSymbols(string &allSymBuffer[]) {
     
     return count;
 }
+#endif
 
 void GetActiveSymbols(string &curBuffer[], string includeSym, string excludeSym, string excludeCur) {
     string symSuffix = GetCurrencySuffix(Symbol());
@@ -91,12 +97,17 @@ void GetActiveSymbols(string &curBuffer[], string includeSym, string excludeSym,
     string finalSym[];
     string finalSymString;
     
-    char delimiter = StringGetCharacter(",", 0);
     string includeSymSplit[];
     string excludeCurSplit[];
-    int includeSymCount = StringSplit(includeSym, delimiter, includeSymSplit);
-    int excludeCurCount = StringSplit(excludeCur, delimiter, excludeCurSplit);
-    //string excludeSymSplit[]; // we can just do a StringFind on this
+    int includeSymCount; int excludeCurCount;
+    if(SingleSymbolMode) {
+        includeSymCount = ArrayPushString(includeSymSplit, Symbol());
+    } else {
+        char delimiter = StringGetCharacter(",", 0);
+        includeSymCount = StringSplit(includeSym, delimiter, includeSymSplit);
+        excludeCurCount = StringSplit(excludeCur, delimiter, excludeCurSplit);
+        //string excludeSymSplit[]; // we can just do a StringFind on this
+    }
     
     if(includeSymCount < 1) {
         ArrayFree(includeSymSplit);
@@ -106,8 +117,8 @@ void GetActiveSymbols(string &curBuffer[], string includeSym, string excludeSym,
     for(int i = 0; i < includeSymCount; i++) {
         string rawSymName = StringTrim(includeSymSplit[i]);
         int symLength = StringLen(rawSymName);
-        if(symLength < 6) {
-            if(symLength > 0) { ThrowError(1, ErrorFunctionTrace, "rawSymName length is not >= 6, assuming invalid and skipping"); }
+        if(symLength < 6 || GetStringType(StringSubstr(rawSymName, 0, 1)) == Type_Symbol) {
+            if(symLength > 0) { PrintInfo(0, ErrorFunctionTrace, "rawSymName invalid, skipping", rawSymName); }
             continue; 
         }
         

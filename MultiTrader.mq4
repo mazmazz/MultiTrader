@@ -10,6 +10,14 @@
 //| defines                                                          |
 //+------------------------------------------------------------------+
 
+#define ExtLib_Symbols
+
+#ifdef ExtLib_Symbols
+    #import "MMT_Library/Symbols.ex4"
+    int Symbols(string& sSymbols[]);
+    #import
+#endif
+
 #include "MMT_Main_Settings.mqh"
 #include "MMT_Filter.mqh"
 #include "MMT_Helper_Error.mqh"

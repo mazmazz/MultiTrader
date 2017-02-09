@@ -15,7 +15,7 @@ enum DisplayStyleEnum {
 
 extern string MADDY_CSS_HGI_Trader_5="///// MultiTrader v1 /////"; // MultiTrader v1
 extern string Lbl_SymbolsSettings="***** Symbols & Currencies Settings *****";
-//extern bool SingleSymbolMode=false; // Current symbol only (for backtesting) // pointless, multi TFs don't backtest
+extern bool SingleSymbolMode=false; // Current symbol only
 extern string IncludeSymbols="AUDCADi,AUDCHFi,AUDJPYi,AUDNZDi,AUDUSDi,CADCHFi,CADJPYi,CHFJPYi,EURAUDi,EURCADi,EURJPYi,EURNZDi,EURUSDi,EURGBPi,GBPAUDi,GBPCADi,GBPCHFi,GBPJPYi,GBPNZDi,GBPUSDi,NZDCADi,NZDCHFi,NZDJPYi,NZDUSDi,USDCADi,USDCHFi,USDJPYi";
 extern string ExcludeSymbols="";
 extern string ExcludeCurrencies="SEK,SGD,DKK,NOK,TRY,HKD,ZAR,MXN,XAG,XAU";

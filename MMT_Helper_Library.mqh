@@ -77,3 +77,30 @@ string ConcatStringFromArray(string& strArray[], string delimiter = ";") {
     
     return finalString;
 }
+
+enum StringType {
+    Type_Alphanumeric,
+    Type_Uppercase,
+    Type_Lowercase,
+    Type_Alpha,
+    Type_Numeric,
+    Type_Symbol
+};
+
+StringType GetStringType(string test) {
+    int len = StringLen(test);
+    bool uppercase; bool lowercase; bool numeric;
+    ushort code;
+    
+    for(int i= 0; i < len; i++) {
+        code = StringGetChar(test, i);
+        if(code >= 65 && code <= 90) { uppercase = true; }
+        else if(code >= 97 && code <= 122) { lowercase = true; }
+        else if(code >= 48 && code <= 57) { numeric = true; }
+    }
+
+    if((uppercase||lowercase)&&numeric){ return Type_Alphanumeric; }
+    else if(uppercase||lowercase) { return Type_Alpha; }
+    else if(numeric) { return Type_Numeric; }
+    else return Type_Symbol;
+}

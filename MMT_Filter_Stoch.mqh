@@ -64,28 +64,28 @@ void Stoch_SetupOptions() {
     
     if(Stoch_CheckCount < 1 && Stoch_Exit_CheckCount < 1) { return; }
     
-    ParseOptions_Int(Stoch_Entry, Stoch_CheckMode, Stoch_CheckCount);
-    ParseOptions_Int(Stoch_Exit, Stoch_Exit_CheckMode, Stoch_Exit_CheckCount);
+    ParseOptions(Stoch_Entry, Stoch_CheckMode, Stoch_CheckCount);
+    ParseOptions(Stoch_Exit, Stoch_Exit_CheckMode, Stoch_Exit_CheckCount);
     
     Stoch_DoEntry = (GetMaxCheckMode(Stoch_CheckMode) > 0);
     Stoch_DoExit = (GetMaxCheckMode(Stoch_Exit_CheckMode) > 0);
     
     if(Stoch_DoEntry) {
-        ParseOptions_Int(Stoch_TimeFrame_, Stoch_TimeFrame, Stoch_CheckCount);
-        ParseOptions_Int(Stoch_KPeriod_, Stoch_KPeriod, Stoch_CheckCount);
-        ParseOptions_Int(Stoch_DPeriod_, Stoch_DPeriod, Stoch_CheckCount);
-        ParseOptions_Int(Stoch_Slowing_, Stoch_Slowing, Stoch_CheckCount);
-        ParseOptions_Int(Stoch_Method_, Stoch_Method, Stoch_CheckCount);
-        ParseOptions_Double(Stoch_BuySellZone_, Stoch_BuySellZone, Stoch_CheckCount);
+        ParseOptions(Stoch_TimeFrame_, Stoch_TimeFrame, Stoch_CheckCount);
+        ParseOptions(Stoch_KPeriod_, Stoch_KPeriod, Stoch_CheckCount);
+        ParseOptions(Stoch_DPeriod_, Stoch_DPeriod, Stoch_CheckCount);
+        ParseOptions(Stoch_Slowing_, Stoch_Slowing, Stoch_CheckCount);
+        ParseOptions(Stoch_Method_, Stoch_Method, Stoch_CheckCount);
+        ParseOptions(Stoch_BuySellZone_, Stoch_BuySellZone, Stoch_CheckCount);
     }
     
     if(Stoch_DoExit) {
-        ParseOptions_Int(Stoch_Exit_TimeFrame_, Stoch_Exit_TimeFrame, Stoch_Exit_CheckCount);
-        ParseOptions_Int(Stoch_Exit_KPeriod_, Stoch_Exit_KPeriod, Stoch_Exit_CheckCount);
-        ParseOptions_Int(Stoch_Exit_DPeriod_, Stoch_Exit_DPeriod, Stoch_Exit_CheckCount);
-        ParseOptions_Int(Stoch_Exit_Slowing_, Stoch_Exit_Slowing, Stoch_Exit_CheckCount);
-        ParseOptions_Int(Stoch_Exit_Method_, Stoch_Exit_Method, Stoch_Exit_CheckCount);
-        ParseOptions_Double(Stoch_Exit_BuySellZone_, Stoch_Exit_BuySellZone, Stoch_Exit_CheckCount);
+        ParseOptions(Stoch_Exit_TimeFrame_, Stoch_Exit_TimeFrame, Stoch_Exit_CheckCount);
+        ParseOptions(Stoch_Exit_KPeriod_, Stoch_Exit_KPeriod, Stoch_Exit_CheckCount);
+        ParseOptions(Stoch_Exit_DPeriod_, Stoch_Exit_DPeriod, Stoch_Exit_CheckCount);
+        ParseOptions(Stoch_Exit_Slowing_, Stoch_Exit_Slowing, Stoch_Exit_CheckCount);
+        ParseOptions(Stoch_Exit_Method_, Stoch_Exit_Method, Stoch_Exit_CheckCount);
+        ParseOptions(Stoch_Exit_BuySellZone_, Stoch_Exit_BuySellZone, Stoch_Exit_CheckCount);
     }
 }
 

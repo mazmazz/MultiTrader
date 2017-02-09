@@ -26,8 +26,8 @@ enum FilterMode {
 //+------------------------------------------------------------------+
 extern string Lbl_IndisAndFilters="********** Indicators & Filters **********"; // Filter List
 extern string Lbl_FilterLegend="0 = Disabled; 1 = Normal; 2 = Opposite; 3 = Not Opposite"; // Legend
-extern string Lbl_Format="a=1;b=0;c=1;"; // Format
-extern string Lbl_Format2="Single entry is allowed (assumes a only)"; // Format single digit
+extern string Lbl_Format="a=1;b=0;c=1"; // Format
+extern string Lbl_Format2="BE CAREFUL of double ;s and trailing ;s - only use with empty values."; // Format single digit
 
 //+------------------------------------------------------------------+
 // 1. Add filters to toggle list here [TOGGLES]

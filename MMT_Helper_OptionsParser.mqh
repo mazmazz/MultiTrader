@@ -13,15 +13,12 @@
 enum DataType {
     DataString,
     DataBool,
-    //DataShort,
     DataInt,
-    //DataLong,
-    //DataUshort,
-    //DataUint,
-    //DataUlong,
-    DataDouble,
-    //DataFloat
+    DataDouble
 };
+
+string KeyValDelimiter = "=";
+string PairDelimiter = ";";
 
 string StringZeroArray[];
 bool BoolZeroArray[];
@@ -38,41 +35,60 @@ double DoubleZeroArray[];
 
 string ParseOptions_GetPairValue(string pair) {
     pair = StringTrim(pair);
-    int delimiterPos = StringFind(pair, "=");
+    int delimiterPos = StringFind(pair, KeyValDelimiter);
     
     if(delimiterPos > 0) { return StringSubstr(pair, delimiterPos+1); }
-    else if(delimiterPos < 0) { return pair; } // missing = assumes key a
+    else if(delimiterPos < 0) { return pair; }
     else {
-        ThrowFatalError(1, ErrorFunctionTrace, StringConcatenate("pair=", pair, " keyLength=", delimiterPos, " not >= 1"));
+        ThrowFatalError(1, ErrorFunctionTrace, "Invalid key=val pair", pair);
         return "";
     }
 }
 
-string ParseOptions_GetPairKey(string pair) {
+string ParseOptions_GetPairKey(string pair, int indexNum = -1) {
     pair = StringTrim(pair);
-    int delimiterPos = StringFind(pair, "=");
+    int delimiterPos = StringFind(pair, KeyValDelimiter);
     
     if(delimiterPos > 0) { return StringSubstr(pair, 0, delimiterPos); }
-    else if(delimiterPos < 0) { return "a"; } // missing = assumes key a
+    else if(delimiterPos < 0) {
+        if(indexNum < 0) { return ""; } // -1 means to return no key; calling procedure should know how to handle this case.
+        else { return AddrIntToAbc(indexNum, true); }
+    }
     else {
-        ThrowFatalError(1, ErrorFunctionTrace, StringConcatenate("pair=", pair, " keyLength=", delimiterPos, " not >= 1"));
+        ThrowFatalError(1, ErrorFunctionTrace, "Invalid key=val pair", pair);
         return "";
     }
 }
 
 bool ParseOptions_IsPairValid(string pair) {
+    // We support value-only (25) and key=value (a=25). 
+    // Empty values are also supported but I'm undecided on this: key=blank (a=), or blank ().
+    // Only invalid pair is =value (=25) or = (=), no key provided.
+    // If one pair uses =, all of them must use =.
+    
     pair = StringTrim(pair);
-    // If it has at least one equals, it's valid. Todo: check if [key] is a valid ABC addr.
-    int delimiterPos = StringFind(pair, "=");
-    return (delimiterPos != 0 && StringLen(pair) > 0); // needs to be at least pos 1 or not exist. pair must not be empty
+    
+    int delimiterPos = StringFind(pair, KeyValDelimiter);
+    int pairLen = StringLen(pair);
+    return (delimiterPos != 0); // todo: check if key is abc valid
+        // Add this if empty values should not be supported: && pairLen > 0 && pairLen != delimiterPos
 }
 
 int ParseOptions_CountPairs(string &optionPairList[]) {
     int optionPairCount = 0;
     int optionPairListCount = ArraySize(optionPairList);
     
+    bool groupHasEquals = false;
+    int numPairsWithoutEquals = 0;
     for(int i = 0; i < optionPairListCount; i++) {
         if(ParseOptions_IsPairValid(optionPairList[i])) { optionPairCount++; }
+        if(StringFind(optionPairList[i], KeyValDelimiter) > -1) { groupHasEquals = true; }
+        else { numPairsWithoutEquals++; }
+    }
+    
+    if(groupHasEquals && numPairsWithoutEquals > 0) {
+        optionPairCount = 0;
+        ThrowFatalError(1, ErrorFunctionTrace, "All option pairs must be key=val when at least one key=val is present.", ConcatStringFromArray(optionPairList));
     }
     
     return optionPairCount;
@@ -80,21 +96,21 @@ int ParseOptions_CountPairs(string &optionPairList[]) {
 
 int ParseOptions_CountPairs(string optionPairs) {
     string pairList[];
-    int pairListCount = StringSplit(optionPairs, StringGetCharacter(";", 0), pairList);
+    int pairListCount = StringSplit(optionPairs, StringGetCharacter(PairDelimiter, 0), pairList);
     
     return ParseOptions_CountPairs(pairList);
 }
 
 void ParseOptions_ParseGeneric(string options,
     DataType valueType, 
-    string &stringDestArray[], bool &boolDestArray[], 
-    /*short &shortDestArray[],*/ int &intDestArray[],/* long &longDestArray[],*/
-    /*ushort &ushortDestArray[], uint &uintDestArray[], ulong &ulongDestArray[],*/
-    double &doubleDestArray[],/* float &floatDestArray[],*/
+    string &stringDestArray[], 
+    bool &boolDestArray[], 
+    int &intDestArray[],
+    double &doubleDestArray[],
     int expectedCount=-1
     ) {
     string pairList[];
-    int pairListCount = StringSplit(options, StringGetCharacter(";", 0), pairList);
+    int pairListCount = StringSplit(options, StringGetCharacter(PairDelimiter, 0), pairList);
 
     int pairValidCount = ParseOptions_CountPairs(pairList);
     
@@ -109,67 +125,55 @@ void ParseOptions_ParseGeneric(string options,
     switch(valueType) {
         case DataString: ArrayFree(stringDestArray); destArraySize = ArrayResize(stringDestArray, pairValidCount); break;
         case DataBool: ArrayFree(boolDestArray); destArraySize = ArrayResize(boolDestArray, pairValidCount); break;
-        //case DataShort: ArrayFree(shortDestArray); destArraySize = ArrayResize(shortDestArray, pairValidCount); break;
         case DataInt: ArrayFree(intDestArray); destArraySize = ArrayResize(intDestArray, pairValidCount); break;
-        //case DataLong: ArrayFree(longDestArray); destArraySize = ArrayResize(longDestArray, pairValidCount); break;
-        //case DataUshort: ArrayFree(ushortDestArray); destArraySize = ArrayResize(ushortDestArray, pairValidCount); break;
-        //case DataUint: ArrayFree(uintDestArray); destArraySize = ArrayResize(uintDestArray, pairValidCount); break;
-        //case DataUlong: ArrayFree(ulongDestArray); destArraySize = ArrayResize(ulongDestArray, pairValidCount); break;
         case DataDouble: ArrayFree(doubleDestArray); destArraySize = ArrayResize(doubleDestArray, pairValidCount); break;
-        //case DataFloat: ArrayFree(floatDestArray); destArraySize = ArrayResize(floatDestArray, pairValidCount); break;
     }
     
     for(int i = 0; i < pairListCount; i++) {
         string key, value; int keyAddrInt;
         
         if(ParseOptions_IsPairValid(pairList[i])) {
-            key = ParseOptions_GetPairKey(pairList[i]);
+            key = ParseOptions_GetPairKey(pairList[i], i);
             value = ParseOptions_GetPairValue(pairList[i]);
-            keyAddrInt = AddrAbcToInt(key);
+            keyAddrInt = StringLen(key) <= 0 ? i : AddrAbcToInt(key);
             
             if(keyAddrInt < 0 || keyAddrInt >= destArraySize) {
-                ThrowFatalError(1, ErrorFunctionTrace, StringConcatenate("key=", key, " keyAddrInt=", keyAddrInt, " is not within destArraySize=", destArraySize));
+                ThrowFatalError(1, ErrorFunctionTrace, StringConcatenate("key=", key, " keyAddrInt=", keyAddrInt, " is not within destArraySize=", destArraySize), pairList[i]);
                 return;
             } else {
                 switch(valueType) {
                     case DataString: stringDestArray[keyAddrInt] = value; break;
                     case DataBool: boolDestArray[keyAddrInt] = StrToBool(value); break;
-                    //case DataShort: shortDestArray[keyAddrInt] = value; break;
                     case DataInt: intDestArray[keyAddrInt] = StrToInteger(value); break;
-                    //case DataLong: longDestArray[keyAddrInt] = value; break;
-                    //case DataUshort: ushortDestArray[keyAddrInt] = value; break;
-                    //case DataUint: uintDestArray[keyAddrInt] = value; break;
-                    //case DataUlong: ulongDestArray[keyAddrInt] = value; break;
                     case DataDouble: doubleDestArray[keyAddrInt] = StrToDouble(value); break;
-                    //case DataFloat: floatDestArray[keyAddrInt] = value; break;
                 }
             }
         }
     }
 }
 
-void ParseOptions_String(string options, string &destArray[], int expectedCount=-1) {
+void ParseOptions(string options, string &destArray[], int expectedCount=-1) {
     ParseOptions_ParseGeneric(options, DataString, 
         destArray, BoolZeroArray, IntZeroArray, DoubleZeroArray,
         expectedCount
         );
 }
 
-void ParseOptions_Bool(string options, bool &destArray[], int expectedCount=-1) {
+void ParseOptions(string options, bool &destArray[], int expectedCount=-1) {
     ParseOptions_ParseGeneric(options, DataBool, 
         StringZeroArray, destArray, IntZeroArray, DoubleZeroArray,
         expectedCount
         );
 }
 
-void ParseOptions_Int(string options, int &destArray[], int expectedCount=-1) {
+void ParseOptions(string options, int &destArray[], int expectedCount=-1) {
     ParseOptions_ParseGeneric(options, DataInt, 
         StringZeroArray, BoolZeroArray, destArray, DoubleZeroArray,
         expectedCount
         );
 }
 
-void ParseOptions_Double(string options, double &destArray[], int expectedCount=-1) {
+void ParseOptions(string options, double &destArray[], int expectedCount=-1) {
     ParseOptions_ParseGeneric(options, DataDouble, 
         StringZeroArray, BoolZeroArray, IntZeroArray, destArray,
         expectedCount

@@ -18,22 +18,22 @@
     #import
 #endif
 
-#include "MMT_Main_Settings.mqh"
-#include "MMT_Filter.mqh"
+#include "MMT_Settings.mqh"
 #include "MMT_Helper_Error.mqh"
-#include "MMT_Main_Symbols.mqh"
 
-string ActiveSymbols[];
+#include "MMT_Filter.mqh"
+#include "MMT_Symbols.mqh"
+
+SymbolManager *MainSymbolManager;
+FilterManager *MainFilterManager;
 
 //+------------------------------------------------------------------+
 // Runtime functions
 //+------------------------------------------------------------------+
 
-#include "MMT_Helper_OptionsParser.mqh"
-
 int OnInit() {
-    GetActiveSymbols(ActiveSymbols, IncludeSymbols, ExcludeSymbols, ExcludeCurrencies);
-    FilterList_OnInit();
+    MainFilterManager = new FilterManager();
+    MainSymbolManager = new SymbolManager(IncludeSymbols, ExcludeSymbols, ExcludeCurrencies);
 
     // CalculateHandler();
     // Set timer here
@@ -46,5 +46,6 @@ void OnTimer() {
 }
 
 void OnDeinit(const int reason) {
-    
+    MainSymbolManager.onDeinit();
+    MainFilterManager.onDeinit();
 }

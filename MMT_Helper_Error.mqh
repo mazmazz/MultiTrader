@@ -9,7 +9,7 @@
 
 #define ErrorFunctionTrace StringConcatenate(__FILE__,"(",__LINE__,") ", __FUNCTION__)
 
-#include "MMT_Main_Settings.mqh"
+#include "MMT_Settings.mqh"
 
 bool ErrorPrintAllFatalErrors = false; // because ExpertRemove() does not exit an EA right away, further error messages will print when only the first one is useful.
 int ErrorFatalCounter = 0;

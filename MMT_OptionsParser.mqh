@@ -25,6 +25,29 @@ bool BoolZeroArray[];
 int IntZeroArray[];
 double DoubleZeroArray[];
 
+class OptionsParser {
+    public:
+    
+    static string GetPairValue(string pair);
+    static string GetPairKey(string pair, int indexNum = -1);
+    static bool IsPairValid(string pair);
+    static int CountPairs(string &optionPairList[]);
+    static int CountPairs(string optionPairs);
+    static void ParseGeneric(string options,
+        DataType valueType, 
+        string &stringDestArray[], 
+        bool &boolDestArray[], 
+        int &intDestArray[],
+        double &doubleDestArray[],
+        int expectedCount=-1
+        );
+        
+    static void Parse(string options, string &destArray[], int expectedCount=-1);
+    static void Parse(string options, bool &destArray[], int expectedCount=-1);
+    static void Parse(string options, int &destArray[], int expectedCount=-1);
+    static void Parse(string options, double &destArray[], int expectedCount=-1);
+};
+
 // https://docs.mql4.com/convert/chartostr
 
 // 1. Split string by ;
@@ -33,7 +56,7 @@ double DoubleZeroArray[];
 // 2b. If no =, assume A only
 // 2c. If proper a=value, convert AddrAbc to AddrInt and record value
 
-string ParseOptions_GetPairValue(string pair) {
+string OptionsParser::GetPairValue(string pair) {
     pair = StringTrim(pair);
     int delimiterPos = StringFind(pair, KeyValDelimiter);
     
@@ -45,7 +68,7 @@ string ParseOptions_GetPairValue(string pair) {
     }
 }
 
-string ParseOptions_GetPairKey(string pair, int indexNum = -1) {
+string OptionsParser::GetPairKey(string pair, int indexNum = -1) {
     pair = StringTrim(pair);
     int delimiterPos = StringFind(pair, KeyValDelimiter);
     
@@ -60,7 +83,7 @@ string ParseOptions_GetPairKey(string pair, int indexNum = -1) {
     }
 }
 
-bool ParseOptions_IsPairValid(string pair) {
+bool OptionsParser::IsPairValid(string pair) {
     // We support value-only (25) and key=value (a=25). 
     // Empty values are also supported but I'm undecided on this: key=blank (a=), or blank ().
     // Only invalid pair is =value (=25) or = (=), no key provided.
@@ -74,14 +97,14 @@ bool ParseOptions_IsPairValid(string pair) {
         // Add this if empty values should not be supported: && pairLen > 0 && pairLen != delimiterPos
 }
 
-int ParseOptions_CountPairs(string &optionPairList[]) {
+int OptionsParser::CountPairs(string &optionPairList[]) {
     int optionPairCount = 0;
     int optionPairListCount = ArraySize(optionPairList);
     
     bool groupHasEquals = false;
     int numPairsWithoutEquals = 0;
     for(int i = 0; i < optionPairListCount; i++) {
-        if(ParseOptions_IsPairValid(optionPairList[i])) { optionPairCount++; }
+        if(OptionsParser::IsPairValid(optionPairList[i])) { optionPairCount++; }
         if(StringFind(optionPairList[i], KeyValDelimiter) > -1) { groupHasEquals = true; }
         else { numPairsWithoutEquals++; }
     }
@@ -94,14 +117,14 @@ int ParseOptions_CountPairs(string &optionPairList[]) {
     return optionPairCount;
 }
 
-int ParseOptions_CountPairs(string optionPairs) {
+int OptionsParser::CountPairs(string optionPairs) {
     string pairList[];
     int pairListCount = StringSplit(optionPairs, StringGetCharacter(PairDelimiter, 0), pairList);
     
-    return ParseOptions_CountPairs(pairList);
+    return OptionsParser::CountPairs(pairList);
 }
 
-void ParseOptions_ParseGeneric(string options,
+void OptionsParser::ParseGeneric(string options,
     DataType valueType, 
     string &stringDestArray[], 
     bool &boolDestArray[], 
@@ -112,7 +135,7 @@ void ParseOptions_ParseGeneric(string options,
     string pairList[];
     int pairListCount = StringSplit(options, StringGetCharacter(PairDelimiter, 0), pairList);
 
-    int pairValidCount = ParseOptions_CountPairs(pairList);
+    int pairValidCount = OptionsParser::CountPairs(pairList);
     
     if(pairValidCount < 1 || (expectedCount > -1 ? pairValidCount != expectedCount : false)) {
         ThrowFatalError(1, ErrorFunctionTrace, 
@@ -132,9 +155,9 @@ void ParseOptions_ParseGeneric(string options,
     for(int i = 0; i < pairListCount; i++) {
         string key, value; int keyAddrInt;
         
-        if(ParseOptions_IsPairValid(pairList[i])) {
-            key = ParseOptions_GetPairKey(pairList[i], i);
-            value = ParseOptions_GetPairValue(pairList[i]);
+        if(OptionsParser::IsPairValid(pairList[i])) {
+            key = OptionsParser::GetPairKey(pairList[i], i);
+            value = OptionsParser::GetPairValue(pairList[i]);
             keyAddrInt = StringLen(key) <= 0 ? i : AddrAbcToInt(key);
             
             if(keyAddrInt < 0 || keyAddrInt >= destArraySize) {
@@ -152,29 +175,29 @@ void ParseOptions_ParseGeneric(string options,
     }
 }
 
-void ParseOptions(string options, string &destArray[], int expectedCount=-1) {
-    ParseOptions_ParseGeneric(options, DataString, 
+void OptionsParser::Parse(string options, string &destArray[], int expectedCount=-1) {
+    OptionsParser::ParseGeneric(options, DataString, 
         destArray, BoolZeroArray, IntZeroArray, DoubleZeroArray,
         expectedCount
         );
 }
 
-void ParseOptions(string options, bool &destArray[], int expectedCount=-1) {
-    ParseOptions_ParseGeneric(options, DataBool, 
+void OptionsParser::Parse(string options, bool &destArray[], int expectedCount=-1) {
+    OptionsParser::ParseGeneric(options, DataBool, 
         StringZeroArray, destArray, IntZeroArray, DoubleZeroArray,
         expectedCount
         );
 }
 
-void ParseOptions(string options, int &destArray[], int expectedCount=-1) {
-    ParseOptions_ParseGeneric(options, DataInt, 
+void OptionsParser::Parse(string options, int &destArray[], int expectedCount=-1) {
+    OptionsParser::ParseGeneric(options, DataInt, 
         StringZeroArray, BoolZeroArray, destArray, DoubleZeroArray,
         expectedCount
         );
 }
 
-void ParseOptions(string options, double &destArray[], int expectedCount=-1) {
-    ParseOptions_ParseGeneric(options, DataDouble, 
+void OptionsParser::Parse(string options, double &destArray[], int expectedCount=-1) {
+    OptionsParser::ParseGeneric(options, DataDouble, 
         StringZeroArray, BoolZeroArray, IntZeroArray, destArray,
         expectedCount
         );

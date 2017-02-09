@@ -89,7 +89,7 @@ enum StringType {
 
 StringType GetStringType(string test) {
     int len = StringLen(test);
-    bool uppercase; bool lowercase; bool numeric;
+    bool uppercase = false; bool lowercase = false; bool numeric = false;
     ushort code;
     
     for(int i= 0; i < len; i++) {

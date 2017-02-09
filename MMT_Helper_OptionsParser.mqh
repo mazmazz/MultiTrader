@@ -43,7 +43,7 @@ string ParseOptions_GetPairValue(string pair) {
     if(delimiterPos > 0) { return StringSubstr(pair, delimiterPos+1); }
     else if(delimiterPos < 0) { return pair; } // missing = assumes key a
     else {
-        ThrowFatalError(1, "Helper_OptionsParser ParseOptions_GetPairValue", StringConcatenate("pair=", pair, " keyLength=", delimiterPos, " not >= 1"));
+        ThrowFatalError(1, ErrorFunctionTrace, StringConcatenate("pair=", pair, " keyLength=", delimiterPos, " not >= 1"));
         return "";
     }
 }
@@ -55,7 +55,7 @@ string ParseOptions_GetPairKey(string pair) {
     if(delimiterPos > 0) { return StringSubstr(pair, 0, delimiterPos); }
     else if(delimiterPos < 0) { return "a"; } // missing = assumes key a
     else {
-        ThrowFatalError(1, "Helper_OptionsParser ParseOptions_GetPairKey", StringConcatenate("pair=", pair, " keyLength=", delimiterPos, " not >= 1"));
+        ThrowFatalError(1, ErrorFunctionTrace, StringConcatenate("pair=", pair, " keyLength=", delimiterPos, " not >= 1"));
         return "";
     }
 }
@@ -99,7 +99,7 @@ void ParseOptions_ParseGeneric(string options,
     int pairValidCount = ParseOptions_CountPairs(pairList);
     
     if(pairValidCount < 1 || (expectedCount > -1 ? pairValidCount != expectedCount : false)) {
-        ThrowFatalError(1, "Helper_OptionsParser ParseOptions_String", 
+        ThrowFatalError(1, ErrorFunctionTrace, 
             pairValidCount < 1 ? StringConcatenate("pairValidCount=", pairValidCount, " not >= 1") : StringConcatenate("pairValidCount=", pairValidCount, " does not match expectedCount=", expectedCount, ". options=", options)
             );
         return;
@@ -128,7 +128,7 @@ void ParseOptions_ParseGeneric(string options,
             keyAddrInt = AddrAbcToInt(key);
             
             if(keyAddrInt < 0 || keyAddrInt >= destArraySize) {
-                ThrowFatalError(1, "Helper_OptionsParser ParseOptions_String", StringConcatenate("key=", key, " keyAddrInt=", keyAddrInt, " is not within destArraySize=", destArraySize));
+                ThrowFatalError(1, ErrorFunctionTrace, StringConcatenate("key=", key, " keyAddrInt=", keyAddrInt, " is not within destArraySize=", destArraySize));
                 return;
             } else {
                 switch(valueType) {

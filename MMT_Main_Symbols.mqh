@@ -15,7 +15,7 @@
 //+------------------------------------------------------------------+
 
 //
-//string GetCurrencyPrefix(string curName) {
+//string GetSymbolPrefix(string curName) {
 //    string result;
 //    
 //    return result;
@@ -25,7 +25,7 @@ string GetCurrencySuffix(string symName) {
     return StringSubstr(symName, 6);
 }
 //
-//bool DoesCurrencyHavePrefix(string curName, string curPrefix) {
+//bool DoesSymbolHavePrefix(string curName, string curPrefix) {
 //    bool result;
 //    
 //    return result;
@@ -37,7 +37,7 @@ bool DoesSymbolHaveSuffix(string symName, string symSuffix) {
 
 string FormatSymbolName(string symName, string symSuffix, /*string curPrefix*/) {
     if(StringLen(symName) < 6) { 
-        ThrowError(1, "Helper_Main FormatSymbolName", "symName is not >=6 chars, assuming invalid, passing as is."); 
+        ThrowError(1, ErrorFunctionTrace, "symName is not >=6 chars, assuming invalid, passing as is."); 
         return symName;
     }
     
@@ -45,14 +45,14 @@ string FormatSymbolName(string symName, string symSuffix, /*string curPrefix*/) 
     else if(DoesSymbolHaveSuffix(symName, symSuffix)) { return symName; }
     else if(StringAdd(symName, symSuffix)) { return symName; } 
     else {
-        ThrowError(1, "Helper_Main FormatSymbolName", "Could not figure out how to format symName, passing as is.");
+        ThrowError(1, ErrorFunctionTrace, "Could not figure out how to format symName, passing as is.");
         return symName;
     }
 }
 
 string UnformatSymbolName(string symName, string symSuffix) {
     if(StringLen(symName) < 6) { 
-        ThrowError(1, "Helper_Main FormatSymbolName", "symName is not >=6 chars, assuming invalid, passing as is."); 
+        ThrowError(1, ErrorFunctionTrace, "symName is not >=6 chars, assuming invalid, passing as is."); 
         return symName;
     }
     
@@ -60,7 +60,7 @@ string UnformatSymbolName(string symName, string symSuffix) {
     else if(!DoesSymbolHaveSuffix(symName, symSuffix)) { return symName; }
     else if(StringReplace(symName, symSuffix, "") > -1) { return symName; } 
     else {
-        ThrowError(1, "Helper_Main UnformatSymbolName", "Could not figure out how to unformat symName, passing as is.");
+        ThrowError(1, ErrorFunctionTrace, "Could not figure out how to unformat symName, passing as is.");
         return symName;
     }
 }
@@ -80,7 +80,7 @@ int GetAllSymbols(string &allSymBuffer[]) {
     int count;
     
     // https://www.mql5.com/en/forum/146736
-    ThrowError(1, "Helper_Main GetAllSymbols", "Get all symbols not implemented");
+    ThrowError(1, ErrorFunctionTrace, "Get all symbols not implemented");
     
     return count;
 }
@@ -107,7 +107,7 @@ void GetActiveSymbols(string &curBuffer[], string includeSym, string excludeSym,
         string rawSymName = StringTrim(includeSymSplit[i]);
         int symLength = StringLen(rawSymName);
         if(symLength < 6) {
-            if(symLength > 0) { ThrowError(1, "Helper_Main GetActiveSymbols", "rawSymName length is not >= 6, assuming invalid and skipping"); }
+            if(symLength > 0) { ThrowError(1, ErrorFunctionTrace, "rawSymName length is not >= 6, assuming invalid and skipping"); }
             continue; 
         }
         

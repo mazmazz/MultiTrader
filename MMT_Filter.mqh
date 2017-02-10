@@ -9,16 +9,6 @@
 
 #include "MMT_Helper_Error.mqh"
 
-//+------------------------------------------------------------------+
-//| Comments
-//+------------------------------------------------------------------+
-//
-// How to Add Filters
-// 1. Add include to include list [INCLUDES]
-// 2. Add OnTick indi call to FilterList_OnTick [HOOKS]
-//
-//+------------------------------------------------------------------+
-
 enum FilterMode {
     FilterDisabled,
     FilterNormal,
@@ -76,18 +66,12 @@ extern string Lbl_Format2="# of values must be same across a filter's settings."
 extern string Lbl_Format3="Do not add a trailing ; unless last value shall be empty.";
 extern string Lbl_Format4="Only use double ;s with empty values.";
 
-//+------------------------------------------------------------------+
-// 1. Include filter includes here [INCLUDES]
-//+------------------------------------------------------------------+
-
-#include "MMT_Filter_Stoch.mqh"
-
-//+------------------------------------------------------------------+
-// 2. Add indi call to below method [HOOKS]
-//+------------------------------------------------------------------+
-
 void FilterManager::FilterManager() {
-    addFilter(new FilterStoch());
+
+}
+
+void FilterManager::~FilterManager() {
+    deleteAllFilters();
 }
 
 //+------------------------------------------------------------------+
@@ -156,14 +140,6 @@ void Filter::setupChecks(string entryList, string exitList) {
     
     doEntry = (FilterManager::getMaxCheckMode(checkMode) > 0);
     doExit = (FilterManager::getMaxCheckMode(exit_checkMode) > 0);
-}
-
-//+------------------------------------------------------------------+
-// Runtime methods [RUNTIME]
-//+------------------------------------------------------------------+
-
-void FilterManager::~FilterManager() {
-    deleteAllFilters();
 }
 
 //+------------------------------------------------------------------+

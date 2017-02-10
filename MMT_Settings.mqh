@@ -23,15 +23,22 @@ extern string ExcludeCurrencies="SEK,SGD,DKK,NOK,TRY,HKD,ZAR,MXN,XAG,XAU";
 extern string Lbl_TradeSettings="***** Trade Settings *****";
 extern bool DoTrade=true;
 extern bool DoExit=true;
-extern string ConfigComment="StochDTestFDJ";
+extern string ConfigComment="";
 extern int MagicNumber=1245;
-extern string MyOrderComment="MCH Stochs 15 30 60";
+extern string MyOrderComment="";
 extern double MaxSpread=4.0;
 extern double MinTradeMarginLevel=100;
 
 extern string Lbl_MultipleTradesSettings="-- Multiple Trades Settings --";
 extern int MaxSymbolTrades=3;
 extern int MultiTrades_TimeFrame=60;
+
+extern string Lbl_TradeDelaysSettings="-- Trade Delay Settings --";
+extern int CycleTimeSeconds=5;
+extern int Entry_StableSeconds=2;
+extern int Exit_StableSeconds=10;
+extern int ExitCheckDelay=10;
+extern int TimeBetweenTrades=2;
 //
 //extern string LbL_Exit_Basket="--- Basket Exit Settings ---";
 //extern bool UseBaskets=false;
@@ -41,12 +48,6 @@ extern int MultiTrades_TimeFrame=60;
 //extern int MaxBasketsPerDay=10;
 //extern int MaxLossBasketsPerDay=0;
 
-extern string Lbl_TradeDelaysSettings="-- Trade Delay Settings --";
-extern int CycleTimeSeconds=5;
-extern int Entry_StableSeconds=2;
-extern int Exit_StableSeconds=10;
-extern int ExitCheckDelay=10;
-extern int TimeBetweenTrades=2;
 //
 //extern string LbL_Exit_ExpiryTrade="--- Expiry Trade Exit Settings ---";
 //extern bool ExpireTrades=false;

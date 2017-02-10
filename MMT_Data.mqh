@@ -65,6 +65,18 @@ class DataUnit {
     SignalType signal;
 };
 
+string DataUnit::getStringValue() {
+    string result;
+    
+    switch(rawValueType) {
+        case DataString: return rawValueString; break;
+        case DataInt: return IntegerToString(rawValueInt); break;
+        case DataDouble: return DoubleToString(rawValueDouble); break;
+        case DataBool: return rawValueBool ? "True" : "False"; break;
+        default: return rawValueString; break;
+    }
+}
+
 class DataList {
     // We need this to maintain a data history
     private: 
@@ -185,6 +197,7 @@ class DataManager {
     
     public:
     DataManager(int symbolCount, int filterCount);
+    ~DataManager();
     
     DataList *getDataList(string symName, string filterName, int filterCheckId, bool isExitCheck = false);
     DataList *getDataList(int symbolId, int filterId, int filterCheckId, bool isExitCheck = false);
@@ -192,8 +205,6 @@ class DataManager {
     DataList *getDataList(string symbolId, int filterId, int filterCheckId, bool isExitCheck = false);
     
     // void deleteAllSymbolData();
-    
-    void onDeinit();
 };
 
 void DataCheck::DataCheck(int historyCount = -1) {
@@ -253,7 +264,7 @@ DataList *DataManager::getDataList(string symName, int filterId, int filterCheck
     return getDataList(MainSymbolManager.getSymbolId(symName), filterId, filterCheckId);
 }
 
-void DataManager::onDeinit() {
+void DataManager::~DataManager() {
     int symbolCount = MainSymbolManager.symbolCount;
     int filterCount = 0; int checkCount = 0; int k = 0;
     

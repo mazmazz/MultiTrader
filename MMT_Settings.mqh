@@ -8,9 +8,9 @@
 #property strict
 
 enum DisplayStyleEnum {
-    ValueAndMode,
+    ValueAndSignal,
     ValueOnly,
-    ModeOnly
+    SignalOnly
 };
 
 extern string MADDY_CSS_HGI_Trader_5="///// MultiTrader v1 /////"; // MultiTrader v1
@@ -103,10 +103,10 @@ extern string LblDisplay="***** Display Settings *****";
 extern bool DisplayShowSettings=true;
 extern bool DisplayShowTable=true;
 extern bool DisplayShowOrdersInTable=true;
-extern string DisplayFont="Courier";
-extern int DisplayFontSize=7;
-extern int DisplaySpacing=13;
-extern DisplayStyleEnum DisplayStyle=ValueAndMode;
+extern string DisplayFont="Lucida Console";
+extern int DisplayFontSize=11;
+//extern int DisplaySpacing=13;
+extern DisplayStyleEnum DisplayStyle=ValueAndSignal;
 
 extern string LblRuntime="***** Runtime Settings *****";
 extern string LblDebug="DebugLevel 0 = Regular messages, 1 = Print errors, 2 = Print info";

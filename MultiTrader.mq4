@@ -9,6 +9,9 @@
 //+------------------------------------------------------------------+
 //| defines                                                          |
 //+------------------------------------------------------------------+
+const string MMT_EaName = "MultiTrader";
+const string MMT_EaShortName = "MMT";
+const string MMT_Version = "v0.1 02/2017";
 
 #define ExtLib_Symbols
 
@@ -24,6 +27,7 @@
 #include "MMT_Filter.mqh"
 #include "MMT_Symbols.mqh"
 #include "MMT_Data.mqh"
+#include "MMT_Dashboard.mqh"
 
 // These are defined in their respective source files
 //SymbolManager *MainSymbolManager;
@@ -38,6 +42,12 @@ int OnInit() {
     MainFilterManager = new FilterManager();
     MainSymbolManager = new SymbolManager(IncludeSymbols, ExcludeSymbols, ExcludeCurrencies);
     MainDataManager = new DataManager(MainSymbolManager.symbolCount, MainFilterManager.filterCount);
+    // order manager
+    MainDashboardManager = new DashboardManager();
+
+    // calculate?
+    // order?
+    // draw dashboard?
 
     // CalculateHandler();
     // Set timer here
@@ -50,10 +60,8 @@ void OnTimer() {
 }
 
 void OnDeinit(const int reason) {
-    MainDataManager.onDeinit();
-    MainSymbolManager.onDeinit();
-    MainFilterManager.onDeinit();
-    
+    delete(MainDashboardManager);
+    // order manager
     delete(MainDataManager);
     delete(MainSymbolManager);
     delete(MainFilterManager);

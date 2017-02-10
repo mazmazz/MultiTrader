@@ -53,14 +53,10 @@ class Filter {
 class FilterManager {
     private:
     Filter *filters[];
-    string filterShortNames[];
 
     public:
     FilterManager();
-    
-    void onInit();
-    void onTimer();
-    void onDeinit();
+    ~FilterManager();
     
     int addFilter(Filter *unit);
     int getFilterId(string filterShortName);
@@ -69,6 +65,7 @@ class FilterManager {
     void deleteAllFilters();
     
     int filterCount;
+    string filterShortNames[];
     static int getMaxCheckMode(int &checkModeList[]);
 };
 
@@ -165,19 +162,7 @@ void Filter::setupChecks(string entryList, string exitList) {
 // Runtime methods [RUNTIME]
 //+------------------------------------------------------------------+
 
-void FilterManager::onInit() {
-    
-}
-//
-//void FilterList_OnTick() {
-//    
-//}
-
-void FilterManager::onTimer() {
-    
-}
-
-void FilterManager::onDeinit() {
+void FilterManager::~FilterManager() {
     deleteAllFilters();
 }
 

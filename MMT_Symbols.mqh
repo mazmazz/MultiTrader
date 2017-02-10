@@ -26,6 +26,7 @@ class SymbolUnit {
 class SymbolManager {
     public:
     SymbolManager(string includeSymbols, string excludeSymbols, string excludeCurrencies);
+    ~SymbolManager();
     
     SymbolUnit *symbols[]; // array
     string symNames[];
@@ -46,8 +47,6 @@ class SymbolManager {
     static string formatSymbolName(string symName, string symSuffix, /*string curPrefix*/);
     static string unformatSymbolName(string symName, string symSuffix);
     static int getAllSymbols(string &allSymBuffer[]);
-    
-    void onDeinit();
 };
 
 //+------------------------------------------------------------------+
@@ -147,7 +146,7 @@ void SymbolManager::SymbolManager(string includeSymbols, string excludeSymbols, 
 // Runtime methods [RUNTIME]
 //+------------------------------------------------------------------+
 
-void SymbolManager::onDeinit() {
+void SymbolManager::~SymbolManager() {
     removeAllSymbols();
 }
 

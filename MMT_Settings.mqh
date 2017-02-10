@@ -28,7 +28,6 @@ extern int MagicNumber=1245;
 extern string MyOrderComment="MCH Stochs 15 30 60";
 extern double MaxSpread=4.0;
 extern double MinTradeMarginLevel=100;
-extern int DebugLevel=2;
 
 extern string Lbl_MultipleTradesSettings="-- Multiple Trades Settings --";
 extern int MaxSymbolTrades=3;
@@ -108,3 +107,11 @@ extern string DisplayFont="Courier";
 extern int DisplayFontSize=7;
 extern int DisplaySpacing=13;
 extern DisplayStyleEnum DisplayStyle=ValueAndMode;
+
+extern string LblRuntime="***** Runtime Settings *****";
+extern string LblDebug="DebugLevel 0 = Regular messages, 1 = Print errors, 2 = Print info";
+extern int DebugLevel=2;
+extern string LblHistory="# of historical data readings to keep per filter per symbol.";
+extern string LblHistory2="Decrease only if memory use is an issue.";
+extern string LblHistory3="Filters can override this # per filter.";
+extern int HistoryLevel=10;

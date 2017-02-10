@@ -23,9 +23,12 @@
 
 #include "MMT_Filter.mqh"
 #include "MMT_Symbols.mqh"
+#include "MMT_Data.mqh"
 
-SymbolManager *MainSymbolManager;
-FilterManager *MainFilterManager;
+// These are defined in their respective source files
+//SymbolManager *MainSymbolManager;
+//FilterManager *MainFilterManager;
+//DataManager *MainDataManager;
 
 //+------------------------------------------------------------------+
 // Runtime functions
@@ -34,6 +37,7 @@ FilterManager *MainFilterManager;
 int OnInit() {
     MainFilterManager = new FilterManager();
     MainSymbolManager = new SymbolManager(IncludeSymbols, ExcludeSymbols, ExcludeCurrencies);
+    MainDataManager = new DataManager(MainSymbolManager.symbolCount, MainFilterManager.filterCount);
 
     // CalculateHandler();
     // Set timer here
@@ -46,6 +50,11 @@ void OnTimer() {
 }
 
 void OnDeinit(const int reason) {
+    MainDataManager.onDeinit();
     MainSymbolManager.onDeinit();
     MainFilterManager.onDeinit();
+    
+    delete(MainDataManager);
+    delete(MainSymbolManager);
+    delete(MainFilterManager);
 }

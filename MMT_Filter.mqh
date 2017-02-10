@@ -28,9 +28,6 @@ enum FilterMode {
 
 class Filter {
     protected:
-    int checkCount;
-    int exit_checkCount;
-    
     int checkMode[];
     int exit_checkMode[];
     
@@ -42,6 +39,8 @@ class Filter {
     
     public:
     string shortName;
+    int checkCount;
+    int exit_checkCount;
     
     void onInit() { ThrowError(1, ErrorFunctionTrace, "Not implemented"); }
     void onTimer() { ThrowError(1, ErrorFunctionTrace, "Not implemented"); }
@@ -64,15 +63,21 @@ class FilterManager {
     void onDeinit();
     
     int addFilter(Filter *unit);
+    int getFilterId(string filterShortName);
+    int getFilterCheckCount(string filterShortName, bool checkCount = false);
+    int getFilterCheckCount(int filterId, bool checkCount = false);
     void deleteAllFilters();
     
+    int filterCount;
     static int getMaxCheckMode(int &checkModeList[]);
 };
 
 extern string Lbl_IndisAndFilters="********** Indicators & Filters **********"; // Filter List
 extern string Lbl_FilterLegend="0 = Disabled; 1 = Normal; 2 = Opposite; 3 = Not Opposite"; // Legend
-extern string Lbl_Format="a=1;b=0;c=1"; // Format
-extern string Lbl_Format2="BE CAREFUL of double ;s and trailing ;s - only use with empty values."; // Format single digit
+extern string Lbl_Format="a=1;b=0;c=1 -OR- 1;0;1 -OR- 1"; // Format
+extern string Lbl_Format2="# of values must be same across a filter's settings."; // Format
+extern string Lbl_Format3="Do not add a trailing ; unless last value shall be empty.";
+extern string Lbl_Format4="Only use double ;s with empty values.";
 
 //+------------------------------------------------------------------+
 // 1. Include filter includes here [INCLUDES]
@@ -100,7 +105,30 @@ int FilterManager::addFilter(Filter *unit) {
     filters[size] = unit;
     filterShortNames[size] = unit.shortName;
     
+    filterCount++;
+    
     return size+1;
+}
+
+int FilterManager::getFilterId(string filterShortName) {
+    int size = ArraySize(filterShortNames);
+    
+    for(int i = 0; i < size; i++) {
+        if(StringCompare(filterShortNames[i], filterShortName) == 0) { return i; }
+    }
+
+    return -1;
+}
+
+int FilterManager::getFilterCheckCount(string filterShortName, bool exitCheck = false) {
+    int filterId = getFilterId(filterShortName);
+    
+    if(filterId < 0) { return -1; }
+    else { return getFilterCheckCount(filterId, exitCheck); }
+}
+
+int FilterManager::getFilterCheckCount(int filterId, bool exitCheck = false) {
+    return exitCheck ? filters[filterId].exit_checkCount : filters[filterId].checkCount;
 }
 
 void FilterManager::deleteAllFilters() {
@@ -163,3 +191,5 @@ int FilterManager::getMaxCheckMode(int &checkModeList[]) {
     if(maxValueId < 0) { return -1; }
     else { return checkModeList[maxValueId]; }
 }
+
+FilterManager *MainFilterManager;

@@ -9,6 +9,7 @@
 
 #include "MMT_Helper_Error.mqh"
 #include "MMT_Helper_Library.mqh"
+#include "MMT_Data.mqh"
 
 //+------------------------------------------------------------------+
 // Symbol classes [CLASSES]
@@ -28,11 +29,13 @@ class SymbolManager {
     
     SymbolUnit *symbols[]; // array
     string symNames[];
+    int symbolCount;
     
     string excludeSym; // not an array
     string excludeCur[]; // array
     
     int addSymbol(string formSymName, string bareSymName = "");
+    int getSymbolId(string formSymName);
     void removeSymbol();
     void removeAllSymbols();
     bool isSymbolExcluded(string symName, string excludeSym, string &excludeCur[]);
@@ -65,6 +68,16 @@ int SymbolManager::addSymbol(string formSymName, string bareSymName = "") {
     symNames[size] = formSymName;
     
     return size+1;
+}
+
+int SymbolManager::getSymbolId(string formSymName) {
+    int size = ArraySize(symNames);
+    
+    for(int i = 0; i < size; i++) {
+        if(StringCompare(symNames[i], formSymName) == 0) { return i; }
+    }
+    
+    return -1;
 }
 
 void SymbolManager::removeAllSymbols() {
@@ -117,6 +130,7 @@ void SymbolManager::getActiveSymbols(string includeSym, string excludeSymIn, str
         
         if(!isSymbolExcluded(bareSymName, excludeSym, excludeCur)) { 
             addSymbol(formSymName, bareSymName);
+            symbolCount++;
             
             if(DebugLevel >= 2) StringAdd(finalSymString, StringConcatenate(", ", formSymName));
         }
@@ -217,3 +231,5 @@ int SymbolManager::getAllSymbols(string &allSymBuffer[]) {
     return count;
 }
 #endif
+
+SymbolManager *MainSymbolManager;

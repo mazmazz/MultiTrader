@@ -8,8 +8,7 @@
 #property strict
 
 #include "MMT_OptionsParser.mqh"
-#include "MMT_Symbols.mqh"
-#include "MMT_Filter.mqh"
+#include "MMT_Main.mqh"
 
 enum SignalType {
     SignalNone,
@@ -230,9 +229,9 @@ void DataSymbol::DataSymbol(int filterCount) {
     
     for(int i = 0; i < filterCount; i++) {
         filter[i] = new DataFilter(
-            MainFilterManager.getFilterCheckCount(i), 
-            MainFilterManager.getFilterCheckCount(i, true),
-            -1 //MainFilterManager.getFilterHistoryCount(i) //, MainFilterManager.getFilterHistoryCount(i, true)
+            Main.filterMan.getFilterCheckCount(i), 
+            Main.filterMan.getFilterCheckCount(i, true),
+            -1 //Main.filterMan.getFilterHistoryCount(i) //, Main.filterMan.getFilterHistoryCount(i, true)
             );
     }
 }
@@ -253,24 +252,24 @@ DataList *DataManager::getDataList(int symbolId, int filterId, int filterCheckId
 }
 
 DataList *DataManager::getDataList(string symName, string filterName, int filterCheckId, bool isExitCheck = false){
-    return getDataList(MainSymbolManager.getSymbolId(symName), MainFilterManager.getFilterId(filterName), filterCheckId);
+    return getDataList(Main.symbolMan.getSymbolId(symName), Main.filterMan.getFilterId(filterName), filterCheckId);
 }
 
 DataList *DataManager::getDataList(int symbolId, string filterName, int filterCheckId, bool isExitCheck = false){
-    return getDataList(symbolId, MainFilterManager.getFilterId(filterName), filterCheckId);
+    return getDataList(symbolId, Main.filterMan.getFilterId(filterName), filterCheckId);
 }
 
 DataList *DataManager::getDataList(string symName, int filterId, int filterCheckId, bool isExitCheck = false){
-    return getDataList(MainSymbolManager.getSymbolId(symName), filterId, filterCheckId);
+    return getDataList(Main.symbolMan.getSymbolId(symName), filterId, filterCheckId);
 }
 
 void DataManager::~DataManager() {
-    int symbolCount = MainSymbolManager.symbolCount;
+    int symbolCount = Main.symbolMan.symbolCount;
     int filterCount = 0; int checkCount = 0; int k = 0;
     
     //void deleteAllSymbolData();
     for(int i = 0; i < symbolCount; i++) {
-        filterCount = MainFilterManager.filterCount;
+        filterCount = Main.filterMan.filterCount;
         
         //void deleteAllFilterData();
         for(int j = 0; j < filterCount; j++) {
@@ -294,5 +293,3 @@ void DataManager::~DataManager() {
         delete(symbol[i]);
     }
 }
-
-DataManager *MainDataManager;

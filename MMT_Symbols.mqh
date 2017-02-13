@@ -9,7 +9,7 @@
 
 #include "MMT_Helper_Error.mqh"
 #include "MMT_Helper_Library.mqh"
-#include "MMT_Data.mqh"
+#include "MMT_Main.mqh"
 
 //+------------------------------------------------------------------+
 // Symbol classes [CLASSES]
@@ -230,5 +230,3 @@ int SymbolManager::getAllSymbols(string &allSymBuffer[]) {
     return count;
 }
 #endif
-
-SymbolManager *MainSymbolManager;

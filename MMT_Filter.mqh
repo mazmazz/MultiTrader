@@ -152,5 +152,3 @@ int FilterManager::getMaxCheckMode(int &checkModeList[]) {
     if(maxValueId < 0) { return -1; }
     else { return checkModeList[maxValueId]; }
 }
-
-FilterManager *MainFilterManager;

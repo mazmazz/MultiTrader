@@ -21,29 +21,9 @@ const string MMT_EaName = "MultiTrader";
 const string MMT_EaShortName = "MMT";
 const string MMT_Version = "v0.1 02/2017";
 
-#define ExtLib_Symbols
+#include "MMT_Library/MMT_Library.mqh"
 
-#ifdef ExtLib_Symbols
-    #import "MMT_Library/Symbols.ex4"
-    int Symbols(string& sSymbols[]);
-    #import
-#endif
-
-#include "MMT_Settings.mqh"
-#include "MMT_Helper_Error.mqh"
-
-#include "MMT_Filter.mqh"
-#include "MMT_Symbols.mqh"
-#include "MMT_Data.mqh"
-#include "MMT_Dashboard.mqh"
-
-// These are defined in their respective source files
-//FilterManager *MainFilterManager;
-//RiskManager *MainRiskManager;
-//SymbolManager *MainSymbolManager;
-//DataManager *MainDataManager;
-//OrderManager *MainOrderManager;
-//DashboardManager *MainDashboardManager;
+#include "MMT_Main.mqh"
 
 //+------------------------------------------------------------------+
 // 1. Include filter and risk includes here [INCLUDES]
@@ -54,48 +34,21 @@ const string MMT_Version = "v0.1 02/2017";
 
 //+------------------------------------------------------------------+
 // 2. Add filters and risks to OnInit below [HOOKS]
+//    Add order affects display order on dashboard
 //+------------------------------------------------------------------+
 
 int OnInit() {
-    MainFilterManager = new FilterManager();
-    MainFilterManager.addFilter(new FilterStoch());
-    
-    // MainRiskManager = new RiskManager();
-    // MainRiskManager.addRisk(new RiskAtr());
-    
-    MainSymbolManager = new SymbolManager(IncludeSymbols, ExcludeSymbols, ExcludeCurrencies);
-    MainDataManager = new DataManager(MainSymbolManager.symbolCount, MainFilterManager.filterCount);
-    // MainOrderManager = new OrderManager();
+    Main = new MainManager();
+    Main.addFilter(new FilterStoch());
 
-    // MainRiskManager.calculateAll();
-    // MainFilterManager.calculateAll();
-    // MainOrderManager.doAllTrades();
-    
-    MainDashboardManager = new DashboardManager();
-
-    return INIT_SUCCEEDED;
+    return Main.onInit();
 }
 
-//void OnTick() {
-    // Toggle to do OnTimer or OnTick
-    // Per order update, risk calc, or filter calc
-    // Per tick or per cycle time (whichever method is picked)
-    
-    // Procedure to calculate risk goes here
-    // Procedure to update existing trades goes here
-    
-    // Procedure to check cycle time goes here
-    // If cycle time, then calculate filters
-    
-    // Dashboard is updated within MainOrderManager, MainRiskManager, and MainFilterManager
-    // No need to update here.
-//}
+void OnTick() {
+    Main.onTick();
+}
 
 void OnDeinit(const int reason) {
-    delete(MainDashboardManager);
-    // delete(MainOrderManager);
-    delete(MainDataManager);
-    delete(MainSymbolManager);
-    // delete(MainRiskManager);
-    delete(MainFilterManager);
+    Main.onDeinit(reason);
+    delete(Main);
 }

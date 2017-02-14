@@ -10,20 +10,8 @@
 #include "MMT_Helper_Library.mqh"
 #include "MMT_Helper_Error.mqh"
 
-enum DataType {
-    DataString,
-    DataBool,
-    DataInt,
-    DataDouble
-};
-
 string KeyValDelimiter = "=";
 string PairDelimiter = ";";
-
-string StringZeroArray[];
-bool BoolZeroArray[];
-int IntZeroArray[];
-double DoubleZeroArray[];
 
 class OptionsParser {
     public:
@@ -39,13 +27,19 @@ class OptionsParser {
         bool &boolDestArray[], 
         int &intDestArray[],
         double &doubleDestArray[],
-        int expectedCount=-1
+        int &idArray[],
+        int expectedCount=-1,
+        bool addToArray = false
         );
         
-    static void Parse(string options, string &destArray[], int expectedCount=-1);
-    static void Parse(string options, bool &destArray[], int expectedCount=-1);
-    static void Parse(string options, int &destArray[], int expectedCount=-1);
-    static void Parse(string options, double &destArray[], int expectedCount=-1);
+    static void Parse(string options, string &destArray[], int expectedCount=-1, bool addToArray = false);
+    static void Parse(string options, bool &destArray[], int expectedCount=-1, bool addToArray = false);
+    static void Parse(string options, int &destArray[], int expectedCount=-1, bool addToArray = false);
+    static void Parse(string options, double &destArray[], int expectedCount=-1, bool addToArray = false);
+    static void Parse(string options, string &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = false);
+    static void Parse(string options, bool &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = false);
+    static void Parse(string options, int &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = false);
+    static void Parse(string options, double &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = false);
 };
 
 // https://docs.mql4.com/convert/chartostr
@@ -130,7 +124,9 @@ void OptionsParser::ParseGeneric(string options,
     bool &boolDestArray[], 
     int &intDestArray[],
     double &doubleDestArray[],
-    int expectedCount=-1
+    int &idArray[],
+    int expectedCount=-1,
+    bool addToArray = false
     ) {
     string pairList[];
     int pairListCount = StringSplit(options, StringGetCharacter(PairDelimiter, 0), pairList);
@@ -144,22 +140,43 @@ void OptionsParser::ParseGeneric(string options,
         return;
     }
     
+    bool fillIdArray = ArrayIsDynamic(idArray);
+    if(fillIdArray) { if(!addToArray) { ArrayFree(idArray); } ArrayReserve(idArray, pairValidCount); }
+    
     int destArraySize = 0;
+    int oldArraySize = 0;
     switch(valueType) {
-        case DataString: ArrayFree(stringDestArray); destArraySize = ArrayResize(stringDestArray, pairValidCount); break;
-        case DataBool: ArrayFree(boolDestArray); destArraySize = ArrayResize(boolDestArray, pairValidCount); break;
-        case DataInt: ArrayFree(intDestArray); destArraySize = ArrayResize(intDestArray, pairValidCount); break;
-        case DataDouble: ArrayFree(doubleDestArray); destArraySize = ArrayResize(doubleDestArray, pairValidCount); break;
+        case DataString: 
+            if(!addToArray) { ArrayFree(stringDestArray); }
+            else { oldArraySize = ArraySize(stringDestArray); }
+            destArraySize = ArrayResize(stringDestArray, oldArraySize+pairValidCount); 
+            break;
+        case DataBool: 
+            if(!addToArray) { ArrayFree(boolDestArray); }
+            else { oldArraySize = ArraySize(boolDestArray); }
+            destArraySize = ArrayResize(boolDestArray, oldArraySize+pairValidCount); 
+            break;
+        case DataInt: 
+            if(!addToArray) { ArrayFree(intDestArray); }
+            else { oldArraySize = ArraySize(intDestArray); }
+            destArraySize = ArrayResize(intDestArray, oldArraySize+pairValidCount); 
+            break;
+        case DataDouble: 
+            if(!addToArray) { ArrayFree(doubleDestArray); }
+            else { oldArraySize = ArraySize(doubleDestArray); }
+            destArraySize = ArrayResize(doubleDestArray, oldArraySize+pairValidCount); 
+            break;
     }
     
-    for(int i = 0; i < pairListCount; i++) {
+    for(int i = 0; i < pairValidCount; i++) {
         string key, value; int keyAddrInt;
         
         if(OptionsParser::IsPairValid(pairList[i])) {
             key = OptionsParser::GetPairKey(pairList[i], i);
             value = OptionsParser::GetPairValue(pairList[i]);
             keyAddrInt = StringLen(key) <= 0 ? i : AddrAbcToInt(key);
-            
+            if(addToArray) { keyAddrInt += oldArraySize; }
+
             if(keyAddrInt < 0 || keyAddrInt >= destArraySize) {
                 ThrowFatalError(1, ErrorFunctionTrace, StringConcatenate("key=", key, " keyAddrInt=", keyAddrInt, " is not within destArraySize=", destArraySize), pairList[i]);
                 return;
@@ -170,35 +187,65 @@ void OptionsParser::ParseGeneric(string options,
                     case DataInt: intDestArray[keyAddrInt] = StrToInteger(value); break;
                     case DataDouble: doubleDestArray[keyAddrInt] = StrToDouble(value); break;
                 }
+                
+                ArrayPush(idArray, keyAddrInt);
             }
         }
     }
 }
 
-void OptionsParser::Parse(string options, string &destArray[], int expectedCount=-1) {
+void OptionsParser::Parse(string options, string &destArray[], int expectedCount=-1, bool addToArray = false) {
     OptionsParser::ParseGeneric(options, DataString, 
         destArray, BoolZeroArray, IntZeroArray, DoubleZeroArray,
-        expectedCount
+        IntZeroArray, expectedCount, addToArray
         );
 }
 
-void OptionsParser::Parse(string options, bool &destArray[], int expectedCount=-1) {
+void OptionsParser::Parse(string options, bool &destArray[], int expectedCount=-1, bool addToArray = false) {
     OptionsParser::ParseGeneric(options, DataBool, 
         StringZeroArray, destArray, IntZeroArray, DoubleZeroArray,
-        expectedCount
+        IntZeroArray, expectedCount, addToArray
         );
 }
 
-void OptionsParser::Parse(string options, int &destArray[], int expectedCount=-1) {
+void OptionsParser::Parse(string options, int &destArray[], int expectedCount=-1, bool addToArray = false) {
     OptionsParser::ParseGeneric(options, DataInt, 
         StringZeroArray, BoolZeroArray, destArray, DoubleZeroArray,
-        expectedCount
+        IntZeroArray, expectedCount, addToArray
         );
 }
 
-void OptionsParser::Parse(string options, double &destArray[], int expectedCount=-1) {
+void OptionsParser::Parse(string options, double &destArray[], int expectedCount=-1, bool addToArray = false) {
     OptionsParser::ParseGeneric(options, DataDouble, 
         StringZeroArray, BoolZeroArray, IntZeroArray, destArray,
-        expectedCount
+        IntZeroArray, expectedCount, addToArray
+        );
+}
+
+void OptionsParser::Parse(string options, string &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = false) {
+    OptionsParser::ParseGeneric(options, DataString, 
+        destArray, BoolZeroArray, IntZeroArray, DoubleZeroArray,
+        idArray, expectedCount, addToArray
+        );
+}
+
+void OptionsParser::Parse(string options, bool &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = false) {
+    OptionsParser::ParseGeneric(options, DataBool, 
+        StringZeroArray, destArray, IntZeroArray, DoubleZeroArray,
+        idArray, expectedCount, addToArray
+        );
+}
+
+void OptionsParser::Parse(string options, int &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = false) {
+    OptionsParser::ParseGeneric(options, DataInt, 
+        StringZeroArray, BoolZeroArray, destArray, DoubleZeroArray,
+        idArray, expectedCount, addToArray
+        );
+}
+
+void OptionsParser::Parse(string options, double &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = false) {
+    OptionsParser::ParseGeneric(options, DataDouble, 
+        StringZeroArray, BoolZeroArray, IntZeroArray, destArray,
+        idArray, expectedCount, addToArray
         );
 }

@@ -8,33 +8,35 @@
 #property strict
 
 #include "MMT_Helper_Error.mqh"
+#include "MMT_OptionsParser.mqh"
 
-enum FilterMode {
-    FilterDisabled,
-    FilterNormal,
-    FilterOpposite,
-    FilterNotOpposite
+enum CheckMode {
+    CheckDisabled,
+    CheckNormal,
+    CheckOpposite,
+    CheckNotOpposite
+};
+
+enum CheckType {
+    CheckAllTypes,
+    CheckEntry,
+    CheckExit,
+    CheckValue
 };
 
 class Filter {
-    protected:
-    int checkMode[];
-    int exit_checkMode[];
-    
-    bool doEntry;
-    bool doExit;
-    
-    void setupChecks(string entryList, string exitList);
+    protected:    
+    void setupChecks(string pairList, CheckType checkTypeIn, bool addToArray = false);
     void setupOptions() { ThrowError(1, ErrorFunctionTrace, "Not implemented"); }
     
     public:
-    string shortName;
-    int checkCount;
-    int exit_checkCount;
+    int checkMode[];
     
-    void onInit() { ThrowError(1, ErrorFunctionTrace, "Not implemented"); }
-    void onTimer() { ThrowError(1, ErrorFunctionTrace, "Not implemented"); }
-    void onDeinit() { ThrowError(1, ErrorFunctionTrace, "Not implemented"); }
+    int entryCheckId[]; int entryCheckCount;
+    int exitCheckId[]; int exitCheckCount;
+    int valueCheckId[]; int valueCheckCount;
+    
+    string shortName;
     
     void calculateEntry() { ThrowError(1, ErrorFunctionTrace, "Not implemented"); }
     void calculateExit() { ThrowError(1, ErrorFunctionTrace, "Not implemented"); }
@@ -50,13 +52,12 @@ class FilterManager {
     
     int addFilter(Filter *unit);
     int getFilterId(string filterShortName);
-    int getFilterCheckCount(string filterShortName, bool checkCount = false);
-    int getFilterCheckCount(int filterId, bool checkCount = false);
+    int getFilterCheckCount(string filterShortName, CheckType type = CheckAllTypes);
+    int getFilterCheckCount(int filterId, CheckType type = CheckAllTypes);
     void deleteAllFilters();
     
     int filterCount;
     string filterShortNames[];
-    static int getMaxCheckMode(int &checkModeList[]);
 };
 
 extern string Lbl_IndisAndFilters="********** Indicators & Filters **********"; // Filter List
@@ -101,15 +102,20 @@ int FilterManager::getFilterId(string filterShortName) {
     return -1;
 }
 
-int FilterManager::getFilterCheckCount(string filterShortName, bool exitCheck = false) {
+int FilterManager::getFilterCheckCount(string filterShortName, CheckType type = CheckAllTypes) {
     int filterId = getFilterId(filterShortName);
     
     if(filterId < 0) { return -1; }
-    else { return getFilterCheckCount(filterId, exitCheck); }
+    else { return getFilterCheckCount(filterId, type); }
 }
 
-int FilterManager::getFilterCheckCount(int filterId, bool exitCheck = false) {
-    return exitCheck ? filters[filterId].exit_checkCount : filters[filterId].checkCount;
+int FilterManager::getFilterCheckCount(int filterId, CheckType type = CheckAllTypes) {
+    switch(type) {
+        case CheckEntry: return filters[filterId].entryCheckCount;
+        case CheckExit: return filters[filterId].exitCheckCount;
+        case CheckValue: return filters[filterId].valueCheckCount;
+        default: return filters[filterId].entryCheckCount + filters[filterId].exitCheckCount + filters[filterId].valueCheckCount;
+    }
 }
 
 void FilterManager::deleteAllFilters() {
@@ -125,30 +131,25 @@ void FilterManager::deleteAllFilters() {
     return;
 }
 
-void Filter::setupChecks(string entryList, string exitList) {
-    checkCount = OptionsParser::CountPairs(entryList);
-    exit_checkCount = OptionsParser::CountPairs(exitList);
-    
-    if(checkCount < 1 && exit_checkCount < 1) {
-        doEntry = false;
-        doExit = false;
-        return; 
+void Filter::setupChecks(string pairList, CheckType checkTypeIn, bool addToArray = false) {
+    switch(checkTypeIn) {
+        case CheckEntry:
+            entryCheckCount = OptionsParser::CountPairs(pairList);
+            if(entryCheckCount > 0) { OptionsParser::Parse(pairList, checkMode, entryCheckId, entryCheckCount, addToArray); }
+            break;
+        
+        case CheckExit:
+            exitCheckCount = OptionsParser::CountPairs(pairList);
+            if(exitCheckCount > 0) { OptionsParser::Parse(pairList, checkMode, exitCheckId, exitCheckCount, addToArray); }
+            break;
+            
+        case CheckValue:
+            valueCheckCount = OptionsParser::CountPairs(pairList);
+            if(valueCheckCount > 0) { OptionsParser::Parse(pairList, checkMode, valueCheckId, valueCheckCount, addToArray); }
+            break;
     }
-    
-    OptionsParser::Parse(entryList, checkMode, checkCount);
-    OptionsParser::Parse(exitList, exit_checkMode, exit_checkCount);
-    
-    doEntry = (FilterManager::getMaxCheckMode(checkMode) > 0);
-    doExit = (FilterManager::getMaxCheckMode(exit_checkMode) > 0);
 }
 
 //+------------------------------------------------------------------+
 // Helper methods [HELPERS]
 //+------------------------------------------------------------------+
-
-int FilterManager::getMaxCheckMode(int &checkModeList[]) {
-    int maxValueId = ArrayMaximum(checkModeList);
-    
-    if(maxValueId < 0) { return -1; }
-    else { return checkModeList[maxValueId]; }
-}

@@ -19,13 +19,6 @@ class FilterStoch : public Filter {
     int method[];
     double buySellZone[];
     
-    int exit_TimeFrame[];
-    int exit_KPeriod[];
-    int exit_DPeriod[];
-    int exit_Slowing[];
-    int exit_Method[];
-    double exit_BuySellZone[];
-    
     protected:
     void setupOptions();
     
@@ -67,38 +60,39 @@ extern string Stoch_Exit_BuySellZone_="30.0";
 void FilterStoch::FilterStoch() {
     shortName = "Stoch";
     
-    setupChecks(Stoch_Entry, Stoch_Exit);
+    setupChecks(Stoch_Entry, CheckEntry, false);
+    setupChecks(Stoch_Exit, CheckExit, true);
     setupOptions();
 }
 
 void FilterStoch::setupOptions() {
-    if(doEntry) {
-        OptionsParser::Parse(Stoch_TimeFrame_, timeFrame, checkCount);
-        OptionsParser::Parse(Stoch_KPeriod_, kPeriod, checkCount);
-        OptionsParser::Parse(Stoch_DPeriod_, dPeriod, checkCount);
-        OptionsParser::Parse(Stoch_Slowing_, slowing, checkCount);
-        OptionsParser::Parse(Stoch_Method_, method, checkCount);
-        OptionsParser::Parse(Stoch_BuySellZone_, buySellZone, checkCount);
+    if(entryCheckCount > 0) {
+        OptionsParser::Parse(Stoch_TimeFrame_, timeFrame, entryCheckCount, false);
+        OptionsParser::Parse(Stoch_KPeriod_, kPeriod, entryCheckCount, false);
+        OptionsParser::Parse(Stoch_DPeriod_, dPeriod, entryCheckCount, false);
+        OptionsParser::Parse(Stoch_Slowing_, slowing, entryCheckCount, false);
+        OptionsParser::Parse(Stoch_Method_, method, entryCheckCount, false);
+        OptionsParser::Parse(Stoch_BuySellZone_, buySellZone, entryCheckCount, false);
     }
     
-    if(doExit) {
-        OptionsParser::Parse(Stoch_Exit_TimeFrame_, exit_TimeFrame, exit_checkCount);
-        OptionsParser::Parse(Stoch_Exit_KPeriod_, exit_KPeriod, exit_checkCount);
-        OptionsParser::Parse(Stoch_Exit_DPeriod_, exit_DPeriod, exit_checkCount);
-        OptionsParser::Parse(Stoch_Exit_Slowing_, exit_Slowing, exit_checkCount);
-        OptionsParser::Parse(Stoch_Exit_Method_, exit_Method, exit_checkCount);
-        OptionsParser::Parse(Stoch_Exit_BuySellZone_, exit_BuySellZone, exit_checkCount);
+    if(exitCheckCount > 0) {
+        OptionsParser::Parse(Stoch_Exit_TimeFrame_, timeFrame, exitCheckCount, true);
+        OptionsParser::Parse(Stoch_Exit_KPeriod_, kPeriod, exitCheckCount, true);
+        OptionsParser::Parse(Stoch_Exit_DPeriod_, dPeriod, exitCheckCount, true);
+        OptionsParser::Parse(Stoch_Exit_Slowing_, slowing, exitCheckCount, true);
+        OptionsParser::Parse(Stoch_Exit_Method_, method, exitCheckCount, true);
+        OptionsParser::Parse(Stoch_Exit_BuySellZone_, buySellZone, exitCheckCount, true);
     }
 }
 
 void FilterStoch::calculateEntry() {
-    if(!doEntry) { return; }
+    if(entryCheckCount < 1) { return; }
     
     
 }
 
 void FilterStoch::calculateExit() {
-    if(!doExit) { return; }
+    if(exitCheckCount < 1) { return; }
     
     
 }

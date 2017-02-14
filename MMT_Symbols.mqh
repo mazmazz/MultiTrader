@@ -103,7 +103,7 @@ void SymbolManager::getActiveSymbols(string includeSym, string excludeSymIn, str
     int includeSymCount; int excludeCurCount;
     
     if(SingleSymbolMode) {
-        includeSymCount = ArrayPushString(includeSymSplit, Symbol());
+        includeSymCount = ArrayPush(includeSymSplit, Symbol());
     } else {
         char delimiter = StringGetCharacter(",", 0);
         includeSymCount = StringSplit(includeSym, delimiter, includeSymSplit);

@@ -133,16 +133,16 @@ void DashboardManager::drawLegend() {
         }
     }
     
-    legendText += sepChar + " ";
+    //legendText += sepChar + " ";
     dataExitPosStart = StringLen(legendText)+1;
     
     // exits
-    for(int i = 0; i < Main.filterMan.filterCount; i++) {
-        checkCount = Main.filterMan.getFilterCheckCount(i, true);
-        for(int j = 1; j <= checkCount; j++) { 
-            legendText += padText(StringConcatenate(truncText(Main.filterMan.filterShortNames[i], maxLabelPos-1), j), colSize);
-        }
-    }
+    //for(int i = 0; i < Main.filterMan.filterCount; i++) {
+    //    checkCount = Main.filterMan.getFilterCheckCount(i, true);
+    //    for(int j = 1; j <= checkCount; j++) { 
+    //        legendText += padText(StringConcatenate(truncText(Main.filterMan.filterShortNames[i], maxLabelPos-1), j), colSize);
+    //    }
+    //}
     
     drawText(prefixName("legend"), legendText);
 }
@@ -159,9 +159,9 @@ void DashboardManager::drawSymbols() {
         col = 0;
         drawText(prefixName(IntegerToString(i)), truncText(Main.symbolMan.symNames[i], maxTextPos));
         
-        // entries
+        // todo: order by filter type, or custom
         for(j = 0; j < Main.filterMan.filterCount; j++) {
-            checkCount = Main.filterMan.getFilterCheckCount(j, false);
+            checkCount = Main.filterMan.getFilterCheckCount(j);
             for(k = 0; k < checkCount; k++) { 
                 string dataObjName = prefixName(StringConcatenate(i, "_", j, "_", k, "_entry"));
                 if(ObjectCreate(dataObjName, OBJ_LABEL, 0, 0, 0)) {
@@ -169,22 +169,6 @@ void DashboardManager::drawSymbols() {
                     ObjectSet(dataObjName, OBJPROP_YDISTANCE, rowSize * row);
                     ObjectSet(dataObjName, OBJPROP_CORNER, 0);
                     drawData(i, j, k, false, true);
-                }
-                col++;
-            }
-        }
-        
-        // exits
-        col=0; //we're using a new offset
-        for(j = 0; j < Main.filterMan.filterCount; j++) {
-            checkCount = Main.filterMan.getFilterCheckCount(j, true);
-            for(k = 0; k < checkCount; k++) { 
-                string dataObjName = prefixName(StringConcatenate(i, "_", j, "_", k, "_exit"));
-                if(ObjectCreate(dataObjName, OBJ_LABEL, 0, 0, 0)) {
-                    ObjectSet(dataObjName, OBJPROP_XDISTANCE, posSize * (dataExitPosStart + col*colSize));
-                    ObjectSet(dataObjName, OBJPROP_YDISTANCE, rowSize * row);
-                    ObjectSet(dataObjName, OBJPROP_CORNER, 0);
-                    drawData(i, j, k, true, true);
                 }
                 col++;
             }
@@ -205,7 +189,7 @@ void DashboardManager::drawData(int symbolId, int filterId, int checkId, bool ch
     if(!exists) { exists = (ObjectFind(objName) >= 0); }
     
     if(exists) {
-        DataUnit *data = Main.dataMan.getDataList(symbolId, filterId, checkId, checkIsExit).getData();
+        DataUnit *data = Main.dataMan.getDataList(symbolId, filterId, checkId).getData();
         color fontColor = fontColorDefault;
         
         if(data == NULL) { dataResult = "-"; }

@@ -39,6 +39,9 @@ const string MMT_Version = "v0.1 02/2017";
 
 int OnInit() {
     Main = new MainManager();
+    //Main.addFilter(new FilterSpread());
+    //Main.addFilter(new FilterAtr());
+    //Main.addFilter(new FilterStdev());
     Main.addFilter(new FilterStoch());
 
     return Main.onInit();

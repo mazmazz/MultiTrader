@@ -1,5 +1,12 @@
 #define ExtLib_Symbols
 #define ExtLib_OrderReliable
+#define ExtLib_PipFactor
+
+#ifdef ExtLib_PipFactor
+    #import "MMT_Library/PipFactor.ex4"
+    int PipFactor(string symbol);
+    #import
+#endif
 
 #ifdef ExtLib_Symbols
     #import "MMT_Library/Symbols.ex4"

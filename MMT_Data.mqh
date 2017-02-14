@@ -174,9 +174,8 @@ class DataCheck {
 
 class DataFilter {
     public:
-    DataFilter(int entryCheckCount, int exitCheckCount, int historyCount = -1);
-    DataCheck *entryCheck[];
-    DataCheck *exitCheck[];
+    DataFilter(int totalCheckCount, int historyCount = -1);
+    DataCheck *check[];
     
     //void deleteAllCheckData();
 };
@@ -198,10 +197,10 @@ class DataManager {
     DataManager(int symbolCount, int filterCount);
     ~DataManager();
     
-    DataList *getDataList(string symName, string filterName, int filterCheckId, bool isExitCheck = false);
-    DataList *getDataList(int symbolId, int filterId, int filterCheckId, bool isExitCheck = false);
-    DataList *getDataList(int symbolId, string filterName, int filterCheckId, bool isExitCheck = false);
-    DataList *getDataList(string symbolId, int filterId, int filterCheckId, bool isExitCheck = false);
+    DataList *getDataList(string symName, string filterName, int filterCheckId);
+    DataList *getDataList(int symbolId, int filterId, int filterCheckId);
+    DataList *getDataList(int symbolId, string filterName, int filterCheckId);
+    DataList *getDataList(string symbolId, int filterId, int filterCheckId);
     
     // void deleteAllSymbolData();
 };
@@ -210,17 +209,14 @@ void DataCheck::DataCheck(int historyCount = -1) {
     data = new DataList(historyCount);
 }
 
-void DataFilter::DataFilter(int entryCheckCount, int exitCheckCount, int historyCount = -1) {
-    ArrayResize(entryCheck, entryCheckCount);
-    ArrayResize(exitCheck, exitCheckCount);
+void DataFilter::DataFilter(int totalCheckCount, int historyCount = -1) {
+    ArrayResize(check, totalCheckCount);
+    
+    //todo: check if disabled?
     
     int i = 0;
-    for(i = 0; i < entryCheckCount; i++) {
-        entryCheck[i] = new DataCheck(historyCount);
-    }
-    
-    for(i = 0; i < exitCheckCount; i++) {
-        exitCheck[i] = new DataCheck(historyCount);
+    for(i = 0; i < totalCheckCount; i++) {
+        check[i] = new DataCheck(historyCount);
     }
 }
 
@@ -229,8 +225,7 @@ void DataSymbol::DataSymbol(int filterCount) {
     
     for(int i = 0; i < filterCount; i++) {
         filter[i] = new DataFilter(
-            Main.filterMan.getFilterCheckCount(i), 
-            Main.filterMan.getFilterCheckCount(i, true),
+            Main.filterMan.getFilterCheckCount(i),
             -1 //Main.filterMan.getFilterHistoryCount(i) //, Main.filterMan.getFilterHistoryCount(i, true)
             );
     }
@@ -244,22 +239,19 @@ void DataManager::DataManager(int symbolCount, int filterCount) {
     }
 }
 
-DataList *DataManager::getDataList(int symbolId, int filterId, int filterCheckId, bool isExitCheck = false){
-    return (isExitCheck ? 
-        symbol[symbolId].filter[filterId].exitCheck[filterCheckId].data :
-        symbol[symbolId].filter[filterId].entryCheck[filterCheckId].data
-        );
+DataList *DataManager::getDataList(int symbolId, int filterId, int filterCheckId){
+    return symbol[symbolId].filter[filterId].check[filterCheckId].data;
 }
 
-DataList *DataManager::getDataList(string symName, string filterName, int filterCheckId, bool isExitCheck = false){
+DataList *DataManager::getDataList(string symName, string filterName, int filterCheckId){
     return getDataList(Main.symbolMan.getSymbolId(symName), Main.filterMan.getFilterId(filterName), filterCheckId);
 }
 
-DataList *DataManager::getDataList(int symbolId, string filterName, int filterCheckId, bool isExitCheck = false){
+DataList *DataManager::getDataList(int symbolId, string filterName, int filterCheckId){
     return getDataList(symbolId, Main.filterMan.getFilterId(filterName), filterCheckId);
 }
 
-DataList *DataManager::getDataList(string symName, int filterId, int filterCheckId, bool isExitCheck = false){
+DataList *DataManager::getDataList(string symName, int filterId, int filterCheckId){
     return getDataList(Main.symbolMan.getSymbolId(symName), filterId, filterCheckId);
 }
 
@@ -273,18 +265,11 @@ void DataManager::~DataManager() {
         
         //void deleteAllFilterData();
         for(int j = 0; j < filterCount; j++) {
-            checkCount = ArraySize(symbol[i].filter[j].entryCheck);
+            checkCount = ArraySize(symbol[i].filter[j].check);
             //void deleteAllCheckData();
             for(k = 0; k < checkCount; k++) {
-                delete(symbol[i].filter[j].entryCheck[k].data); //void deleteAllDataList();
-                delete(symbol[i].filter[j].entryCheck[k]); 
-            }
-            
-            checkCount = ArraySize(symbol[i].filter[j].exitCheck);
-            //void deleteAllCheckData();
-            for(k = 0; k < checkCount; k++) { 
-                delete(symbol[i].filter[j].exitCheck[k].data); //void deleteAllDataList();
-                delete(symbol[i].filter[j].exitCheck[k]);
+                delete(symbol[i].filter[j].check[k].data); //void deleteAllDataList();
+                delete(symbol[i].filter[j].check[k]); 
             }
             
             delete(symbol[i].filter[j]);

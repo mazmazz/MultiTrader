@@ -7,9 +7,10 @@
 #property link      "https://www.mql5.com"
 #property strict
 
-#include "MMT_Helper_Error.mqh"
-#include "MMT_Helper_Library.mqh"
+#include "MC_Common/MC_Error.mqh"
+#include "MC_Common/MC_Common.mqh"
 #include "MMT_Main.mqh"
+#include "depends/Symbols.mqh"
 
 //+------------------------------------------------------------------+
 // Symbol classes [CLASSES]
@@ -103,7 +104,7 @@ void SymbolManager::getActiveSymbols(string includeSym, string excludeSymIn, str
     int includeSymCount; int excludeCurCount;
     
     if(SingleSymbolMode) {
-        includeSymCount = ArrayPush(includeSymSplit, Symbol());
+        includeSymCount = Common::ArrayPush(includeSymSplit, Symbol());
     } else {
         char delimiter = StringGetCharacter(",", 0);
         includeSymCount = StringSplit(includeSym, delimiter, includeSymSplit);
@@ -117,10 +118,10 @@ void SymbolManager::getActiveSymbols(string includeSym, string excludeSymIn, str
     }
     
     for(int i = 0; i < includeSymCount; i++) {
-        string rawSymName = StringTrim(includeSymSplit[i]);
+        string rawSymName = Common::StringTrim(includeSymSplit[i]);
         int symLength = StringLen(rawSymName);
-        if(symLength < 6 || GetStringType(StringSubstr(rawSymName, 0, 1)) == Type_Symbol) {
-            if(symLength > 0) { PrintInfo(0, ErrorFunctionTrace, "rawSymName invalid, skipping", rawSymName); }
+        if(symLength < 6 || Common::GetStringType(StringSubstr(rawSymName, 0, 1)) == Type_Symbol) {
+            if(symLength > 0) { Error::PrintInfo(ErrorInfo, "rawSymName invalid, skipping", FunctionTrace, rawSymName); }
             continue; 
         }
         
@@ -135,7 +136,7 @@ void SymbolManager::getActiveSymbols(string includeSym, string excludeSymIn, str
         }
     }
     
-    PrintInfo(2, ErrorFunctionTrace, StringConcatenate("Active symbols: ", finalSymString));
+    Error::PrintInfo(ErrorInfo, StringConcatenate("Active symbols: ", finalSymString), FunctionTrace);
 }
 
 void SymbolManager::SymbolManager(string includeSymbols, string excludeSymbols, string excludeCurrencies) {
@@ -177,7 +178,7 @@ bool SymbolManager::doesSymbolHaveSuffix(string symName, string symSuffix) {
 
 string SymbolManager::formatSymbolName(string symName, string symSuffix, /*string curPrefix*/) {
     if(StringLen(symName) < 6) { 
-        ThrowError(1, ErrorFunctionTrace, "symName is not >=6 chars, assuming invalid, passing as is."); 
+        Error::ThrowError(ErrorNormal, "symName is not >=6 chars, assuming invalid, passing as is.", FunctionTrace); 
         return symName;
     }
     
@@ -185,14 +186,14 @@ string SymbolManager::formatSymbolName(string symName, string symSuffix, /*strin
     else if(SymbolManager::doesSymbolHaveSuffix(symName, symSuffix)) { return symName; }
     else if(StringAdd(symName, symSuffix)) { return symName; } 
     else {
-        ThrowError(1, ErrorFunctionTrace, "Could not figure out how to format symName, passing as is.");
+        Error::ThrowError(ErrorNormal, "Could not figure out how to format symName, passing as is.", FunctionTrace);
         return symName;
     }
 }
 
 string SymbolManager::unformatSymbolName(string symName, string symSuffix) {
     if(StringLen(symName) < 6) { 
-        ThrowError(1, ErrorFunctionTrace, "symName is not >=6 chars, assuming invalid, passing as is."); 
+        Error::ThrowError(ErrorNormal, "symName is not >=6 chars, assuming invalid, passing as is.", FunctionTrace); 
         return symName;
     }
     
@@ -200,7 +201,7 @@ string SymbolManager::unformatSymbolName(string symName, string symSuffix) {
     else if(!SymbolManager::doesSymbolHaveSuffix(symName, symSuffix)) { return symName; }
     else if(StringReplace(symName, symSuffix, "") > -1) { return symName; } 
     else {
-        ThrowError(1, ErrorFunctionTrace, "Could not figure out how to unformat symName, passing as is.");
+        Error::ThrowError(ErrorNormal, "Could not figure out how to unformat symName, passing as is.", FunctionTrace);
         return symName;
     }
 }
@@ -216,17 +217,6 @@ bool SymbolManager::isSymbolExcluded(string symName, string excludeSymIn, string
     return false;
 }
 
-#ifdef ExtLib_Symbols
 int SymbolManager::getAllSymbols(string &allSymBuffer[]) {
     return Symbols(allSymBuffer);
 }
-#else
-int SymbolManager::getAllSymbols(string &allSymBuffer[]) {
-    int count;
-    
-    // https://www.mql5.com/en/forum/146736
-    ThrowError(1, ErrorFunctionTrace, "Get all symbols not implemented");
-    
-    return count;
-}
-#endif

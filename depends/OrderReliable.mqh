@@ -86,7 +86,7 @@
 
 #property copyright "Copyright � 2006, Matt Kennel, Derk Wehler, 2010 Matt Kennel"
 #property link      "mbkennelfx@gmail.com"
-#property library
+//#property library
 
 #include <stdlib.mqh>
 #include <stderror.mqh>

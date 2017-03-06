@@ -8,7 +8,7 @@
 #property strict
 
 #include "MMT_Filter.mqh"
-#include "MMT_OptionsParser.mqh"
+#include "../MC_Common/MC_MultiSettings.mqh"
 
 class FilterStoch : public Filter {
     private:
@@ -34,16 +34,16 @@ class FilterStoch : public Filter {
 //+------------------------------------------------------------------+
 
 extern string Lbl_Stoch_1="-------- Stoch Settings --------";
-extern string Stoch_Entry="a=1;b=1;c=1";
+extern string Stoch_Entry="a=1|b=1|c=1";
 extern string Stoch_Exit="1";
 
 extern string LbL_Stoch_Entry_="---- Stoch Entry Settings ----";
-extern string Stoch_TimeFrame_="a=15;b=30;c=60";
-extern string Stoch_KPeriod_="a=5;b=5;c=5";
-extern string Stoch_DPeriod_="a=3;b=3;c=3";
-extern string Stoch_Slowing_="a=3;b=3;c=3";
-extern string Stoch_Method_="a=3;b=3;c=3";
-extern string Stoch_BuySellZone_="a=22.0;b=22.0;c=22.0";
+extern string Stoch_TimeFrame_="a=15|b=30|c=60";
+extern string Stoch_KPeriod_="a=5|b=5|c=5";
+extern string Stoch_DPeriod_="a=3|b=3|c=3";
+extern string Stoch_Slowing_="a=3|b=3|c=3";
+extern string Stoch_Method_="a=3|b=3|c=3";
+extern string Stoch_BuySellZone_="a=22.0|b=22.0|c=22.0";
 
 extern string LbL_Stoch_Exit_="---- Stoch Exit Settings ----";
 extern string Stoch_Exit_TimeFrame_="15";
@@ -60,39 +60,39 @@ extern string Stoch_Exit_BuySellZone_="30.0";
 void FilterStoch::FilterStoch() {
     shortName = "Stoch";
     
-    setupChecks(Stoch_Entry, CheckEntry, false);
-    setupChecks(Stoch_Exit, CheckExit, true);
+    setupSubfilters(Stoch_Entry, SubfilterEntry, false);
+    setupSubfilters(Stoch_Exit, SubfilterExit, true);
     setupOptions();
 }
 
 void FilterStoch::setupOptions() {
-    if(entryCheckCount > 0) {
-        OptionsParser::Parse(Stoch_TimeFrame_, timeFrame, entryCheckCount, false);
-        OptionsParser::Parse(Stoch_KPeriod_, kPeriod, entryCheckCount, false);
-        OptionsParser::Parse(Stoch_DPeriod_, dPeriod, entryCheckCount, false);
-        OptionsParser::Parse(Stoch_Slowing_, slowing, entryCheckCount, false);
-        OptionsParser::Parse(Stoch_Method_, method, entryCheckCount, false);
-        OptionsParser::Parse(Stoch_BuySellZone_, buySellZone, entryCheckCount, false);
+    if(entrySubfilterCount > 0) {
+        MultiSettings::Parse(Stoch_TimeFrame_, timeFrame, entrySubfilterCount, false);
+        MultiSettings::Parse(Stoch_KPeriod_, kPeriod, entrySubfilterCount, false);
+        MultiSettings::Parse(Stoch_DPeriod_, dPeriod, entrySubfilterCount, false);
+        MultiSettings::Parse(Stoch_Slowing_, slowing, entrySubfilterCount, false);
+        MultiSettings::Parse(Stoch_Method_, method, entrySubfilterCount, false);
+        MultiSettings::Parse(Stoch_BuySellZone_, buySellZone, entrySubfilterCount, false);
     }
     
-    if(exitCheckCount > 0) {
-        OptionsParser::Parse(Stoch_Exit_TimeFrame_, timeFrame, exitCheckCount, true);
-        OptionsParser::Parse(Stoch_Exit_KPeriod_, kPeriod, exitCheckCount, true);
-        OptionsParser::Parse(Stoch_Exit_DPeriod_, dPeriod, exitCheckCount, true);
-        OptionsParser::Parse(Stoch_Exit_Slowing_, slowing, exitCheckCount, true);
-        OptionsParser::Parse(Stoch_Exit_Method_, method, exitCheckCount, true);
-        OptionsParser::Parse(Stoch_Exit_BuySellZone_, buySellZone, exitCheckCount, true);
+    if(exitSubfilterCount > 0) {
+        MultiSettings::Parse(Stoch_Exit_TimeFrame_, timeFrame, exitSubfilterCount, true);
+        MultiSettings::Parse(Stoch_Exit_KPeriod_, kPeriod, exitSubfilterCount, true);
+        MultiSettings::Parse(Stoch_Exit_DPeriod_, dPeriod, exitSubfilterCount, true);
+        MultiSettings::Parse(Stoch_Exit_Slowing_, slowing, exitSubfilterCount, true);
+        MultiSettings::Parse(Stoch_Exit_Method_, method, exitSubfilterCount, true);
+        MultiSettings::Parse(Stoch_Exit_BuySellZone_, buySellZone, exitSubfilterCount, true);
     }
 }
 
 void FilterStoch::calculateEntry() {
-    if(entryCheckCount < 1) { return; }
+    if(entrySubfilterCount < 1) { return; }
     
     
 }
 
 void FilterStoch::calculateExit() {
-    if(exitCheckCount < 1) { return; }
+    if(exitSubfilterCount < 1) { return; }
     
     
 }

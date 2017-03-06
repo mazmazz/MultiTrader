@@ -4,7 +4,7 @@
 //|                                                                  |
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2017, Marco Z"
-#property link      ""
+#property link      "https://github.com/mazmazz"
 #property strict
 //+------------------------------------------------------------------+
 //| Comments
@@ -21,8 +21,6 @@ const string MMT_EaName = "MultiTrader";
 const string MMT_EaShortName = "MMT";
 const string MMT_Version = "v0.1 02/2017";
 
-#include "MMT_Library/MMT_Library.mqh"
-
 #include "MMT_Main.mqh"
 
 //+------------------------------------------------------------------+
@@ -30,7 +28,7 @@ const string MMT_Version = "v0.1 02/2017";
 //    Include order affects settings order in config window
 //+------------------------------------------------------------------+
 
-#include "MMT_Filter_Stoch.mqh"
+#include "MMT_Filters/MMT_Filter_Stoch.mqh"
 
 //+------------------------------------------------------------------+
 // 2. Add filters and risks to OnInit below [HOOKS]

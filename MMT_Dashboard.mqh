@@ -8,6 +8,7 @@
 #property strict
 
 #include "MMT_Main.mqh"
+#include "MMT_Data/MMT_DataUnit.mqh"
 
 class DashboardManager {
     private:
@@ -53,7 +54,7 @@ class DashboardManager {
     DashboardManager();
     ~DashboardManager();
     
-    void drawData(int symbolId, int filterId, int checkId, bool checkIsExit, bool exists = false);
+    void drawData(int symbolId, int filterId, int subfilterId, bool subfilterIsExit, bool exists = false);
 };
 
 void DashboardManager::DashboardManager() {
@@ -95,8 +96,8 @@ void DashboardManager::drawHeader() {
     /* list of filters
     for(int i = 0; i < Main.filterMan.filterCount; i++) {
         headerText += Main.filterMan.filterShortNames[i] + 
-            "(" + Main.filterMan.getFilterCheckCount(i, false) + 
-            "," + Main.filterMan.getFilterCheckCount(i, true) +
+            "(" + Main.filterMan.getFilterSubfilterCount(i, false) + 
+            "," + Main.filterMan.getFilterSubfilterCount(i, true) +
             ") ";
     }*/
     
@@ -113,7 +114,7 @@ void DashboardManager::drawLegend() {
     int maxLabelPos = colSize-1;
     string legendText = "";
     string filterText = "";
-    int checkCount = 0;
+    int subfilterCount = 0;
     
     legendText += "Symbols" + spacedSepChar;
     // SL (if not 0)
@@ -127,8 +128,8 @@ void DashboardManager::drawLegend() {
     
     // entries
     for(int i = 0; i < Main.filterMan.filterCount; i++) {
-        checkCount = Main.filterMan.getFilterCheckCount(i, false);
-        for(int j = 1; j <= checkCount; j++) { 
+        subfilterCount = Main.filterMan.getFilterSubfilterCount(i, false);
+        for(int j = 1; j <= subfilterCount; j++) { 
             legendText += padText(StringConcatenate(truncText(Main.filterMan.filterShortNames[i], maxLabelPos-1), j), colSize);
         }
     }
@@ -138,8 +139,8 @@ void DashboardManager::drawLegend() {
     
     // exits
     //for(int i = 0; i < Main.filterMan.filterCount; i++) {
-    //    checkCount = Main.filterMan.getFilterCheckCount(i, true);
-    //    for(int j = 1; j <= checkCount; j++) { 
+    //    subfilterCount = Main.filterMan.getFilterSubfilterCount(i, true);
+    //    for(int j = 1; j <= subfilterCount; j++) { 
     //        legendText += padText(StringConcatenate(truncText(Main.filterMan.filterShortNames[i], maxLabelPos-1), j), colSize);
     //    }
     //}
@@ -152,7 +153,7 @@ void DashboardManager::drawSymbols() {
     int firstSymRow = row;
     int maxLabelPos = colSize-1;
     int maxTextPos = 7; // "Symbols " minus 1
-    int checkCount = 0;
+    int subfilterCount = 0;
     
     int j = 0; int k = 0;
     for(int i = 0; i < Main.symbolMan.symbolCount; i++) {
@@ -161,8 +162,8 @@ void DashboardManager::drawSymbols() {
         
         // todo: order by filter type, or custom
         for(j = 0; j < Main.filterMan.filterCount; j++) {
-            checkCount = Main.filterMan.getFilterCheckCount(j);
-            for(k = 0; k < checkCount; k++) { 
+            subfilterCount = Main.filterMan.getFilterSubfilterCount(j);
+            for(k = 0; k < subfilterCount; k++) { 
                 string dataObjName = prefixName(StringConcatenate(i, "_", j, "_", k, "_entry"));
                 if(ObjectCreate(dataObjName, OBJ_LABEL, 0, 0, 0)) {
                     ObjectSet(dataObjName, OBJPROP_XDISTANCE, posSize * (dataPosStart + col*colSize));
@@ -178,18 +179,18 @@ void DashboardManager::drawSymbols() {
     }
 }
 
-void DashboardManager::drawData(int symbolId, int filterId, int checkId, bool checkIsExit, bool exists = false) {
-    // mmt_data_[symbolId]_[filterId]_[checkId]
+void DashboardManager::drawData(int symbolId, int filterId, int subfilterId, bool subfilterIsExit, bool exists = false) {
+    // mmt_data_[symbolId]_[filterId]_[subfilterId]
     string objName;
     string dataResult;
     
-    if(checkIsExit) { objName = prefixName(StringConcatenate(symbolId, "_", filterId, "_", checkId, "_exit")); }
-    else { objName = prefixName(StringConcatenate(symbolId, "_", filterId, "_", checkId, "_entry")); }
+    if(subfilterIsExit) { objName = prefixName(StringConcatenate(symbolId, "_", filterId, "_", subfilterId, "_exit")); }
+    else { objName = prefixName(StringConcatenate(symbolId, "_", filterId, "_", subfilterId, "_entry")); }
     
     if(!exists) { exists = (ObjectFind(objName) >= 0); }
     
     if(exists) {
-        DataUnit *data = Main.dataMan.getDataList(symbolId, filterId, checkId).getData();
+        DataUnit *data = Main.dataMan.getDataHistory(symbolId, filterId, subfilterId).getData();
         color fontColor = fontColorDefault;
         
         if(data == NULL) { dataResult = "-"; }

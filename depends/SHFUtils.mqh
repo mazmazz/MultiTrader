@@ -1,7 +1,7 @@
 //+------------------------------------------------------------------+
 //|                                                     SHFUtils.mq4 |
 //+------------------------------------------------------------------+
-#property library
+//#property library
 #property copyright "Copyright 2012, Steve Hopwood"
 #property link      "https://www.stevehopwoodforex.com"
 #property version   "1.00"

@@ -7,39 +7,39 @@
 #property link      "https://www.mql5.com"
 #property strict
 
-#include "MMT_Helper_Error.mqh"
-#include "MMT_OptionsParser.mqh"
+#include "../MC_Common/MC_Error.mqh"
+#include "../MC_Common/MC_MultiSettings.mqh"
 
-enum CheckMode {
-    CheckDisabled,
-    CheckNormal,
-    CheckOpposite,
-    CheckNotOpposite
+enum SubfilterMode {
+    SubfilterDisabled,
+    SubfilterNormal,
+    SubfilterOpposite,
+    SubfilterNotOpposite
 };
 
-enum CheckType {
-    CheckAllTypes,
-    CheckEntry,
-    CheckExit,
-    CheckValue
+enum SubfilterType {
+    SubfilterAllTypes,
+    SubfilterEntry,
+    SubfilterExit,
+    SubfilterValue
 };
 
 class Filter {
     protected:    
-    void setupChecks(string pairList, CheckType checkTypeIn, bool addToArray = false);
-    void setupOptions() { ThrowError(1, ErrorFunctionTrace, "Not implemented"); }
+    void setupSubfilters(string pairList, SubfilterType subfilterTypeIn, bool addToArray = false);
+    void setupOptions() { Error::ThrowError(ErrorNormal, "Filter: Options not implemented", FunctionTrace); }
     
     public:
-    int checkMode[];
+    int subfilterMode[];
     
-    int entryCheckId[]; int entryCheckCount;
-    int exitCheckId[]; int exitCheckCount;
-    int valueCheckId[]; int valueCheckCount;
+    int entrySubfilterId[]; int entrySubfilterCount;
+    int exitSubfilterId[]; int exitSubfilterCount;
+    int valueSubfilterId[]; int valueSubfilterCount;
     
     string shortName;
     
-    void calculateEntry() { ThrowError(1, ErrorFunctionTrace, "Not implemented"); }
-    void calculateExit() { ThrowError(1, ErrorFunctionTrace, "Not implemented"); }
+    void calculateEntry() { Error::ThrowError(ErrorNormal, "Filter: calculateEntry not implemented", FunctionTrace); }
+    void calculateExit() { Error::ThrowError(ErrorNormal, "Filter: calculateExit not implemented", FunctionTrace); }
 };
 
 class FilterManager {
@@ -52,8 +52,8 @@ class FilterManager {
     
     int addFilter(Filter *unit);
     int getFilterId(string filterShortName);
-    int getFilterCheckCount(string filterShortName, CheckType type = CheckAllTypes);
-    int getFilterCheckCount(int filterId, CheckType type = CheckAllTypes);
+    int getFilterSubfilterCount(string filterShortName, SubfilterType type = SubfilterAllTypes);
+    int getFilterSubfilterCount(int filterId, SubfilterType type = SubfilterAllTypes);
     void deleteAllFilters();
     
     int filterCount;
@@ -102,19 +102,19 @@ int FilterManager::getFilterId(string filterShortName) {
     return -1;
 }
 
-int FilterManager::getFilterCheckCount(string filterShortName, CheckType type = CheckAllTypes) {
+int FilterManager::getFilterSubfilterCount(string filterShortName, SubfilterType type = SubfilterAllTypes) {
     int filterId = getFilterId(filterShortName);
     
     if(filterId < 0) { return -1; }
-    else { return getFilterCheckCount(filterId, type); }
+    else { return getFilterSubfilterCount(filterId, type); }
 }
 
-int FilterManager::getFilterCheckCount(int filterId, CheckType type = CheckAllTypes) {
+int FilterManager::getFilterSubfilterCount(int filterId, SubfilterType type = SubfilterAllTypes) {
     switch(type) {
-        case CheckEntry: return filters[filterId].entryCheckCount;
-        case CheckExit: return filters[filterId].exitCheckCount;
-        case CheckValue: return filters[filterId].valueCheckCount;
-        default: return filters[filterId].entryCheckCount + filters[filterId].exitCheckCount + filters[filterId].valueCheckCount;
+        case SubfilterEntry: return filters[filterId].entrySubfilterCount;
+        case SubfilterExit: return filters[filterId].exitSubfilterCount;
+        case SubfilterValue: return filters[filterId].valueSubfilterCount;
+        default: return filters[filterId].entrySubfilterCount + filters[filterId].exitSubfilterCount + filters[filterId].valueSubfilterCount;
     }
 }
 
@@ -131,21 +131,21 @@ void FilterManager::deleteAllFilters() {
     return;
 }
 
-void Filter::setupChecks(string pairList, CheckType checkTypeIn, bool addToArray = false) {
-    switch(checkTypeIn) {
-        case CheckEntry:
-            entryCheckCount = OptionsParser::CountPairs(pairList);
-            if(entryCheckCount > 0) { OptionsParser::Parse(pairList, checkMode, entryCheckId, entryCheckCount, addToArray); }
+void Filter::setupSubfilters(string pairList, SubfilterType subfilterTypeIn, bool addToArray = false) {
+    switch(subfilterTypeIn) {
+        case SubfilterEntry:
+            entrySubfilterCount = MultiSettings::CountPairs(pairList);
+            if(entrySubfilterCount > 0) { MultiSettings::Parse(pairList, subfilterMode, entrySubfilterId, entrySubfilterCount, addToArray); }
             break;
         
-        case CheckExit:
-            exitCheckCount = OptionsParser::CountPairs(pairList);
-            if(exitCheckCount > 0) { OptionsParser::Parse(pairList, checkMode, exitCheckId, exitCheckCount, addToArray); }
+        case SubfilterExit:
+            exitSubfilterCount = MultiSettings::CountPairs(pairList);
+            if(exitSubfilterCount > 0) { MultiSettings::Parse(pairList, subfilterMode, exitSubfilterId, exitSubfilterCount, addToArray); }
             break;
             
-        case CheckValue:
-            valueCheckCount = OptionsParser::CountPairs(pairList);
-            if(valueCheckCount > 0) { OptionsParser::Parse(pairList, checkMode, valueCheckId, valueCheckCount, addToArray); }
+        case SubfilterValue:
+            valueSubfilterCount = MultiSettings::CountPairs(pairList);
+            if(valueSubfilterCount > 0) { MultiSettings::Parse(pairList, subfilterMode, valueSubfilterId, valueSubfilterCount, addToArray); }
             break;
     }
 }

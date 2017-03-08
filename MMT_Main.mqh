@@ -2,57 +2,48 @@
 #property link      ""
 #property strict
 
-#include "MMT_Filters/MMT_Filter.mqh"
+#include "MMT_Filters/MMT_Filters.mqh"
 #include "MMT_Symbols.mqh"
 #include "MMT_Data/MMT_Data.mqh"
+#include "MMT_Order.mqh"
 #include "MMT_Dashboard.mqh"
 
 //+------------------------------------------------------------------+
 
-class MainManager {
+class MainMultiTrader {
     public:
-    FilterManager *filterMan;
-    SymbolManager *symbolMan;
-    DataManager *dataMan;
-    //OrderManager *orderMan;
-    DashboardManager *dashboardMan;
-
-    void MainManager();
+    void MainMultiTrader();
     int onInit();
     void onTick();
     void onTimer();
     void onDeinit(const int reason);
-    void ~MainManager();
+    void ~MainMultiTrader();
+    void doCycle();
     
     void addFilter(Filter *inputFilter);
 };
 
-void MainManager::MainManager() {
-    filterMan = new FilterManager();
+void MainMultiTrader::MainMultiTrader() {
+    MainFilterMan = new FilterManager();
     
     // We need to add filters in root file
     // After filters are added, run onInit()
 }
 
-void MainManager::addFilter(Filter *inputFilter) {
-    filterMan.addFilter(inputFilter);
+void MainMultiTrader::addFilter(Filter *inputFilter) {
+    MainFilterMan.addFilter(inputFilter);
 }
 
-int MainManager::onInit() {
-    symbolMan = new SymbolManager(IncludeSymbols, ExcludeSymbols, ExcludeCurrencies);
-    dataMan = new DataManager(symbolMan.symbolCount, filterMan.filterCount);
-    // Main.orderMan = new OrderManager();
-
-    // MainRiskManager.calculateAll();
-    // Main.filterMan.calculateAll();
-    // Main.orderMan.doAllTrades();
+int MainMultiTrader::onInit() {
+    MainSymbolMan = new SymbolManager(IncludeSymbols, ExcludeSymbols, ExcludeCurrencies);
+    MainDataMan = new DataManager(MainSymbolMan.symbolCount(), MainFilterMan.filterCount());
+    MainOrderMan = new OrderManager();
+    MainDashboardMan = new DashboardManager();
     
-    dashboardMan = new DashboardManager();
-
     return INIT_SUCCEEDED;
 }
 
-void MainManager::onTick() {
+void MainMultiTrader::onTick() {
     // Toggle to do OnTimer or OnTick
     // Per order update, risk calc, or filter calc
     // Per tick or per cycle time (whichever method is picked)
@@ -60,26 +51,36 @@ void MainManager::onTick() {
     
     //((cur) >= (prev)) ? ((cur)-(prev)) : ((0xFFFFFFFF-(prev))+(cur)+1)
     
-    // Procedure to calculate risk goes here
-    // Procedure to update existing trades goes here
-    
     // Procedure to check cycle time goes here
-    // If cycle time, then calculate filters
+    // If cycle time, then do cycle
+}
+
+void MainMultiTrader::onTimer() {
+    doCycle();
+}
+
+void MainMultiTrader::doCycle() {
+    // MainSymbolMan.retrieveData();
+        // iterates through symbols, calls filters and subs on all of them
+        // filters feed data
+        
+    // MainOrderMan.doAllTrades();
     
-    // Dashboard is updated within Main.orderMan, MainRiskManager, and Main.filterMan
-    // No need to update here.
+    // MainDashboardMan.update();
+    
+    // MainDataWriterMan.writeStuff();
 }
 
-void MainManager::onDeinit(const int reason) {
-    delete(dashboardMan);
-    // delete(orderMan);
-    delete(dataMan);
-    delete(symbolMan);
-    delete(filterMan);
+void MainMultiTrader::onDeinit(const int reason) {
+    delete(MainDashboardMan);
+    delete(MainOrderMan);
+    delete(MainDataMan);
+    delete(MainSymbolMan);
+    delete(MainFilterMan);
 }
 
-void MainManager::~MainManager() {
+void MainMultiTrader::~MainMultiTrader() {
     
 }
 
-MainManager *Main;
+MainMultiTrader *Main;

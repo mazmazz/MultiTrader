@@ -23,10 +23,10 @@ class MultiSettings {
     static int CountPairs(string optionPairs);
     
     template<typename T>
-    static void Parse(string options, T &destArray[], int expectedCount=-1, bool addToArray = false);
+    static void Parse(string options, T &destArray[], int expectedCount=-1, bool addToArray = true);
     
     template<typename T>
-    static void Parse(string options, T &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = false);
+    static void Parse(string options, T &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = true);
 };
 
 string MultiSettings::KeyValDelimiter = "=";
@@ -109,12 +109,12 @@ int MultiSettings::CountPairs(string optionPairs) {
 }
 
 template<typename T>
-void MultiSettings::Parse(string options, T &destArray[], int expectedCount=-1, bool addToArray = false) {
+void MultiSettings::Parse(string options, T &destArray[], int expectedCount=-1, bool addToArray = true) {
     MultiSettings::Parse(options, destArray, IntZeroArray, expectedCount, addToArray);
 }
 
 template<typename T>
-void MultiSettings::Parse(string options, T &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = false) {
+void MultiSettings::Parse(string options, T &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = true) {
     string pairList[];
     int pairListCount = StringSplit(options, StringGetCharacter(PairDelimiter, 0), pairList);
 
@@ -131,7 +131,10 @@ void MultiSettings::Parse(string options, T &destArray[], int &idArray[], int ex
     }
     
     bool fillIdArray = ArrayIsDynamic(idArray);
-    if(fillIdArray) { if(!addToArray) { ArrayFree(idArray); } Common::ArrayReserve(idArray, pairValidCount); }
+    if(fillIdArray) { 
+        if(!addToArray) { ArrayFree(idArray); } 
+        Common::ArrayReserve(idArray, ArraySize(idArray) + pairValidCount); 
+    }
     
     int destArraySize = 0;
     int oldArraySize = 0;

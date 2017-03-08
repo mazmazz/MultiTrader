@@ -8,7 +8,8 @@
 #property strict
 
 #include "../MC_Common/MC_MultiSettings.mqh"
-#include "../MMT_Main.mqh"
+#include "../MMT_Symbols.mqh"
+#include "../MMT_Filters/MMT_Filters.mqh"
 #include "MMT_DataHistory.mqh"
 
 //+------------------------------------------------------------------+
@@ -23,47 +24,29 @@
 class DataSubfilter {
     public:
     DataSubfilter(int historyCount = -1);
-    DataHistory *data;
+    ~DataSubfilter();
+    DataHistory *history;
     
     //void deleteAllDataHistory();
 };
+
+void DataSubfilter::DataSubfilter(int historyCount = -1) {
+    history = new DataHistory(historyCount);
+}
+
+void DataSubfilter::~DataSubfilter() {
+    Common::SafeDelete(history);
+}
+
+//+------------------------------------------------------------------+
 
 class DataFilter {
     public:
     DataFilter(int totalSubfilterCount, int historyCount = -1);
     DataSubfilter *subfilter[];
     
-    //void deleteAllSubfilterData();
+    ~DataFilter();
 };
-
-class DataSymbol {
-    public:
-    DataSymbol();
-    DataSymbol(int filterCount);
-    DataFilter *filter[];
-    
-    // void deleteAllFilterData();
-};
-
-class DataManager {
-    private:
-    DataSymbol *symbol[];
-    
-    public:
-    DataManager(int symbolCount, int filterCount);
-    ~DataManager();
-    
-    DataHistory *getDataHistory(string symName, string filterName, int filterSubfilterId);
-    DataHistory *getDataHistory(int symbolId, int filterId, int filterSubfilterId);
-    DataHistory *getDataHistory(int symbolId, string filterName, int filterSubfilterId);
-    DataHistory *getDataHistory(string symbolId, int filterId, int filterSubfilterId);
-    
-    // void deleteAllSymbolData();
-};
-
-void DataSubfilter::DataSubfilter(int historyCount = -1) {
-    data = new DataHistory(historyCount);
-}
 
 void DataFilter::DataFilter(int totalSubfilterCount, int historyCount = -1) {
     ArrayResize(subfilter, totalSubfilterCount);
@@ -76,40 +59,62 @@ void DataFilter::DataFilter(int totalSubfilterCount, int historyCount = -1) {
     }
 }
 
+void DataFilter::~DataFilter() {
+    int size = ArraySize(subfilter);
+    
+    for(int i = 0; i < size; i++) {
+        Common::SafeDelete(subfilter[i]);
+    }
+}
+
+//+------------------------------------------------------------------+
+
+class DataSymbol {
+    public:
+    DataFilter *filter[];
+    
+    DataSymbol();
+    DataSymbol(int filterCount);
+    ~DataSymbol();
+    
+    // void deleteAllFilterData();
+};
+
 void DataSymbol::DataSymbol(int filterCount) {
     ArrayResize(filter, filterCount);
     
     for(int i = 0; i < filterCount; i++) {
         filter[i] = new DataFilter(
-            Main.filterMan.getFilterSubfilterCount(i),
-            -1 //Main.filterMan.getFilterHistoryCount(i) //, Main.filterMan.getFilterHistoryCount(i, true)
+            MainFilterMan.filters[i].subfilterCount(),
+            -1 //MainFilterMan.getFilterHistoryCount(i) //, MainFilterMan.getFilterHistoryCount(i, true)
             );
     }
 }
 
-void DataManager::~DataManager() {
-    int symbolCount = Main.symbolMan.symbolCount;
-    int filterCount = 0; int subfilterCount = 0; int k = 0;
+void DataSymbol::~DataSymbol() {
+    int size = ArraySize(filter);
     
-    //void deleteAllSymbolData();
-    for(int i = 0; i < symbolCount; i++) {
-        filterCount = Main.filterMan.filterCount;
-        
-        //void deleteAllFilterData();
-        for(int j = 0; j < filterCount; j++) {
-            subfilterCount = ArraySize(symbol[i].filter[j].subfilter);
-            //void deleteAllSubfilterData();
-            for(k = 0; k < subfilterCount; k++) {
-                delete(symbol[i].filter[j].subfilter[k].data); //void deleteAllDataHistory();
-                delete(symbol[i].filter[j].subfilter[k]); 
-            }
-            
-            delete(symbol[i].filter[j]);
-        }
-        
-        delete(symbol[i]);
+    for(int i = 0; i < size; i++) {
+        Common::SafeDelete(filter[i]);
     }
 }
+
+//+------------------------------------------------------------------+
+
+class DataManager {
+    public:
+    DataSymbol *symbol[];
+    
+    DataManager(int symbolCount, int filterCount);
+    ~DataManager();
+    
+    DataHistory *getDataHistory(string symName, string filterName, int subfilterId);
+    DataHistory *getDataHistory(int symbolId, int filterId, int subfilterId);
+    DataHistory *getDataHistory(int symbolId, string filterName, int subfilterId);
+    DataHistory *getDataHistory(string symbolId, int filterId, int subfilterId);
+    
+    // void deleteAllSymbolData();
+};
 
 void DataManager::DataManager(int symbolCount, int filterCount) {
     ArrayResize(symbol, symbolCount);
@@ -119,18 +124,29 @@ void DataManager::DataManager(int symbolCount, int filterCount) {
     }
 }
 
-DataHistory *DataManager::getDataHistory(int symbolId, int filterId, int filterSubfilterId){
-    return symbol[symbolId].filter[filterId].subfilter[filterSubfilterId].data;
+void DataManager::~DataManager() {
+    int size = MainSymbolMan.symbolCount();
+    
+    //void deleteAllSymbolData();
+    for(int i = 0; i < size; i++) {
+        Common::SafeDelete(symbol[i]);
+    }
 }
 
-DataHistory *DataManager::getDataHistory(string symName, string filterName, int filterSubfilterId){
-    return getDataHistory(Main.symbolMan.getSymbolId(symName), Main.filterMan.getFilterId(filterName), filterSubfilterId);
+DataHistory *DataManager::getDataHistory(int symbolId, int filterId, int subfilterId){
+    return symbol[symbolId].filter[filterId].subfilter[subfilterId].history;
 }
 
-DataHistory *DataManager::getDataHistory(int symbolId, string filterName, int filterSubfilterId){
-    return getDataHistory(symbolId, Main.filterMan.getFilterId(filterName), filterSubfilterId);
+DataHistory *DataManager::getDataHistory(string symName, string filterName, int subfilterId){
+    return getDataHistory(MainSymbolMan.getSymbolId(symName), MainFilterMan.getFilterId(filterName), subfilterId);
 }
 
-DataHistory *DataManager::getDataHistory(string symName, int filterId, int filterSubfilterId){
-    return getDataHistory(Main.symbolMan.getSymbolId(symName), filterId, filterSubfilterId);
+DataHistory *DataManager::getDataHistory(int symbolId, string filterName, int subfilterId){
+    return getDataHistory(symbolId, MainFilterMan.getFilterId(filterName), subfilterId);
 }
+
+DataHistory *DataManager::getDataHistory(string symName, int filterId, int subfilterId){
+    return getDataHistory(MainSymbolMan.getSymbolId(symName), filterId, subfilterId);
+}
+
+DataManager *MainDataMan;

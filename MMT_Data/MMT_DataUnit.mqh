@@ -21,13 +21,15 @@ enum SignalType {
 
 class DataUnit {
     public:
+    bool success;
     SignalType signal;
     string rawValueType;
     string debugValue;
     
     DataUnit();
+    DataUnit(bool successIn);
     template<typename T>
-    DataUnit(T value, SignalType signalInput = SignalNone, string debugValueInput = "");
+    DataUnit(bool successIn, T value, SignalType signalInput = SignalNone, string debugValueInput = "", datetime lastUpdate = 0);
     
     template <typename T>
     void setRawValue(T value, SignalType signalInput = SignalNone, string debugValueInput = "", datetime lastChangedTimeInput = 0);
@@ -51,11 +53,17 @@ class DataUnit {
     datetime lastChangedTime; // todo: how to express milliseconds?
 };
 
-void DataUnit::DataUnit() { }
+void DataUnit::DataUnit() { 
+    success = false;
+}
+
+void DataUnit::DataUnit(bool successIn) {
+    success = successIn;
+}
 
 template <typename T>
-void DataUnit::DataUnit(T value, SignalType signalInput = SignalNone, string debugValueInput = "") {
-    setRawValue(value, signalInput, debugValueInput);
+void DataUnit::DataUnit(bool successIn, T value, SignalType signalInput = SignalNone, string debugValueInput = "", datetime lastUpdate = 0) {
+    setRawValue(value, signalInput, debugValueInput, lastUpdate);
 }
 
 template <typename T>

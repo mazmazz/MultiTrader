@@ -7,8 +7,9 @@
 #property link      "https://www.mql5.com"
 #property strict
 
-#include "MMT_Main.mqh"
-#include "MMT_Data/MMT_DataUnit.mqh"
+#include "MMT_Symbols.mqh"
+#include "MMT_Filters/MMT_Filters.mqh"
+#include "MMT_Data/MMT_Data.mqh"
 
 class DashboardManager {
     private:
@@ -60,7 +61,7 @@ class DashboardManager {
 void DashboardManager::DashboardManager() {
     objPrefix = MMT_EaShortName + "_";
     fontFace = DisplayFont;
-    fontSize = DisplayFontSize;
+    fontSize = 11+(DisplayScale < 1 ? -4 : (DisplayScale-1)*4); //DisplayFontSize;
     fontColorDefault = clrSilver;
     fontColorBuy = clrGreen;
     fontColorSell = clrRed;
@@ -94,10 +95,10 @@ void DashboardManager::drawHeader() {
     string statusText = "DoTrade: " + (DoTrade ? "True" : "False") + " DoExit: " + (DoExit ? "True" : "False") + spacedSepChar;
     
     /* list of filters
-    for(int i = 0; i < Main.filterMan.filterCount; i++) {
-        headerText += Main.filterMan.filterShortNames[i] + 
-            "(" + Main.filterMan.getFilterSubfilterCount(i, false) + 
-            "," + Main.filterMan.getFilterSubfilterCount(i, true) +
+    for(int i = 0; i < MainFilterMan.filterCount; i++) {
+        headerText += MainFilterMan.filterShortNames[i] + 
+            "(" + MainFilterMan.getSubfilterCount(i, false) + 
+            "," + MainFilterMan.getSubfilterCount(i, true) +
             ") ";
     }*/
     
@@ -126,11 +127,13 @@ void DashboardManager::drawLegend() {
     
     dataPosStart = StringLen(legendText)+1;
     
+    int filterCount = MainFilterMan.filterCount();
+    
     // entries
-    for(int i = 0; i < Main.filterMan.filterCount; i++) {
-        subfilterCount = Main.filterMan.getFilterSubfilterCount(i, false);
+    for(int i = 0; i < filterCount; i++) {
+        subfilterCount = MainFilterMan.filters[i].subfilterCount();
         for(int j = 1; j <= subfilterCount; j++) { 
-            legendText += padText(StringConcatenate(truncText(Main.filterMan.filterShortNames[i], maxLabelPos-1), j), colSize);
+            legendText += padText(StringConcatenate(truncText(MainFilterMan.filters[i].shortName, maxLabelPos-1), j), colSize);
         }
     }
     
@@ -138,10 +141,10 @@ void DashboardManager::drawLegend() {
     dataExitPosStart = StringLen(legendText)+1;
     
     // exits
-    //for(int i = 0; i < Main.filterMan.filterCount; i++) {
-    //    subfilterCount = Main.filterMan.getFilterSubfilterCount(i, true);
+    //for(int i = 0; i < MainFilterMan.filterCount; i++) {
+    //    subfilterCount = MainFilterMan.getSubfilterCount(i, true);
     //    for(int j = 1; j <= subfilterCount; j++) { 
-    //        legendText += padText(StringConcatenate(truncText(Main.filterMan.filterShortNames[i], maxLabelPos-1), j), colSize);
+    //        legendText += padText(StringConcatenate(truncText(MainFilterMan.filterShortNames[i], maxLabelPos-1), j), colSize);
     //    }
     //}
     
@@ -154,15 +157,18 @@ void DashboardManager::drawSymbols() {
     int maxLabelPos = colSize-1;
     int maxTextPos = 7; // "Symbols " minus 1
     int subfilterCount = 0;
+    int size = MainSymbolMan.symbolCount();
     
     int j = 0; int k = 0;
-    for(int i = 0; i < Main.symbolMan.symbolCount; i++) {
+    for(int i = 0; i < size; i++) {
         col = 0;
-        drawText(prefixName(IntegerToString(i)), truncText(Main.symbolMan.symNames[i], maxTextPos));
+        drawText(prefixName(IntegerToString(i)), truncText(MainSymbolMan.symNames[i], maxTextPos));
+        
+        int filterCount = MainFilterMan.filterCount();
         
         // todo: order by filter type, or custom
-        for(j = 0; j < Main.filterMan.filterCount; j++) {
-            subfilterCount = Main.filterMan.getFilterSubfilterCount(j);
+        for(j = 0; j < filterCount; j++) {
+            subfilterCount = MainFilterMan.filters[j].subfilterCount();
             for(k = 0; k < subfilterCount; k++) { 
                 string dataObjName = prefixName(StringConcatenate(i, "_", j, "_", k, "_entry"));
                 if(ObjectCreate(dataObjName, OBJ_LABEL, 0, 0, 0)) {
@@ -190,7 +196,7 @@ void DashboardManager::drawData(int symbolId, int filterId, int subfilterId, boo
     if(!exists) { exists = (ObjectFind(objName) >= 0); }
     
     if(exists) {
-        DataUnit *data = Main.dataMan.getDataHistory(symbolId, filterId, subfilterId).getData();
+        DataUnit *data = MainDataMan.getDataHistory(symbolId, filterId, subfilterId).getData();
         color fontColor = fontColorDefault;
         
         if(data == NULL) { dataResult = "-"; }
@@ -289,3 +295,5 @@ void DashboardManager::deleteAllObjects()
 void DashboardManager::~DashboardManager() {
     deleteAllObjects();
 }
+
+DashboardManager *MainDashboardMan;

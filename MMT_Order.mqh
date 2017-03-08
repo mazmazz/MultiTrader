@@ -10,6 +10,16 @@
 
 class OrderManager {
     public:
-    
-
+    OrderManager();
+    ~OrderManager();
 };
+
+void OrderManager::OrderManager() {
+
+}
+
+void OrderManager::~OrderManager() {
+
+}
+
+OrderManager *MainOrderMan;

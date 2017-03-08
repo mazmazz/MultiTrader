@@ -7,94 +7,81 @@
 #property link      "https://www.mql5.com"
 #property strict
 
+#include "MMT_Settings.mqh"
 #include "MC_Common/MC_Error.mqh"
 #include "MC_Common/MC_Common.mqh"
-#include "MMT_Main.mqh"
 #include "depends/Symbols.mqh"
+#include "MMT_Filters/MMT_Filters.mqh"
 
-//+------------------------------------------------------------------+
-// Symbol classes [CLASSES]
 //+------------------------------------------------------------------+
 
 class SymbolUnit {
     public:
-    SymbolUnit(string formSymName, string bareSymName = "");
-    
+    // bool enabled;
     string formSymName;
     string bareSymName;
+    // string prefix;
+    // string suffix;
+    // SymbolType type; // Forex, Metals, Indexes, ...
+    string baseCurName;
+    string quoteCurName;
+    
+    SymbolUnit(string formSymNameIn, string bareSymNameIn = "", string baseCurNameIn = "", string quoteCurNameIn = "");
 };
+
+void SymbolUnit::SymbolUnit(string formSymNameIn, string bareSymNameIn = "", string baseCurNameIn = "", string quoteCurNameIn = "") {
+    formSymName = formSymNameIn;
+    bareSymName = StringLen(bareSymNameIn) <= 0 ? formSymNameIn : bareSymNameIn;
+    baseCurName = baseCurNameIn;
+    quoteCurName = quoteCurNameIn;
+}
+
+//+------------------------------------------------------------------+
 
 class SymbolManager {
     public:
+    SymbolUnit *symbols[];
+    string symNames[];
+    string excludeSym; // not an array, we don't need it for our processing
+    string excludeCur[];
+    
+    int symbolCount() { return ArraySize(symbols); }
+    
     SymbolManager(string includeSymbols, string excludeSymbols, string excludeCurrencies);
     ~SymbolManager();
     
-    SymbolUnit *symbols[]; // array
-    string symNames[];
-    int symbolCount;
+    void retrieveActiveSymbols(string includeSym, string excludeSym, string excludeCur);
     
-    string excludeSym; // not an array
-    string excludeCur[]; // array
-    
-    int addSymbol(string formSymName, string bareSymName = "");
+    int addSymbol(string formSymName, string bareSymName = "", string baseCurName = "", string quoteCurName = "");
     int getSymbolId(string formSymName);
-    void removeSymbol();
-    void removeAllSymbols();
     bool isSymbolExcluded(string symName, string excludeSym, string &excludeCur[]);
-    void getActiveSymbols(string includeSym, string excludeSym, string excludeCur);
+    void removeAllSymbols();
     
-    static string getCurrencySuffix(string symName);
+    bool retrieveData();
+    
+    static int getAllSymbols(string &allSymBuffer[]);
     static bool doesSymbolHaveSuffix(string symName, string symSuffix);
+    static string getCurrencySuffix(string symName);
     static string formatSymbolName(string symName, string symSuffix, /*string curPrefix*/);
     static string unformatSymbolName(string symName, string symSuffix);
-    static int getAllSymbols(string &allSymBuffer[]);
+    static string getSymbolBaseCurrency(string symName);
+    static string getSymbolQuoteCurrency(string symName);
 };
 
 //+------------------------------------------------------------------+
 // Class methods [METHODS]
 //+------------------------------------------------------------------+
 
-void SymbolUnit::SymbolUnit(string formSymNameIn, string bareSymNameIn = "") {
-    formSymName = formSymNameIn;
-    bareSymName = bareSymNameIn;
+void SymbolManager::SymbolManager(string includeSymbols, string excludeSymbols, string excludeCurrencies) {
+    retrieveActiveSymbols(includeSymbols, excludeSymbols, excludeCurrencies);
 }
 
-int SymbolManager::addSymbol(string formSymName, string bareSymName = "") {
-    int size = ArraySize(symbols); // assuming 1-based
-    ArrayResize(symbols, size+1);
-    ArrayResize(symNames, size+1);
-    
-    symbols[size] = new SymbolUnit(formSymName, bareSymName);
-    symNames[size] = formSymName;
-    
-    return size+1;
+void SymbolManager::~SymbolManager() {
+    removeAllSymbols();
 }
 
-int SymbolManager::getSymbolId(string formSymName) {
-    int size = ArraySize(symNames);
-    
-    for(int i = 0; i < size; i++) {
-        if(StringCompare(symNames[i], formSymName) == 0) { return i; }
-    }
-    
-    return -1;
-}
-
-void SymbolManager::removeAllSymbols() {
-    int size = ArraySize(symbols); // assuming 1-based
-    
-    for(int i=0; i < size; i++) {
-        delete(symbols[i]);
-    }
-    
-    ArrayFree(symbols);
-    ArrayFree(symNames);
-    
-    return;
-}
-
-void SymbolManager::getActiveSymbols(string includeSym, string excludeSymIn, string excludeCurIn) {
-    string symSuffix = SymbolManager::getCurrencySuffix(Symbol());
+void SymbolManager::retrieveActiveSymbols(string includeSym, string excludeSymIn, string excludeCurIn) {
+    string symSuffix = getCurrencySuffix(Symbol());
     
     ArrayFree(symNames);
     ArrayFree(excludeCur);
@@ -125,12 +112,12 @@ void SymbolManager::getActiveSymbols(string includeSym, string excludeSymIn, str
             continue; 
         }
         
-        string formSymName = SymbolManager::formatSymbolName(rawSymName, symSuffix);
-        string bareSymName = SymbolManager::unformatSymbolName(rawSymName, symSuffix);
+        string formSymName = formatSymbolName(rawSymName, symSuffix);
+        string bareSymName = unformatSymbolName(rawSymName, symSuffix);
         
-        if(!isSymbolExcluded(bareSymName, excludeSym, excludeCur)) { 
-            addSymbol(formSymName, bareSymName);
-            symbolCount++;
+        if(SingleSymbolMode || !isSymbolExcluded(bareSymName, excludeSym, excludeCur)) { 
+            // todo: exclude non-forex symbols even if SingleSymbolMode
+            addSymbol(formSymName, bareSymName, getSymbolBaseCurrency(bareSymName), getSymbolQuoteCurrency(bareSymName));
             
             if(DebugLevel >= 2) StringAdd(finalSymString, StringConcatenate(", ", formSymName));
         }
@@ -139,71 +126,22 @@ void SymbolManager::getActiveSymbols(string includeSym, string excludeSymIn, str
     Error::PrintInfo(ErrorInfo, StringConcatenate("Active symbols: ", finalSymString), FunctionTrace);
 }
 
-void SymbolManager::SymbolManager(string includeSymbols, string excludeSymbols, string excludeCurrencies) {
-    getActiveSymbols(includeSymbols, excludeSymbols, excludeCurrencies);
+
+int SymbolManager::addSymbol(string formSymName, string bareSymName = "", string baseCurName = "", string quoteCurName = "") {
+    int size = ArraySize(symbols); // assuming 1-based
+
+    Common::ArrayPush(symbols, new SymbolUnit(formSymName, bareSymName, baseCurName, quoteCurName));
+    return Common::ArrayPush(symNames, formSymName);
 }
 
-//+------------------------------------------------------------------+
-// Runtime methods [RUNTIME]
-//+------------------------------------------------------------------+
-
-void SymbolManager::~SymbolManager() {
-    removeAllSymbols();
-}
-
-//+------------------------------------------------------------------+
-// Helpers [HELPERS]
-//+------------------------------------------------------------------+
-
-//
-//string GetSymbolPrefix(string curName) {
-//    string result;
-//    
-//    return result;
-//}
-
-string SymbolManager::getCurrencySuffix(string symName) {
-    return StringSubstr(symName, 6);
-}
-//
-//bool DoesSymbolHavePrefix(string curName, string curPrefix) {
-//    bool result;
-//    
-//    return result;
-//}
-
-bool SymbolManager::doesSymbolHaveSuffix(string symName, string symSuffix) {
-    return (StringLen(symName) > 6 && StringCompare(StringSubstr(symName, 6), symSuffix) == 0);
-}
-
-string SymbolManager::formatSymbolName(string symName, string symSuffix, /*string curPrefix*/) {
-    if(StringLen(symName) < 6) { 
-        Error::ThrowError(ErrorNormal, "symName is not >=6 chars, assuming invalid, passing as is.", FunctionTrace); 
-        return symName;
+int SymbolManager::getSymbolId(string formSymName) {
+    int size = ArraySize(symNames);
+    
+    for(int i = 0; i < size; i++) {
+        if(StringCompare(symNames[i], formSymName) == 0) { return i; }
     }
     
-    if(StringLen(symSuffix) < 1) { return symName; }
-    else if(SymbolManager::doesSymbolHaveSuffix(symName, symSuffix)) { return symName; }
-    else if(StringAdd(symName, symSuffix)) { return symName; } 
-    else {
-        Error::ThrowError(ErrorNormal, "Could not figure out how to format symName, passing as is.", FunctionTrace);
-        return symName;
-    }
-}
-
-string SymbolManager::unformatSymbolName(string symName, string symSuffix) {
-    if(StringLen(symName) < 6) { 
-        Error::ThrowError(ErrorNormal, "symName is not >=6 chars, assuming invalid, passing as is.", FunctionTrace); 
-        return symName;
-    }
-    
-    if(StringLen(symSuffix) < 1) { return symName; }
-    else if(!SymbolManager::doesSymbolHaveSuffix(symName, symSuffix)) { return symName; }
-    else if(StringReplace(symName, symSuffix, "") > -1) { return symName; } 
-    else {
-        Error::ThrowError(ErrorNormal, "Could not figure out how to unformat symName, passing as is.", FunctionTrace);
-        return symName;
-    }
+    return -1;
 }
 
 bool SymbolManager::isSymbolExcluded(string symName, string excludeSymIn, string &excludeCurIn[]) {
@@ -217,6 +155,94 @@ bool SymbolManager::isSymbolExcluded(string symName, string excludeSymIn, string
     return false;
 }
 
+void SymbolManager::removeAllSymbols() {
+    int size = ArraySize(symbols); // assuming 1-based
+    
+    for(int i=0; i < size; i++) {
+        delete(symbols[i]);
+    }
+    
+    ArrayFree(symbols);
+    ArrayFree(symNames);
+}
+
+bool SymbolManager::retrieveData() {
+    int size = ArraySize(symbols);
+    
+    for(int i = 0; i < size; i++) {
+        MainFilterMan.calculateFilters(symbols[i].bareSymName);
+    }
+    
+    return true;
+}
+
+//+------------------------------------------------------------------+
+// Helpers [HELPERS]
+//+------------------------------------------------------------------+
+
 int SymbolManager::getAllSymbols(string &allSymBuffer[]) {
     return Symbols(allSymBuffer);
 }
+
+//bool DoesSymbolHavePrefix(string curName, string curPrefix) {
+//    bool result;
+//    
+//    return result;
+//}
+//
+//string GetSymbolPrefix(string curName) {
+//    string result;
+//    
+//    return result;
+//}
+
+bool SymbolManager::doesSymbolHaveSuffix(string symName, string symSuffix) {
+    return (StringLen(symName) > 6 && StringCompare(StringSubstr(symName, 6), symSuffix) == 0);
+}
+
+string SymbolManager::getCurrencySuffix(string symName) {
+    return StringSubstr(symName, 6);
+}
+
+string SymbolManager::formatSymbolName(string symName, string symSuffix, /*string curPrefix*/) {
+    if(StringLen(symName) < 6) { 
+        Error::ThrowError(ErrorNormal, "symName is not >=6 chars, assuming invalid, passing as is.", FunctionTrace); 
+        return symName;
+    }
+    
+    if(StringLen(symSuffix) < 1) { return symName; }
+    else if(doesSymbolHaveSuffix(symName, symSuffix)) { return symName; }
+    else if(StringAdd(symName, symSuffix)) { return symName; } 
+    else {
+        Error::ThrowError(ErrorNormal, "Could not figure out how to format symName, passing as is.", FunctionTrace);
+        return symName;
+    }
+}
+
+string SymbolManager::unformatSymbolName(string symName, string symSuffix = "") {
+    if(StringLen(symName) < 6) { 
+        Error::ThrowError(ErrorNormal, "symName is not >=6 chars, assuming invalid, passing as is.", FunctionTrace); 
+        return symName;
+    }
+    
+    if(StringLen(symSuffix) <= 0) { symSuffix = getCurrencySuffix(symName); }
+    if(StringLen(symSuffix) < 1) { return symName; }
+    else if(!doesSymbolHaveSuffix(symName, symSuffix)) { return symName; }
+    else if(StringReplace(symName, symSuffix, "") > -1) { return symName; } 
+    else {
+        Error::ThrowError(ErrorNormal, "Could not figure out how to unformat symName, passing as is.", FunctionTrace);
+        return symName;
+    }
+}
+
+string SymbolManager::getSymbolBaseCurrency(string symName) {
+    string bareSymName = unformatSymbolName(symName);
+    return StringSubstr(bareSymName, 0, 3);
+}
+
+string SymbolManager::getSymbolQuoteCurrency(string symName) {
+    string bareSymName = unformatSymbolName(symName);
+    return StringSubstr(bareSymName, 3, 3);
+}
+
+SymbolManager *MainSymbolMan;

@@ -7,11 +7,13 @@
 #property link      "https://www.mql5.com"
 #property strict
 
-#include "MMT_Filter.mqh"
+#include "MMT_Filters.mqh"
 #include "../MC_Common/MC_MultiSettings.mqh"
+#include "../MMT_Data/MMT_DataUnit.mqh"
 
 class FilterStoch : public Filter {
     private:
+    bool isInit;
     int timeFrame[];
     int kPeriod[];
     int dPeriod[];
@@ -23,10 +25,8 @@ class FilterStoch : public Filter {
     void setupOptions();
     
     public:
-    FilterStoch();
-    
-    void calculateEntry();
-    void calculateExit();
+    void initFilter();
+    bool calculate(int subfilterIndex, string symbol, DataUnit *dataOut);
 };
 
 //+------------------------------------------------------------------+
@@ -35,7 +35,7 @@ class FilterStoch : public Filter {
 
 extern string Lbl_Stoch_1="-------- Stoch Settings --------";
 extern string Stoch_Entry="a=1|b=1|c=1";
-extern string Stoch_Exit="1";
+extern string Stoch_Exit="a=1";
 
 extern string LbL_Stoch_Entry_="---- Stoch Entry Settings ----";
 extern string Stoch_TimeFrame_="a=15|b=30|c=60";
@@ -46,53 +46,57 @@ extern string Stoch_Method_="a=3|b=3|c=3";
 extern string Stoch_BuySellZone_="a=22.0|b=22.0|c=22.0";
 
 extern string LbL_Stoch_Exit_="---- Stoch Exit Settings ----";
-extern string Stoch_Exit_TimeFrame_="15";
-extern string Stoch_Exit_KPeriod_="5";
-extern string Stoch_Exit_DPeriod_="3";
-extern string Stoch_Exit_Slowing_="3";
-extern string Stoch_Exit_Method_="3";
-extern string Stoch_Exit_BuySellZone_="30.0";
+extern string Stoch_Exit_TimeFrame_="a=15";
+extern string Stoch_Exit_KPeriod_="a=5";
+extern string Stoch_Exit_DPeriod_="a=3";
+extern string Stoch_Exit_Slowing_="a=3";
+extern string Stoch_Exit_Method_="a=3";
+extern string Stoch_Exit_BuySellZone_="a=30.0";
 
 //+------------------------------------------------------------------+
 // Methods
 //+------------------------------------------------------------------+
 
-void FilterStoch::FilterStoch() {
+void FilterStoch::initFilter() {
+    if(isInit) { return; }
+    
     shortName = "Stoch";
     
-    setupSubfilters(Stoch_Entry, SubfilterEntry, false);
-    setupSubfilters(Stoch_Exit, SubfilterExit, true);
+    setupSubfilters(Stoch_Entry, SubfilterEntry);
+    setupSubfilters(Stoch_Exit, SubfilterExit);
     setupOptions();
+    
+    isInit = true;
 }
 
 void FilterStoch::setupOptions() {
-    if(entrySubfilterCount > 0) {
-        MultiSettings::Parse(Stoch_TimeFrame_, timeFrame, entrySubfilterCount, false);
-        MultiSettings::Parse(Stoch_KPeriod_, kPeriod, entrySubfilterCount, false);
-        MultiSettings::Parse(Stoch_DPeriod_, dPeriod, entrySubfilterCount, false);
-        MultiSettings::Parse(Stoch_Slowing_, slowing, entrySubfilterCount, false);
-        MultiSettings::Parse(Stoch_Method_, method, entrySubfilterCount, false);
-        MultiSettings::Parse(Stoch_BuySellZone_, buySellZone, entrySubfilterCount, false);
+    int entrySubfilterCount = ArraySize(entrySubfilterId);
+    int exitSubfilterCount = ArraySize(exitSubfilterId);
+    if(ArraySize(entrySubfilterId) > 0) {
+        MultiSettings::Parse(Stoch_TimeFrame_, timeFrame, entrySubfilterCount);
+        MultiSettings::Parse(Stoch_KPeriod_, kPeriod, entrySubfilterCount);
+        MultiSettings::Parse(Stoch_DPeriod_, dPeriod, entrySubfilterCount);
+        MultiSettings::Parse(Stoch_Slowing_, slowing, entrySubfilterCount);
+        MultiSettings::Parse(Stoch_Method_, method, entrySubfilterCount);
+        MultiSettings::Parse(Stoch_BuySellZone_, buySellZone, entrySubfilterCount);
     }
     
-    if(exitSubfilterCount > 0) {
-        MultiSettings::Parse(Stoch_Exit_TimeFrame_, timeFrame, exitSubfilterCount, true);
-        MultiSettings::Parse(Stoch_Exit_KPeriod_, kPeriod, exitSubfilterCount, true);
-        MultiSettings::Parse(Stoch_Exit_DPeriod_, dPeriod, exitSubfilterCount, true);
-        MultiSettings::Parse(Stoch_Exit_Slowing_, slowing, exitSubfilterCount, true);
-        MultiSettings::Parse(Stoch_Exit_Method_, method, exitSubfilterCount, true);
-        MultiSettings::Parse(Stoch_Exit_BuySellZone_, buySellZone, exitSubfilterCount, true);
+    if(ArraySize(exitSubfilterId) > 0) {
+        MultiSettings::Parse(Stoch_Exit_TimeFrame_, timeFrame, exitSubfilterCount);
+        MultiSettings::Parse(Stoch_Exit_KPeriod_, kPeriod, exitSubfilterCount);
+        MultiSettings::Parse(Stoch_Exit_DPeriod_, dPeriod, exitSubfilterCount);
+        MultiSettings::Parse(Stoch_Exit_Slowing_, slowing, exitSubfilterCount);
+        MultiSettings::Parse(Stoch_Exit_Method_, method, exitSubfilterCount);
+        MultiSettings::Parse(Stoch_Exit_BuySellZone_, buySellZone, exitSubfilterCount);
     }
 }
 
-void FilterStoch::calculateEntry() {
-    if(entrySubfilterCount < 1) { return; }
+bool FilterStoch::calculate(int subfilterIndex, string symbol, DataUnit *dataOut) {
+    if(subfilterIndex >= subfilterCount()) {
+        Error::ThrowError(ErrorNormal, "Subfilter index does not exist", FunctionTrace, shortName + "|" + subfilterIndex + "|" + subfilterCount());
+        dataOut.success = false;
+        return false;
+    }
     
-    
-}
-
-void FilterStoch::calculateExit() {
-    if(exitSubfilterCount < 1) { return; }
-    
-    
+    return true;
 }

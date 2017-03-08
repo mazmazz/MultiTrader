@@ -17,10 +17,8 @@
 //+------------------------------------------------------------------+
 //| defines                                                          |
 //+------------------------------------------------------------------+
-const string MMT_EaName = "MultiTrader";
-const string MMT_EaShortName = "MMT";
-const string MMT_Version = "v0.1 02/2017";
 
+#include "MMT_Settings.mqh"
 #include "MMT_Main.mqh"
 
 //+------------------------------------------------------------------+
@@ -31,22 +29,19 @@ const string MMT_Version = "v0.1 02/2017";
 #include "MMT_Filters/MMT_Filter_Stoch.mqh"
 
 //+------------------------------------------------------------------+
-// 2. Add filters and risks to OnInit below [HOOKS]
+// 2. Add filters to OnInit below [HOOKS]
 //    Add order affects display order on dashboard
 //+------------------------------------------------------------------+
 
 int OnInit() {
-    Main = new MainManager();
-    //Main.addFilter(new FilterSpread());
-    //Main.addFilter(new FilterAtr());
-    //Main.addFilter(new FilterStdev());
+    Main = new MainMultiTrader();
     Main.addFilter(new FilterStoch());
 
     return Main.onInit();
 }
 
-void OnTick() {
-    Main.onTick();
+void OnTimer() {
+    Main.onTimer();
 }
 
 void OnDeinit(const int reason) {

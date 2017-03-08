@@ -7,6 +7,10 @@
 #property link      "https://www.mql5.com"
 #property strict
 
+const string MMT_EaName = "MultiTrader";
+const string MMT_EaShortName = "MMT";
+const string MMT_Version = "v0.1 02/2017";
+
 enum DisplayStyleEnum {
     ValueAndSignal,
     ValueOnly,
@@ -105,7 +109,8 @@ extern bool DisplayShowSettings=true;
 extern bool DisplayShowTable=true;
 extern bool DisplayShowOrdersInTable=true;
 extern string DisplayFont="Lucida Console";
-extern int DisplayFontSize=11;
+extern int DisplayScale=1; // DisplayScale: 0 = Half, 1 = Normal, 2+ = Large
+//extern int DisplayFontSize=11;
 //extern int DisplaySpacing=13;
 extern DisplayStyleEnum DisplayStyle=ValueAndSignal;
 

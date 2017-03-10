@@ -145,7 +145,7 @@ void DashboardManager::drawLegend() {
     for(int i = 0; i < filterCount; i++) {
         subfilterCount = MainFilterMan.filters[i].subfilterCount();
         for(int j = 0; j < subfilterCount; j++) { 
-            legendText += padText(StringConcatenate(truncText(MainFilterMan.filters[i].shortName, maxLabelPos-2), "-", MainFilterMan.filters[i].subfilterName[j]), colSize);
+            legendText += padText(truncText(MainFilterMan.filters[i].shortName, maxLabelPos-2) + "-" + MainFilterMan.filters[i].subfilterName[j], colSize);
         }
     }
     
@@ -192,11 +192,11 @@ void DashboardManager::drawSymbols() {
 }
 
 void DashboardManager::drawData(int symbolId, int filterId, int subfilterId) {
-    string dataObjName = prefixName(StringConcatenate(symbolId, "_", filterId, "_", subfilterId, getDataSuffix(filterId, subfilterId)));
-    if(ObjectCreate(dataObjName, OBJ_LABEL, 0, 0, 0)) {
-        ObjectSet(dataObjName, OBJPROP_XDISTANCE, posSize * (dataPosStart + col*colSize));
-        ObjectSet(dataObjName, OBJPROP_YDISTANCE, rowSize * row);
-        ObjectSet(dataObjName, OBJPROP_CORNER, 0);
+    string dataObjName = prefixName(symbolId + "_" + filterId + "_" + subfilterId, getDataSuffix(filterId, subfilterId));
+    if(ObjectCreate(0, dataObjName, OBJ_LABEL, 0, 0, 0)) {
+        ObjectSetInteger(0, dataObjName, OBJPROP_XDISTANCE, posSize * (dataPosStart + col*colSize));
+        ObjectSetInteger(0, dataObjName, OBJPROP_YDISTANCE, rowSize * row);
+        ObjectSetInteger(0, dataObjName, OBJPROP_CORNER, 0);
         updateData(symbolId, filterId, subfilterId, true);
     }
 }
@@ -225,9 +225,9 @@ void DashboardManager::updateData(int symbolId, int filterId, int subfilterId, b
 
     string suffixName = getDataSuffix(filterId, subfilterId);
 
-    objName = prefixName(StringConcatenate(symbolId, "_", filterId, "_", subfilterId, suffixName));
+    objName = prefixName(symbolId + "_" + filterId + "_" + subfilterId, suffixName);
     
-    if(!exists) { exists = (ObjectFind(objName) >= 0); }
+    if(!exists) { exists = (ObjectFind(0, objName) >= 0); }
     
     if(exists) {
         DataUnit *data = MainDataMan.getDataHistory(symbolId, filterId, subfilterId).getData();
@@ -292,13 +292,13 @@ string DashboardManager::padText(string text,int length) {
 int DashboardManager::getPosSize() {
     string objName = prefixName("test");
     int size = 0;
-    if(ObjectCreate(objName, OBJ_LABEL, 0, 0, 0)) {
+    if(ObjectCreate(0, objName, OBJ_LABEL, 0, 0, 0)) {
         ObjectSetText(objName, "W", fontSize, fontFace, clrWhite);
-        ObjectSet(objName, OBJPROP_XDISTANCE, 0);
-        ObjectSet(objName, OBJPROP_YDISTANCE, 0);
-        ObjectSet(objName, OBJPROP_CORNER, 0);
-        size = ObjectGet(objName, OBJPROP_XSIZE);
-        ObjectDelete(objName);
+        ObjectSetInteger(0, objName, OBJPROP_XDISTANCE, 0);
+        ObjectSetInteger(0, objName, OBJPROP_YDISTANCE, 0);
+        ObjectSetInteger(0, objName, OBJPROP_CORNER, 0);
+        size = ObjectGetInteger(0, objName, OBJPROP_XSIZE);
+        ObjectDelete(0, objName);
     }
     
     return size;
@@ -321,24 +321,22 @@ void DashboardManager::drawText(string objName, string text, color textColor) {
     
     for(int i = 0; i < multiple; i++) {
         finalObjName = objName + (i <= 0 ? "" : i+1);
-        if(ObjectCreate(finalObjName, OBJ_LABEL, 0, 0, 0)) {
+        if(ObjectCreate(0, finalObjName, OBJ_LABEL, 0, 0, 0)) {
             ObjectSetText(finalObjName, StringSubstr(text, i*maxSize, maxSize+1), fontSize, fontFace, textColor);
-            ObjectSet(finalObjName, OBJPROP_XDISTANCE, posSize*(pos+(i*maxSize)));
-            ObjectSet(finalObjName, OBJPROP_YDISTANCE, rowSize*row);
-            ObjectSet(finalObjName, OBJPROP_CORNER, 0);
+            ObjectSetInteger(0, finalObjName, OBJPROP_XDISTANCE, posSize*(pos+(i*maxSize)));
+            ObjectSetInteger(0, finalObjName, OBJPROP_YDISTANCE, rowSize*row);
+            ObjectSetInteger(0, finalObjName, OBJPROP_CORNER, 0);
         }
     }
 }
 
 void DashboardManager::deleteAllObjects()
 {
-    // This could be static, but instantiating it in case we want to do more later
-    // Borrowed from jlcgarcia, MyFriendEA
     int i = 0;
     while(i<ObjectsTotal())
     {
-        string objName=ObjectName(i);
-        ObjectDelete(objName);
+        string objName=ObjectName(0, i);
+        ObjectDelete(0, objName);
     }
 }
 

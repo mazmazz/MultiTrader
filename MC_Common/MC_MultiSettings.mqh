@@ -123,8 +123,8 @@ void MultiSettings::Parse(string options, T &destArray[], int &idArray[], int ex
     if(pairValidCount < 1 || (expectedCount > -1 ? pairValidCount != expectedCount : false)) {
         Error::ThrowFatalError(ErrorFatal
             , pairValidCount < 1 ? 
-                StringConcatenate("pairValidCount=", pairValidCount, " not >= 1") 
-                : StringConcatenate("pairValidCount=", pairValidCount, " does not match expectedCount=", expectedCount, ". options=", options)
+                ("pairValidCount=" + pairValidCount + " not >= 1") 
+                : ("pairValidCount=" + pairValidCount + " does not match expectedCount=" + expectedCount + ". options=" + options)
             , FunctionTrace    
             );
         return;
@@ -152,12 +152,12 @@ void MultiSettings::Parse(string options, T &destArray[], int &idArray[], int ex
             if(addToArray) { keyAddrInt += oldArraySize; }
 
             if(keyAddrInt < 0 || keyAddrInt >= destArraySize) {
-                Error::ThrowFatalError(ErrorFatal, StringConcatenate("key=", key, " keyAddrInt=", keyAddrInt, " is not within destArraySize=", destArraySize), FunctionTrace, pairList[i]);
+                Error::ThrowFatalError(ErrorFatal, "key=" + key + " keyAddrInt=" + keyAddrInt + " is not within destArraySize=" + destArraySize, FunctionTrace, pairList[i]);
                 return;
             } else {
                 if(typename(T) == "bool") { destArray[keyAddrInt] = Common::StrToBool(value); }
-                else if(typename(T) == "int") { destArray[keyAddrInt] = StrToInteger(value); }
-                else if(typename(T) == "double") { destArray[keyAddrInt] = StrToDouble(value); }
+                else if(typename(T) == "int") { destArray[keyAddrInt] = StringToInteger(value); }
+                else if(typename(T) == "double") { destArray[keyAddrInt] = StringToDouble(value); }
                 else { destArray[keyAddrInt] = value; }
                 
                 Common::ArrayPush(idArray, keyAddrInt);

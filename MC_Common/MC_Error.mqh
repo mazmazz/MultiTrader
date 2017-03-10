@@ -7,7 +7,8 @@
 #property link      "https://github.com/mazmazz"
 #property strict
 
-#define FunctionTrace StringConcatenate(__FILE__,"(",__LINE__,") ", __FUNCTION__)
+
+#define FunctionTrace __FILE__+"("+__LINE__+") "+ __FUNCTION__
 
 enum ErrorLevel {
     ErrorNone,
@@ -75,13 +76,14 @@ void Error::PrintError(int level, string message = "", string funcTrace = "", bo
     // todo: alerts
     if(fatal && FatalCounter > 0 && !PrintAllFatalErrors) { return; } // if fatal, only print an error message once. 
     
-    string errorMsg = StringConcatenate(
-        fatal ? StringConcatenate(FatalCounter, " FATAL ") : "", 
-        level == ErrorInfo ? "INFO: " : level == ErrorMinor ? "MINOR: " : "ERROR: ", 
-        funcTrace, StringLen(funcTrace) > 0 ? " - " : "", 
-        message,
-        StringLen(params) > 0 ? StringConcatenate(" - PARAMS: ", params) : ""
-        );
+    string errorMsg = 
+        (fatal ? (FatalCounter + " FATAL ") : "")
+        + (level == ErrorInfo ? "INFO: " : level == ErrorMinor ? "MINOR: " : "ERROR: ")
+        + funcTrace 
+        + (StringLen(funcTrace) > 0 ? " - " : "")
+        + message
+        + (StringLen(params) > 0 ? (" - PARAMS: " + params) : "")
+        ;
     
     if(DebugLevel >= level || fatal) { 
         if(LogAllErrorsToTerminal || !LogAllErrorsToFile || location == ErrorForceTerminal) { Print(errorMsg); }

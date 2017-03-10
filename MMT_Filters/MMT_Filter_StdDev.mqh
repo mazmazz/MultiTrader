@@ -72,7 +72,24 @@ void FilterStdDev::init() {
 
 bool FilterStdDev::calculate(int subfilterIndex, string symbol, DataUnit *dataOut) {
     if(!checkSafe(subfilterIndex)) { return false; }
-    
+
+#ifdef __MQL5__
+    int iStdDevHandle = iStdDev(
+        symbol
+        , GetMql5TimeFrame(timeFrame[subfilterIndex])
+        , period[subfilterIndex]
+        , shift[subfilterIndex]
+        , (ENUM_MA_METHOD)method[subfilterIndex]
+        , appliedPrice[subfilterIndex]
+        );
+    if(iStdDevHandle == INVALID_HANDLE) { return false; }
+    double value = NormalizeDouble(
+        Common::GetSingleValueFromBuffer(iStdDevHandle, periodShift[subfilterIndex])
+        , MarketInfo(symbol, MODE_DIGITS)
+        );
+    IndicatorRelease(iStdDevHandle);
+#else
+#ifdef __MQL4__
     double value = NormalizeDouble(
         iStdDev(
             symbol
@@ -85,6 +102,8 @@ bool FilterStdDev::calculate(int subfilterIndex, string symbol, DataUnit *dataOu
             )
         , MarketInfo(symbol, MODE_DIGITS)
         );
+#endif
+#endif
     
     dataOut.setRawValue(value, 0, DoubleToString(PriceToPips(symbol, value), 1));
     

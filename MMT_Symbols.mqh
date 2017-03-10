@@ -10,7 +10,6 @@
 #include "MMT_Settings.mqh"
 #include "MC_Common/MC_Error.mqh"
 #include "MC_Common/MC_Common.mqh"
-#include "depends/Symbols.mqh"
 #include "MMT_Filters/MMT_Filters.mqh"
 
 //+------------------------------------------------------------------+
@@ -124,11 +123,11 @@ void SymbolManager::retrieveActiveSymbols(string includeSym, string excludeSymIn
             // todo: exclude non-forex symbols even if SingleSymbolMode
             addSymbol(formSymName, bareSymName, getSymbolBaseCurrency(bareSymName), getSymbolQuoteCurrency(bareSymName));
             
-            if(DebugLevel >= 2) StringAdd(finalSymString, StringConcatenate(", ", formSymName));
+            if(DebugLevel >= 2) { finalSymString += ", " + formSymName; }
         }
     }
     
-    Error::PrintInfo(ErrorInfo, StringConcatenate("Active symbols: ", finalSymString), FunctionTrace);
+    Error::PrintInfo(ErrorInfo, "Active symbols: " + finalSymString, FunctionTrace);
 }
 
 
@@ -202,7 +201,19 @@ bool SymbolManager::retrieveData() {
 //+------------------------------------------------------------------+
 
 int SymbolManager::getAllSymbols(string &allSymBuffer[]) {
-    return Symbols(allSymBuffer);
+    int count = SymbolsTotal(false);
+    Common::ArrayReserve(allSymBuffer, count);
+    
+    for(int i = 0; i < count; i++) {
+        // todo: filter nonforex? we'll filter out prefixed names for now.
+        string symName = SymbolName(i, false);
+        uchar prefix = StringGetCharacter(symName, 0);
+        if((prefix >= 65 && prefix <= 90) || (prefix >= 97 && prefix <= 122)) {
+            Common::ArrayPush(allSymBuffer, SymbolName(i, false));
+        }
+    }
+    
+    return ArraySize(allSymBuffer);
 }
 
 //bool DoesSymbolHavePrefix(string curName, string curPrefix) {

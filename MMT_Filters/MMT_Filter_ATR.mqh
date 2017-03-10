@@ -64,10 +64,22 @@ void FilterAtr::init() {
 bool FilterAtr::calculate(int subfilterIndex, string symbol, DataUnit *dataOut) {
     if(!checkSafe(subfilterIndex)) { return false; }
     
+#ifdef __MQL5__
+    int iAtrHandle = iATR(symbol, GetMql5TimeFrame(timeFrame[subfilterIndex]), period[subfilterIndex]);
+    if(iAtrHandle == INVALID_HANDLE) { return false; }
+    double value = NormalizeDouble(
+        Common::GetSingleValueFromBuffer(iAtrHandle, shift[subfilterIndex])
+        , MarketInfo(symbol, MODE_DIGITS)
+        );
+    IndicatorRelease(iAtrHandle);
+#else
+#ifdef __MQL4__
     double value = NormalizeDouble(
         iATR(symbol, timeFrame[subfilterIndex], period[subfilterIndex], shift[subfilterIndex])
         , MarketInfo(symbol, MODE_DIGITS)
         );
+#endif
+#endif
     
     dataOut.setRawValue(value, 0, DoubleToString(PriceToPips(symbol, value), 1));
     

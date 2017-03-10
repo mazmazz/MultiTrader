@@ -43,9 +43,9 @@ void DataHistory::DataHistory() {
         // (i.e., element 0 is copied onto index 1 and then index 0 is freed.)
 }
 
-void DataHistory::DataHistory(int historyCount) {
+void DataHistory::DataHistory(int historyCountIn) {
     ArraySetAsSeries(data, true); 
-    setHistoryCount(historyCount);
+    setHistoryCount(historyCountIn);
 }
 
 void DataHistory::~DataHistory() {

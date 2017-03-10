@@ -103,6 +103,24 @@ void FilterStoch::init() {
 bool FilterStoch::calculate(int subfilterIndex, string symbol, DataUnit *dataOut) {
     if(!checkSafe(subfilterIndex)) { return false; }
     
+#ifdef __MQL5__
+    int iStochHandle = iStochastic(
+        symbol
+        , GetMql5TimeFrame(timeFrame[subfilterIndex])
+        , kPeriod[subfilterIndex]
+        , dPeriod[subfilterIndex]
+        , slowing[subfilterIndex]
+        , (ENUM_MA_METHOD)method[subfilterIndex]
+        , (ENUM_STO_PRICE)priceField[subfilterIndex]
+        );
+    if(iStochHandle == INVALID_HANDLE) { return false; }
+    double value = NormalizeDouble(
+        Common::GetSingleValueFromBuffer(iStochHandle, shift[subfilterIndex], 0)
+        , MarketInfo(symbol, MODE_DIGITS)
+        );
+    IndicatorRelease(iStochHandle);
+#else
+#ifdef __MQL4__
     double value = iStochastic(
         symbol
         , timeFrame[subfilterIndex]
@@ -114,6 +132,8 @@ bool FilterStoch::calculate(int subfilterIndex, string symbol, DataUnit *dataOut
         , 0
         , shift[subfilterIndex]
         );
+#endif
+#endif
     
     double lowerZone = buySellZone[subfilterIndex];
     double upperZone = 100-buySellZone[subfilterIndex];

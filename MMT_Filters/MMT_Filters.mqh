@@ -77,6 +77,7 @@ void Filter::setupSubfilters(string pairList, string nameList, SubfilterType sub
             break;
     }
     
+    Common::ArrayReserve(subfilterName, pairCount);
     MultiSettings::Parse(nameList, subfilterName, pairCount, addToArray);
     
     for(int i = oldSize; i < oldSize + ArraySize(subfilterMode); i++) {

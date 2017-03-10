@@ -12,6 +12,15 @@
 #include "MMT_Data/MMT_Data.mqh"
 
 class DashboardManager {
+    public:
+    DashboardManager();
+    ~DashboardManager();
+    
+    void initDashboard();
+    void updateDashboard();
+    void updateData(int symbolId, int filterId, int subfilterId, bool exists = false);
+    void deleteAllObjects();
+
     private:
     string objPrefix;
     string fontFace;
@@ -48,17 +57,20 @@ class DashboardManager {
     void drawHeader();
     void drawLegend();
     void drawSymbols();
+    void drawData(int symbolId, int filterId, int subfilterId);
     
-    void deleteAllObjects();
-    
-    public:
-    DashboardManager();
-    ~DashboardManager();
-    
-    void drawData(int symbolId, int filterId, int subfilterId, bool subfilterIsExit, bool exists = false);
+    string getDataSuffix(int filterId, int subfilterId);
 };
 
 void DashboardManager::DashboardManager() {
+    initDashboard();
+}
+
+void DashboardManager::~DashboardManager() {
+    deleteAllObjects();
+}
+
+void DashboardManager::initDashboard() {
     objPrefix = MMT_EaShortName + "_";
     fontFace = DisplayFont;
     fontSize = 11+(DisplayScale < 1 ? -4 : (DisplayScale-1)*4); //DisplayFontSize;
@@ -132,8 +144,8 @@ void DashboardManager::drawLegend() {
     // entries
     for(int i = 0; i < filterCount; i++) {
         subfilterCount = MainFilterMan.filters[i].subfilterCount();
-        for(int j = 1; j <= subfilterCount; j++) { 
-            legendText += padText(StringConcatenate(truncText(MainFilterMan.filters[i].shortName, maxLabelPos-1), j), colSize);
+        for(int j = 0; j < subfilterCount; j++) { 
+            legendText += padText(StringConcatenate(truncText(MainFilterMan.filters[i].shortName, maxLabelPos-2), "-", MainFilterMan.filters[i].subfilterName[j]), colSize);
         }
     }
     
@@ -170,13 +182,7 @@ void DashboardManager::drawSymbols() {
         for(j = 0; j < filterCount; j++) {
             subfilterCount = MainFilterMan.filters[j].subfilterCount();
             for(k = 0; k < subfilterCount; k++) { 
-                string dataObjName = prefixName(StringConcatenate(i, "_", j, "_", k, "_entry"));
-                if(ObjectCreate(dataObjName, OBJ_LABEL, 0, 0, 0)) {
-                    ObjectSet(dataObjName, OBJPROP_XDISTANCE, posSize * (dataPosStart + col*colSize));
-                    ObjectSet(dataObjName, OBJPROP_YDISTANCE, rowSize * row);
-                    ObjectSet(dataObjName, OBJPROP_CORNER, 0);
-                    drawData(i, j, k, false, true);
-                }
+                drawData(i, j, k);
                 col++;
             }
         }
@@ -185,13 +191,41 @@ void DashboardManager::drawSymbols() {
     }
 }
 
-void DashboardManager::drawData(int symbolId, int filterId, int subfilterId, bool subfilterIsExit, bool exists = false) {
+void DashboardManager::drawData(int symbolId, int filterId, int subfilterId) {
+    string dataObjName = prefixName(StringConcatenate(symbolId, "_", filterId, "_", subfilterId, getDataSuffix(filterId, subfilterId)));
+    if(ObjectCreate(dataObjName, OBJ_LABEL, 0, 0, 0)) {
+        ObjectSet(dataObjName, OBJPROP_XDISTANCE, posSize * (dataPosStart + col*colSize));
+        ObjectSet(dataObjName, OBJPROP_YDISTANCE, rowSize * row);
+        ObjectSet(dataObjName, OBJPROP_CORNER, 0);
+        updateData(symbolId, filterId, subfilterId, true);
+    }
+}
+
+void DashboardManager::updateDashboard() {
+    int filterCount = MainFilterMan.filterCount();
+    int subfilterCount = 0;
+    int size = MainSymbolMan.symbolCount();
+    
+    int j = 0; int k = 0;
+    for(int i = 0; i < size; i++) {
+        // todo: order by filter type, or custom
+        for(j = 0; j < filterCount; j++) {
+            subfilterCount = MainFilterMan.filters[j].subfilterCount();
+            for(k = 0; k < subfilterCount; k++) { 
+                updateData(i, j, k);
+            }
+        }
+    }
+}
+
+void DashboardManager::updateData(int symbolId, int filterId, int subfilterId, bool exists = false) {
     // mmt_data_[symbolId]_[filterId]_[subfilterId]
     string objName;
     string dataResult;
-    
-    if(subfilterIsExit) { objName = prefixName(StringConcatenate(symbolId, "_", filterId, "_", subfilterId, "_exit")); }
-    else { objName = prefixName(StringConcatenate(symbolId, "_", filterId, "_", subfilterId, "_entry")); }
+
+    string suffixName = getDataSuffix(filterId, subfilterId);
+
+    objName = prefixName(StringConcatenate(symbolId, "_", filterId, "_", subfilterId, suffixName));
     
     if(!exists) { exists = (ObjectFind(objName) >= 0); }
     
@@ -203,7 +237,7 @@ void DashboardManager::drawData(int symbolId, int filterId, int subfilterId, boo
         else {
             switch(DisplayStyle) {
                 case ValueAndSignal:
-                    dataResult = data.getStringValue() + " " + signalToString(data.signal, true);
+                    dataResult = data.getStringValue(MainSymbolMan.symbols[symbolId].digits) + " " + signalToString(data.signal, true);
                     break;
                     
                 case SignalOnly:
@@ -211,7 +245,7 @@ void DashboardManager::drawData(int symbolId, int filterId, int subfilterId, boo
                     break;
                     
                 default: // value only
-                    dataResult = data.getStringValue();
+                    dataResult = data.getStringValue(MainSymbolMan.symbols[symbolId].digits);
                     break;
             }
             
@@ -224,6 +258,14 @@ void DashboardManager::drawData(int symbolId, int filterId, int subfilterId, boo
     
         ObjectSetText(objName, dataResult, fontSize, fontFace, fontColor);
     }
+}
+
+string DashboardManager::getDataSuffix(int filterId, int subfilterId) {
+    return MainFilterMan.filters[filterId].subfilterType[subfilterId] == SubfilterEntry ? "_entry"
+        : MainFilterMan.filters[filterId].subfilterType[subfilterId] == SubfilterExit ? "_exit"
+        : MainFilterMan.filters[filterId].subfilterType[subfilterId] == SubfilterValue ? "_value"
+        : ""
+        ;
 }
 
 string DashboardManager::signalToString(SignalType signal, bool shortCode = false) {
@@ -272,11 +314,19 @@ void DashboardManager::drawText(string objName, string text) {
 }
 
 void DashboardManager::drawText(string objName, string text, color textColor) {
-    if(ObjectCreate(objName, OBJ_LABEL, 0, 0, 0)) {
-        ObjectSetText(objName, text, fontSize, fontFace, textColor);
-        ObjectSet(objName, OBJPROP_XDISTANCE, posSize*pos);
-        ObjectSet(objName, OBJPROP_YDISTANCE, rowSize*row);
-        ObjectSet(objName, OBJPROP_CORNER, 0);
+    // objects only take 63 characters. split text and create multiple objs if needed
+    int maxSize = 63;
+    int multiple = MathFloor(StringLen(text) / maxSize) + 1;
+    string finalObjName = "";
+    
+    for(int i = 0; i < multiple; i++) {
+        finalObjName = objName + (i <= 0 ? "" : i+1);
+        if(ObjectCreate(finalObjName, OBJ_LABEL, 0, 0, 0)) {
+            ObjectSetText(finalObjName, StringSubstr(text, i*maxSize, maxSize+1), fontSize, fontFace, textColor);
+            ObjectSet(finalObjName, OBJPROP_XDISTANCE, posSize*(pos+(i*maxSize)));
+            ObjectSet(finalObjName, OBJPROP_YDISTANCE, rowSize*row);
+            ObjectSet(finalObjName, OBJPROP_CORNER, 0);
+        }
     }
 }
 
@@ -290,10 +340,6 @@ void DashboardManager::deleteAllObjects()
         string objName=ObjectName(i);
         ObjectDelete(objName);
     }
-}
-
-void DashboardManager::~DashboardManager() {
-    deleteAllObjects();
 }
 
 DashboardManager *MainDashboardMan;

@@ -26,18 +26,45 @@
 //    Include order affects settings order in config window
 //+------------------------------------------------------------------+
 
+#include "MMT_Filters/MMT_Filter_ATR.mqh"
+#include "MMT_Filters/MMT_Filter_StdDev.mqh"
 #include "MMT_Filters/MMT_Filter_Stoch.mqh"
+#include "MMT_Filters/MMT_Filter_HGI.mqh"
 
 //+------------------------------------------------------------------+
 // 2. Add filters to OnInit below [HOOKS]
-//    Add order affects display order on dashboard
+//    ORDER MATTERS BY DEPENDENCY! Any filter that depends on other filters' values
+//    must be added after those other filters.
+//    Add order also affects display order on dashboard.
 //+------------------------------------------------------------------+
 
 int OnInit() {
     Main = new MainMultiTrader();
+    Main.addFilter(new FilterAtr());
+    Main.addFilter(new FilterStdDev());
     Main.addFilter(new FilterStoch());
+    Main.addFilter(new FilterHgi());
+
+    SetTimer();
 
     return Main.onInit();
+}
+
+bool SetTimer() {
+    bool result = false;
+    
+    //if(firstRun) {
+    //    if(DelayedEntrySeconds > 0) { result = Common::EventSetTimerReliable(DelayedEntrySeconds); }
+    //    else { result = Common::EventSetMillisecondTimerReliable(255); }
+    //} else {
+        result = Common::EventSetTimerReliable(1);
+    //}
+    
+    if(!result) {
+        Error::ThrowFatalError(ErrorFatal, "Could not set run timer; try to reload the EA.", FunctionTrace);
+    }
+    
+    return result;
 }
 
 void OnTimer() {

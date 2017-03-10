@@ -60,13 +60,13 @@ void MainMultiTrader::onTimer() {
 }
 
 void MainMultiTrader::doCycle() {
-    // MainSymbolMan.retrieveData();
+    MainSymbolMan.retrieveData();
         // iterates through symbols, calls filters and subs on all of them
         // filters feed data
         
     // MainOrderMan.doAllTrades();
     
-    // MainDashboardMan.update();
+    MainDashboardMan.updateDashboard();
     
     // MainDataWriterMan.writeStuff();
 }

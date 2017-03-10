@@ -19,13 +19,12 @@ class FilterStoch : public Filter {
     int dPeriod[];
     int slowing[];
     int method[];
+    int priceField[];
+    int shift[];
     double buySellZone[];
     
-    protected:
-    void setupOptions();
-    
     public:
-    void initFilter();
+    void init();
     bool calculate(int subfilterIndex, string symbol, DataUnit *dataOut);
 };
 
@@ -33,70 +32,100 @@ class FilterStoch : public Filter {
 // Params
 //+------------------------------------------------------------------+
 
-extern string Lbl_Stoch_1="-------- Stoch Settings --------";
-extern string Stoch_Entry="a=1|b=1|c=1";
-extern string Stoch_Exit="a=1";
+extern string Lbl_Stoch_1="________ Stoch Settings [Stoch] ________";
+extern string Stoch_Entry_Modes="a=1|b=1|c=1";
+extern string Stoch_Entry_Names="a=M15|b=M30|c=M60";
+extern string Stoch_Exit_Modes="a=1";
+extern string Stoch_Exit_Names="a=M15";
 
-extern string LbL_Stoch_Entry_="---- Stoch Entry Settings ----";
-extern string Stoch_TimeFrame_="a=15|b=30|c=60";
-extern string Stoch_KPeriod_="a=5|b=5|c=5";
-extern string Stoch_DPeriod_="a=3|b=3|c=3";
-extern string Stoch_Slowing_="a=3|b=3|c=3";
-extern string Stoch_Method_="a=3|b=3|c=3";
-extern string Stoch_BuySellZone_="a=22.0|b=22.0|c=22.0";
+extern string LbL_Stoch_Entry="---- Stoch Entry Settings ----";
+extern string Stoch_Entry_TimeFrame="a=15|b=30|c=60";
+extern string Stoch_Entry_KPeriod="a=5|b=5|c=5";
+extern string Stoch_Entry_DPeriod="a=3|b=3|c=3";
+extern string Stoch_Entry_Slowing="a=3|b=3|c=3";
+extern string Stoch_Entry_Method="a=3|b=3|c=3";
+extern string Stoch_Entry_PriceField="a=0|b=0|c=0";
+extern string Stoch_Entry_Shift="a=0|b=0|c=0";
+extern string Stoch_Entry_BuySellZone="a=22.0|b=22.0|c=22.0";
 
-extern string LbL_Stoch_Exit_="---- Stoch Exit Settings ----";
-extern string Stoch_Exit_TimeFrame_="a=15";
-extern string Stoch_Exit_KPeriod_="a=5";
-extern string Stoch_Exit_DPeriod_="a=3";
-extern string Stoch_Exit_Slowing_="a=3";
-extern string Stoch_Exit_Method_="a=3";
-extern string Stoch_Exit_BuySellZone_="a=30.0";
+extern string LbL_Stoch_Exit="---- Stoch Exit Settings ----";
+extern string Stoch_Exit_TimeFrame="a=15";
+extern string Stoch_Exit_KPeriod="a=5";
+extern string Stoch_Exit_DPeriod="a=3";
+extern string Stoch_Exit_Slowing="a=3";
+extern string Stoch_Exit_Method="a=3";
+extern string Stoch_Exit_PriceField="a=0";
+extern string Stoch_Exit_Shift="a=0";
+extern string Stoch_Exit_BuySellZone="a=30.0";
 
 //+------------------------------------------------------------------+
 // Methods
 //+------------------------------------------------------------------+
 
-void FilterStoch::initFilter() {
+void FilterStoch::init() {
     if(isInit) { return; }
     
+    // 1. Define a shortName -- other settings will refer to this filter using this name (case-insensitive).
     shortName = "Stoch";
     
-    setupSubfilters(Stoch_Entry, SubfilterEntry);
-    setupSubfilters(Stoch_Exit, SubfilterExit);
-    setupOptions();
+    // 2. Call setupSubfilters for every type offered -- entry, exit, and/or value.
+    setupSubfilters(Stoch_Entry_Modes, Stoch_Entry_Names, SubfilterEntry);
+    setupSubfilters(Stoch_Exit_Modes, Stoch_Exit_Names, SubfilterExit);
+    
+    // 3. Set up options per subfilter type.
+    int entrySubfilterCount = ArraySize(entrySubfilterId);
+    int exitSubfilterCount = ArraySize(exitSubfilterId);
+    if(entrySubfilterCount > 0) {
+        MultiSettings::Parse(Stoch_Entry_TimeFrame, timeFrame, entrySubfilterCount);
+        MultiSettings::Parse(Stoch_Entry_KPeriod, kPeriod, entrySubfilterCount);
+        MultiSettings::Parse(Stoch_Entry_DPeriod, dPeriod, entrySubfilterCount);
+        MultiSettings::Parse(Stoch_Entry_Slowing, slowing, entrySubfilterCount);
+        MultiSettings::Parse(Stoch_Entry_Method, method, entrySubfilterCount);
+        MultiSettings::Parse(Stoch_Entry_PriceField, priceField, entrySubfilterCount);
+        MultiSettings::Parse(Stoch_Entry_Shift, shift, entrySubfilterCount);
+        MultiSettings::Parse(Stoch_Entry_BuySellZone, buySellZone, entrySubfilterCount);
+    }
+    
+    if(exitSubfilterCount > 0) {
+        MultiSettings::Parse(Stoch_Exit_TimeFrame, timeFrame, exitSubfilterCount);
+        MultiSettings::Parse(Stoch_Exit_KPeriod, kPeriod, exitSubfilterCount);
+        MultiSettings::Parse(Stoch_Exit_DPeriod, dPeriod, exitSubfilterCount);
+        MultiSettings::Parse(Stoch_Exit_Slowing, slowing, exitSubfilterCount);
+        MultiSettings::Parse(Stoch_Exit_Method, method, exitSubfilterCount);
+        MultiSettings::Parse(Stoch_Exit_PriceField, priceField, exitSubfilterCount);
+        MultiSettings::Parse(Stoch_Exit_Shift, shift, exitSubfilterCount);
+        MultiSettings::Parse(Stoch_Exit_BuySellZone, buySellZone, exitSubfilterCount);
+    }
     
     isInit = true;
 }
 
-void FilterStoch::setupOptions() {
-    int entrySubfilterCount = ArraySize(entrySubfilterId);
-    int exitSubfilterCount = ArraySize(exitSubfilterId);
-    if(ArraySize(entrySubfilterId) > 0) {
-        MultiSettings::Parse(Stoch_TimeFrame_, timeFrame, entrySubfilterCount);
-        MultiSettings::Parse(Stoch_KPeriod_, kPeriod, entrySubfilterCount);
-        MultiSettings::Parse(Stoch_DPeriod_, dPeriod, entrySubfilterCount);
-        MultiSettings::Parse(Stoch_Slowing_, slowing, entrySubfilterCount);
-        MultiSettings::Parse(Stoch_Method_, method, entrySubfilterCount);
-        MultiSettings::Parse(Stoch_BuySellZone_, buySellZone, entrySubfilterCount);
-    }
-    
-    if(ArraySize(exitSubfilterId) > 0) {
-        MultiSettings::Parse(Stoch_Exit_TimeFrame_, timeFrame, exitSubfilterCount);
-        MultiSettings::Parse(Stoch_Exit_KPeriod_, kPeriod, exitSubfilterCount);
-        MultiSettings::Parse(Stoch_Exit_DPeriod_, dPeriod, exitSubfilterCount);
-        MultiSettings::Parse(Stoch_Exit_Slowing_, slowing, exitSubfilterCount);
-        MultiSettings::Parse(Stoch_Exit_Method_, method, exitSubfilterCount);
-        MultiSettings::Parse(Stoch_Exit_BuySellZone_, buySellZone, exitSubfilterCount);
-    }
-}
-
 bool FilterStoch::calculate(int subfilterIndex, string symbol, DataUnit *dataOut) {
-    if(subfilterIndex >= subfilterCount()) {
-        Error::ThrowError(ErrorNormal, "Subfilter index does not exist", FunctionTrace, shortName + "|" + subfilterIndex + "|" + subfilterCount());
-        dataOut.success = false;
-        return false;
-    }
+    if(!checkSafe(subfilterIndex)) { return false; }
+    
+    double value = iStochastic(
+        symbol
+        , timeFrame[subfilterIndex]
+        , kPeriod[subfilterIndex]
+        , dPeriod[subfilterIndex]
+        , slowing[subfilterIndex]
+        , method[subfilterIndex]
+        , priceField[subfilterIndex]
+        , 0
+        , shift[subfilterIndex]
+        );
+    
+    double lowerZone = buySellZone[subfilterIndex];
+    double upperZone = 100-buySellZone[subfilterIndex];
+    
+    SignalType signal;
+    signal = 
+        value <= lowerZone ? SignalBuy
+        : value >= upperZone ? SignalSell
+        : SignalNone
+        ;
+    
+    dataOut.setRawValue(value, signal, DoubleToString(value, 2));
     
     return true;
 }

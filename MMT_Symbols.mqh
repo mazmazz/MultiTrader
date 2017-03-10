@@ -26,6 +26,8 @@ class SymbolUnit {
     string baseCurName;
     string quoteCurName;
     
+    int digits;
+    
     SymbolUnit(string formSymNameIn, string bareSymNameIn = "", string baseCurNameIn = "", string quoteCurNameIn = "");
 };
 
@@ -34,6 +36,7 @@ void SymbolUnit::SymbolUnit(string formSymNameIn, string bareSymNameIn = "", str
     bareSymName = StringLen(bareSymNameIn) <= 0 ? formSymNameIn : bareSymNameIn;
     baseCurName = baseCurNameIn;
     quoteCurName = quoteCurNameIn;
+    digits = MarketInfo(formSymName, MODE_DIGITS);
 }
 
 //+------------------------------------------------------------------+
@@ -53,7 +56,9 @@ class SymbolManager {
     void retrieveActiveSymbols(string includeSym, string excludeSym, string excludeCur);
     
     int addSymbol(string formSymName, string bareSymName = "", string baseCurName = "", string quoteCurName = "");
-    int getSymbolId(string formSymName);
+    int getSymbolId(string symName, bool isFormSymName = false);
+    string getFormSymName(string symName);
+    int getSymbolDigits(string symName);
     bool isSymbolExcluded(string symName, string excludeSym, string &excludeCur[]);
     void removeAllSymbols();
     
@@ -134,11 +139,15 @@ int SymbolManager::addSymbol(string formSymName, string bareSymName = "", string
     return Common::ArrayPush(symNames, formSymName);
 }
 
-int SymbolManager::getSymbolId(string formSymName) {
-    int size = ArraySize(symNames);
+int SymbolManager::getSymbolId(string symName, bool isBareSymName = false) {
+    int size = ArraySize(symbols);
     
     for(int i = 0; i < size; i++) {
-        if(StringCompare(symNames[i], formSymName) == 0) { return i; }
+        if(isBareSymName) {
+            if(symbols[i].bareSymName == symName) { return i; }
+        } else {
+            if(symbols[i].formSymName == symName) { return i; }
+        }
     }
     
     return -1;
@@ -166,11 +175,23 @@ void SymbolManager::removeAllSymbols() {
     ArrayFree(symNames);
 }
 
+string SymbolManager::getFormSymName(string symName) {
+    int index = getSymbolId(symName);
+    
+    return symbols[index].formSymName;
+}
+
+int SymbolManager::getSymbolDigits(string symName) {
+    int index = getSymbolId(symName);
+    
+    return symbols[index].digits;
+}
+
 bool SymbolManager::retrieveData() {
     int size = ArraySize(symbols);
     
     for(int i = 0; i < size; i++) {
-        MainFilterMan.calculateFilters(symbols[i].bareSymName);
+        MainFilterMan.calculateFilters(symbols[i].formSymName);
     }
     
     return true;

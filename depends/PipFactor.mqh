@@ -47,7 +47,7 @@ const CurrencyFactor PipFactors[] =
 //| Returns     : returns the point value for the number of decimal places that the     |
 //|             : symbol uses                                                           |
 //+-------------------------------------------------------------------------------------+
-int PipFactor(string symbol) export
+int GetPipFactor(string symbol) export
 {
   for (int i = 0, count = ArraySize(PipFactors); i < count; ++i)
   {

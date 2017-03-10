@@ -57,10 +57,6 @@ extern int TimeBetweenTrades=2;
 //extern bool ExpireTrades=false;
 //extern int Exit_expirySeconds=900;
 
-extern string Lbl_ATR_Settings="--- ATR (AverageTrueRange) Settings ---";
-extern int ATR_TimeFrame=60;
-extern int ATR_Period=20;
-
 extern string Lbl_Lotsize_Settings="-- LotSize Settings --";
 extern int LotCalcMethod=0; //LotCalcMethod //enum
 extern double LotSize=0.1;
@@ -109,15 +105,11 @@ extern bool DisplayShowSettings=true;
 extern bool DisplayShowTable=true;
 extern bool DisplayShowOrdersInTable=true;
 extern string DisplayFont="Lucida Console";
-extern int DisplayScale=1; // DisplayScale: 0 = Half, 1 = Normal, 2+ = Large
+extern int DisplayScale=0; // DisplayScale: 0 = Half, 1 = Normal, 2+ = Large
 //extern int DisplayFontSize=11;
 //extern int DisplaySpacing=13;
 extern DisplayStyleEnum DisplayStyle=ValueAndSignal;
 
 extern string LblRuntime="***** Runtime Settings *****";
-extern string LblDebug="DebugLevel 0 = Regular messages, 1 = Print errors, 2 = Print info";
-extern int DebugLevel=2;
-extern string LblHistory="# of historical data readings to keep per filter per symbol.";
-extern string LblHistory2="Decrease only if memory use is an issue.";
-extern string LblHistory3="Filters can override this # per filter.";
+extern int DebugLevel=2; // DebugLevel: 0 = Hide errors, 1 = Normal errors, 2 = Info, 3 = Minor
 extern int HistoryLevel=10;

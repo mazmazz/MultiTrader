@@ -29,6 +29,7 @@ enum SubfilterType {
 class Filter {
     public:
     SubfilterMode subfilterMode[];
+    string subfilterName[];
     SubfilterType subfilterType[];
     
     int entrySubfilterId[];
@@ -39,13 +40,12 @@ class Filter {
     
     int subfilterCount(SubfilterType type = SubfilterAllTypes);
     
-    virtual void initFilter() { Error::ThrowError(ErrorNormal, "Filter: init not implemented", FunctionTrace, shortName); }
+    virtual void init() { Error::ThrowError(ErrorNormal, "Filter: init not implemented", FunctionTrace, shortName); }
     virtual bool calculate(int subfilterIndex, string symbol, DataUnit *dataOut) { Error::ThrowError(ErrorNormal, "Filter: Calculate not implemented", FunctionTrace, shortName); return false; }
     
     protected:    
-    void setupSubfilters(string pairList, SubfilterType subfilterTypeIn, bool addToArray = true);
-    virtual void setupOptions() { Error::ThrowError(ErrorNormal, "Filter: Options not implemented", FunctionTrace, shortName); }
-    
+    void setupSubfilters(string pairList, string nameList, SubfilterType subfilterTypeIn, bool addToArray = true);
+    bool checkSafe(int subfilterIndex);
 };
 
 int Filter::subfilterCount(SubfilterType type = SubfilterAllTypes) {
@@ -57,7 +57,7 @@ int Filter::subfilterCount(SubfilterType type = SubfilterAllTypes) {
     }
 }
 
-void Filter::setupSubfilters(string pairList, SubfilterType subfilterTypeIn, bool addToArray = true) {
+void Filter::setupSubfilters(string pairList, string nameList, SubfilterType subfilterTypeIn, bool addToArray = true) {
     int pairCount = MultiSettings::CountPairs(pairList);
     int oldSize = ArraySize(subfilterMode);
     
@@ -77,9 +77,25 @@ void Filter::setupSubfilters(string pairList, SubfilterType subfilterTypeIn, boo
             break;
     }
     
+    MultiSettings::Parse(nameList, subfilterName, pairCount, addToArray);
+    
     for(int i = oldSize; i < oldSize + ArraySize(subfilterMode); i++) {
         Common::ArrayPush(subfilterType, subfilterTypeIn);
     }
+}
+
+bool Filter::checkSafe(int subfilterIndex) {
+    if(subfilterIndex >= subfilterCount()) {
+        Error::ThrowError(ErrorNormal, "Subfilter index does not exist", FunctionTrace, shortName + "-" + subfilterIndex + "|" + subfilterCount());
+        return false;
+    }
+    
+    if(subfilterMode[subfilterIndex] <= 0) {
+        Error::ThrowError(ErrorMinor, "Subfilter index is disabled, skipping.", FunctionTrace, shortName + "-" + subfilterIndex);
+        return false;
+    }
+
+    return true;
 }
 
 //+------------------------------------------------------------------+
@@ -121,7 +137,7 @@ void FilterManager::~FilterManager() {
 //+------------------------------------------------------------------+
 
 int FilterManager::addFilter(Filter *unit) {
-    unit.initFilter();
+    unit.init();
     int size = ArraySize(filters); // assuming 1-based
     Common::ArrayPush(filters, unit);
     return size+1;
@@ -157,6 +173,8 @@ void FilterManager::calculateSubfilterByIndex(int filterIndex, int subfilterInde
     DataUnit *data = new DataUnit();
     
     if(filters[filterIndex].calculate(subfilterIndex, symbol, data)) {
+        data.success = true;
+        // data datetime?
         MainDataMan.getDataHistory(symbol, filterIndex, subfilterIndex).addData(data);
     } else {
         delete(data);

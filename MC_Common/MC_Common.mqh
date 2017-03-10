@@ -36,6 +36,8 @@ class Common {
     
     // string
     static string StringTrim(string inputStr);
+    //template<typename T>
+    //static bool ConvertToBool(T in);
     static bool StrToBool(string inputStr);
     static bool IsAddrAbcValid (string addrAbc);
     static int AddrAbcToInt(string addrAbc, bool zeroBased=true);
@@ -65,6 +67,8 @@ class Common {
     static bool IsPointer(const T &value);
     template<typename T>
     static bool IsInvalidPointer(T *pointer);
+    
+    static double PriceToPips(double price, string symbol);
 };
 
 // https://github.com/dingmaotu/mql4-lib
@@ -77,10 +81,15 @@ void Common::ArrayDelete(T &array[],int index, int diff=1, bool resize=true) {
     
    if(isSeries) { ArraySetAsSeries(array, false); }
 
-   for(int i=index; i<size-diff; i++)
-     {
-      array[i]=array[i+diff];
-     }
+   if(index == size-diff) { SafeDelete(array[index]); }
+   else {
+      for(int i=index; i<size-diff; i++)
+        {
+         SafeDelete(array[i]); // in case this is a pointer
+         array[i]=array[i+diff];
+        }
+   }
+   
    if(resize) { ArrayResize(array,size-diff); }
    
    if(isSeries) { ArraySetAsSeries(array, true); }
@@ -138,6 +147,12 @@ int Common::ArrayTsearch(string &array[], string value, int count=-1, int start=
 string Common::StringTrim(string inputStr) {
     return StringTrimLeft(StringTrimRight(inputStr));
 }
+
+//template<typename T>
+//bool Common::ConvertToBool(T in) {
+//    if(typename(T) == "string") { return StrToBool(in); }
+//    else { return (bool)in; }
+//}
 
 bool Common::StrToBool(string inputStr) {
     StringToLower(inputStr);
@@ -385,3 +400,12 @@ bool Common::IsInvalidPointer(T *pointer)
    return CheckPointer(pointer)==POINTER_INVALID;
   }
 //+------------------------------------------------------------------+
+
+double Common::PriceToPips(double price, string symbol) {
+    int digits = MarketInfo(symbol, MODE_DIGITS);
+    
+    return NormalizeDouble(digits % 2 <= 0 ? price*MathPow(10, digits) : price*MathPow(10, digits-1), digits % 2);
+        // if digits is even (4, 2, ...), do digits as is. If digits is odd (3, 5, ...), assume one decimal place.
+        // digits % 2 = 0 means even, 1 means odd
+        // TODO: How about 6 digit brokers? And do they quote JPY in 4 digits, too?
+}

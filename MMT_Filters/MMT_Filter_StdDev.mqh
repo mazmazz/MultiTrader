@@ -24,7 +24,7 @@ class FilterStdDev : public Filter {
     
     public:
     void init();
-    bool calculate(int subfilterIndex, string symbol, DataUnit *dataOut);
+    bool calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut);
 };
 
 //+------------------------------------------------------------------+
@@ -70,9 +70,10 @@ void FilterStdDev::init() {
     isInit = true;
 }
 
-bool FilterStdDev::calculate(int subfilterIndex, string symbol, DataUnit *dataOut) {
+bool FilterStdDev::calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut) {
     if(!checkSafe(subfilterIndex)) { return false; }
-
+    string symbol = MainSymbolMan.symbols[symbolIndex].formSymName;
+    
 #ifdef __MQL5__
     int iStdDevHandle = iStdDev(
         symbol

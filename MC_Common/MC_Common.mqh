@@ -292,9 +292,9 @@ string Common::GetUuid()
          character = (ushort) MathRand() % 16;
          character = StringGetCharacter(alphabet_x, character);
         }
-      id=StringSetCharacter(id,i,character);
+      StringSetCharacter(id,i,character);
      }
-   return (id);
+   return id;
   }
 //+------------------------------------------------------------------+
 

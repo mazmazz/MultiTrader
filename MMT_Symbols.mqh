@@ -190,7 +190,7 @@ bool SymbolManager::retrieveData() {
     int size = ArraySize(symbols);
     
     for(int i = 0; i < size; i++) {
-        MainFilterMan.calculateFilters(symbols[i].formSymName);
+        MainFilterMan.calculateFilters(i);
     }
     
     return true;

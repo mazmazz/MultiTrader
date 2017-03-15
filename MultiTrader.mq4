@@ -10,9 +10,9 @@
 //| Comments
 //+------------------------------------------------------------------+
 //
-// How to Add Filters and Risks
+// How to Add Filters
 // 1. Add include to include list - search [INCLUDES]
-// 2. Add filter or risk to OnInit() - search [HOOKS]
+// 2. Add filter to OnInit() - search [HOOKS]
 //
 //+------------------------------------------------------------------+
 //| defines                                                          |
@@ -31,7 +31,7 @@
 #include "MMT_Main.mqh"
 
 //+------------------------------------------------------------------+
-// 1. Include filter and risk includes here [INCLUDES]
+// 1. Include filter includes here [INCLUDES]
 //    Include order affects settings order in config window
 //+------------------------------------------------------------------+
 
@@ -40,6 +40,7 @@
 #include "MMT_Filters/MMT_Filter_Stoch.mqh"
 #ifdef __MQL4__
 #include "MMT_Filters/MMT_Filter_HGI.mqh"
+#include "MMT_Filters/MMT_Filter_CSS.mqh"
 #endif
 
 //+------------------------------------------------------------------+
@@ -56,6 +57,7 @@ int OnInit() {
     Main.addFilter(new FilterStoch());
 #ifdef __MQL4__
     Main.addFilter(new FilterHgi());
+    Main.addFilter(new FilterCss());
 #endif
 
     SetTimer();

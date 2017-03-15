@@ -25,7 +25,7 @@ class FilterStoch : public Filter {
     
     public:
     void init();
-    bool calculate(int subfilterIndex, string symbol, DataUnit *dataOut);
+    bool calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut);
 };
 
 //+------------------------------------------------------------------+
@@ -100,8 +100,9 @@ void FilterStoch::init() {
     isInit = true;
 }
 
-bool FilterStoch::calculate(int subfilterIndex, string symbol, DataUnit *dataOut) {
+bool FilterStoch::calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut) {
     if(!checkSafe(subfilterIndex)) { return false; }
+    string symbol = MainSymbolMan.symbols[symbolIndex].formSymName;
     
 #ifdef __MQL5__
     int iStochHandle = iStochastic(

@@ -21,7 +21,7 @@ class FilterAtr : public Filter {
     
     public:
     void init();
-    bool calculate(int subfilterIndex, string symbol, DataUnit *dataOut);
+    bool calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut);
 };
 
 //+------------------------------------------------------------------+
@@ -61,8 +61,9 @@ void FilterAtr::init() {
     isInit = true;
 }
 
-bool FilterAtr::calculate(int subfilterIndex, string symbol, DataUnit *dataOut) {
+bool FilterAtr::calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut) {
     if(!checkSafe(subfilterIndex)) { return false; }
+    string symbol = MainSymbolMan.symbols[symbolIndex].formSymName;
     
 #ifdef __MQL5__
     int iAtrHandle = iATR(symbol, GetMql5TimeFrame(timeFrame[subfilterIndex]), period[subfilterIndex]);

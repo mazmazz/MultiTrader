@@ -41,7 +41,7 @@ class Filter {
     int subfilterCount(SubfilterType type = SubfilterAllTypes);
     
     virtual void init() { Error::ThrowError(ErrorNormal, "Filter: init not implemented", FunctionTrace, shortName); }
-    virtual bool calculate(int subfilterIndex, string symbol, DataUnit *dataOut) { Error::ThrowError(ErrorNormal, "Filter: Calculate not implemented", FunctionTrace, shortName); return false; }
+    virtual bool calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut) { Error::ThrowError(ErrorNormal, "Filter: Calculate not implemented", FunctionTrace, shortName); return false; }
     
     protected:    
     void setupSubfilters(string pairList, string nameList, SubfilterType subfilterTypeIn, bool addToArray = true);
@@ -113,10 +113,10 @@ class FilterManager {
     int filterCount();
     void deleteAllFilters();
     
-    void calculateSubfilterByIndex(int filterIndex, int subfilterIndex, string symbol);
-    void calculateSubfilters(int filterIndex, string symbol);
-    void calculateFilterByIndex(int index, string symbol);
-    void calculateFilters(string symbol);
+    void calculateSubfilterByIndex(int filterIndex, int subfilterIndex, int symbolIndex);
+    void calculateSubfilters(int filterIndex, int symbolIndex);
+    void calculateFilterByIndex(int index, int symbolIndex);
+    void calculateFilters(int symbolIndex);
 };
 
 extern string Lbl_IndisAndFilters="********** Indicators & Filters **********"; // Filter List
@@ -170,35 +170,35 @@ void FilterManager::deleteAllFilters() {
     return;
 }
 
-void FilterManager::calculateSubfilterByIndex(int filterIndex, int subfilterIndex, string symbol) {
+void FilterManager::calculateSubfilterByIndex(int filterIndex, int subfilterIndex, int symbolIndex) {
     DataUnit *data = new DataUnit();
     
-    if(filters[filterIndex].calculate(subfilterIndex, symbol, data)) {
+    if(filters[filterIndex].calculate(subfilterIndex, symbolIndex, data)) {
         data.success = true;
         // data datetime?
-        MainDataMan.getDataHistory(symbol, filterIndex, subfilterIndex).addData(data);
+        MainDataMan.getDataHistory(symbolIndex, filterIndex, subfilterIndex).addData(data);
     } else {
         delete(data);
     }
 }
 
-void FilterManager::calculateSubfilters(int filterIndex, string symbol) {
+void FilterManager::calculateSubfilters(int filterIndex, int symbolIndex) {
     int size = filters[filterIndex].subfilterCount();
     
     for(int i = 0; i < size; i++) {
-        calculateSubfilterByIndex(filterIndex, i, symbol);
+        calculateSubfilterByIndex(filterIndex, i, symbolIndex);
     }
 }
 
-void FilterManager::calculateFilterByIndex(int index, string symbol) {
-    calculateSubfilters(index, symbol);
+void FilterManager::calculateFilterByIndex(int index, int symbolIndex) {
+    calculateSubfilters(index, symbolIndex);
 }
 
-void FilterManager::calculateFilters(string symbol) {
+void FilterManager::calculateFilters(int symbolIndex) {
     int size = ArraySize(filters);
     
     for(int i = 0; i < size; i++) {
-        calculateFilterByIndex(i, symbol);
+        calculateFilterByIndex(i, symbolIndex);
     }
 }
 

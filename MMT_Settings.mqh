@@ -38,10 +38,10 @@ int HistoryLevel=1; // not convinced this should be a user setting
 
 extern string Lbl_CycleSettings="---- Cycle Settings ----";
 extern CycleType CycleMode=CycleTimerSeconds;
-extern int CycleLength=1; // CycleLength: Length of time between cycles (seconds or milliseconds)
+extern int CycleLength=1; // CycleLength: Length between cycles (seconds or milliseconds)
 
 extern string Lbl_Symbols="***** Symbols & Currencies Settings *****";
-extern bool SingleSymbolMode=false; // Current symbol only
+extern bool SingleSymbolMode=false; // SingleSymbolMode: Use only the current chart symbol
 extern string IncludeSymbols="AUDCADi,AUDCHFi,AUDJPYi,AUDNZDi,AUDUSDi,CADCHFi,CADJPYi,CHFJPYi,EURAUDi,EURCADi,EURJPYi,EURNZDi,EURUSDi,EURGBPi,GBPAUDi,GBPCADi,GBPCHFi,GBPJPYi,GBPNZDi,GBPUSDi,NZDCADi,NZDCHFi,NZDJPYi,NZDUSDi,USDCADi,USDCHFi,USDJPYi";
 extern string ExcludeSymbols="";
 extern string ExcludeCurrencies="SEK,SGD,DKK,NOK,TRY,HKD,ZAR,MXN,XAG,XAU";
@@ -59,7 +59,7 @@ extern string Lbl_MultipleTrades="-- Multiple Trades Settings --";
 extern int MaxTradesPerSymbol=3;
 extern int MultiTrades_TimeFrame=60;
 
-extern string Lbl_TradeDelays="-- Trade Delay Settings --";
+extern string Lbl_TradeDelays="-- Trade Delay Settings --"; // TradeDelays
 extern TimeUnits TimeSettingUnit=UnitSeconds; // TimeSettingUnit: Unit for values below
 extern int EntryStableTime=2;
 extern int ExitStableTime=10;

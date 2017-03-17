@@ -5,8 +5,6 @@
 //+------------------------------------------------------------------+
 
 #define libCSS_version            "v1.1.2"
-#define libCSS_EPSILON            0.00000001
-#define libCSS_CURRENCYCOUNT      8
 
 #property strict
 
@@ -31,25 +29,22 @@ enum libCSS_versions {
     VerSuperSlope
 };
 
-string libCSS_currentSymbol             = "";
-string libCSS_currentBase               = "";
-string libCSS_currentQuote              = "";
-
 libCSS_versions libCSS_useCalcMethod  = VerLibCSS;
 bool    libCSS_ignoreFuture             = true;
 bool    libCSS_sundayCandlesDetected    = false;
-bool    libCSS_addSundayToMonday        = false;
 bool    libCSS_useOnlySymbolOnChart     = false;
+bool    libCSS_doNotCache               = false;
 string  libCSS_cacheSymbol              = "EURUSD";
-int     libCSS_cacheTimeframe           = PERIOD_M1;
-double  libCSS_cacheVolume              = 0;
+int     libCSS_cacheLastTime            = 0; // this limits CSS updates to 1 second at shortest
 bool    libCSS_cacheFirstRunComplete    = false;
+void    libCSS_flushCache()             { libCSS_cacheFirstRunComplete = false; }
 string  libCSS_symbolsToWeigh           = "GBPNZD,EURNZD,GBPAUD,GBPCAD,GBPJPY,GBPCHF,CADJPY,EURCAD,EURAUD,USDCHF,GBPUSD,EURJPY,NZDJPY,AUDCHF,AUDJPY,USDJPY,EURUSD,NZDCHF,CADCHF,AUDNZD,NZDUSD,CHFJPY,AUDCAD,USDCAD,NZDCAD,AUDUSD,EURCHF,EURGBP";
 int     libCSS_symbolCount;
+int     libCSS_currencyCount;
 string  libCSS_symbolNames[];
-string  libCSS_currencyNames[libCSS_CURRENCYCOUNT]        = { "USD", "EUR", "GBP", "CHF", "JPY", "AUD", "CAD", "NZD" };
-double  libCSS_currencyValues[libCSS_CURRENCYCOUNT];      // Currency slope strength
-double  libCSS_currencyOccurrences[libCSS_CURRENCYCOUNT]; // Holds the number of occurrences of each currency in symbols
+string  libCSS_currencyNames[];        // = { "USD", "EUR", "GBP", "CHF", "JPY", "AUD", "CAD", "NZD" };
+double  libCSS_currencyValues[];      // Currency slope strength
+int     libCSS_currencyOccurrences[]; // Holds the number of occurrences of each currency in symbols
 int libCSS_maPeriod = 21; // SuperSlope = 7
 int libCSS_atrPeriod = 100; // SuperSlope = 50
 int libCSS_rsiWorkPeriod = 17;
@@ -60,7 +55,10 @@ int libCSS_rsiPeriod = 2;
 //+------------------------------------------------------------------+
 void libCSS_init()
 {
+   libCSS_cacheSymbol = libCSS_symbolHelper_fixSymbolName(libCSS_cacheSymbol);
+    
    libCSS_initSymbols();
+   libCSS_initCurrencies();
 
    libCSS_sundayCandlesDetected = false;
    for ( int i = 0; i < 8; i++ )
@@ -80,77 +78,68 @@ void libCSS_init()
 void libCSS_initSymbols()
 {
    int i;
-   
-   // Get extra characters on this crimmal's symbol names
-   string symbolExtraChars = StringSubstr(Symbol(), 6, 4);
 
-   // Trim user input
-   libCSS_symbolsToWeigh = StringTrimLeft(libCSS_symbolsToWeigh);
-   libCSS_symbolsToWeigh = StringTrimRight(libCSS_symbolsToWeigh);
+   ArrayFree(libCSS_symbolNames);
 
-   // Add extra comma
-   if (StringSubstr(libCSS_symbolsToWeigh, StringLen(libCSS_symbolsToWeigh) - 1) != ",")
-   {
-      libCSS_symbolsToWeigh = StringConcatenate(libCSS_symbolsToWeigh, ",");   
-   }   
+   string symbolsToWeighIn[];
 
-   // Split user input
-   i = StringFind( libCSS_symbolsToWeigh, "," ); 
-   while ( i != -1 )
-   {
-      int size = ArraySize(libCSS_symbolNames);
-      string newSymbol = StringConcatenate(StringSubstr(libCSS_symbolsToWeigh, 0, i), symbolExtraChars);
-      if ( MarketInfo( newSymbol, MODE_TRADEALLOWED ) > libCSS_EPSILON )
-      {
-         ArrayResize( libCSS_symbolNames, size + 1 );
-         // Set array
-         libCSS_symbolNames[size] = newSymbol;
-      }
-      // Trim symbols
-      libCSS_symbolsToWeigh = StringSubstr(libCSS_symbolsToWeigh, i + 1);
-      i = StringFind(libCSS_symbolsToWeigh, ","); 
-   }
-   
-   // Kill unwanted symbols from array
-   if ( libCSS_useOnlySymbolOnChart )
-   {
-      libCSS_symbolCount = ArraySize(libCSS_symbolNames);
-      string tempNames[];
-      for ( i = 0; i < libCSS_symbolCount; i++ )
-      {
-         for ( int j = 0; j < libCSS_CURRENCYCOUNT; j++ )
-         {
-            if ( StringFind( Symbol(), libCSS_currencyNames[j] ) == -1 )
-            {
-               continue;
-            }
-            if ( StringFind( libCSS_symbolNames[i], libCSS_currencyNames[j] ) != -1 )
-            {  
-               int size = ArraySize( tempNames );
-               ArrayResize( tempNames, size + 1 );
-               tempNames[size] = libCSS_symbolNames[i];
-               break;
-            }
-         }
-      }
-      for ( i = 0; i < ArraySize( tempNames ); i++ )
-      {
-         ArrayResize( libCSS_symbolNames, i + 1 );
-         libCSS_symbolNames[i] = tempNames[i];
+   libCSS_symbolsToWeigh = libCSS_helper_StringTrim(libCSS_symbolsToWeigh);
+
+   if(libCSS_useOnlySymbolOnChart || libCSS_useCalcMethod == VerSuperSlope) {
+      if(libCSS_symbolHelper_getSymbolUsable(Symbol())) { libCSS_helper_ArrayPush(libCSS_symbolNames, Symbol()); }
+   } else if(StringLen(libCSS_symbolsToWeigh) <= 0) {
+      libCSS_symbolHelper_getAllSymbols(libCSS_symbolNames);
+   } else {
+      StringSplit(
+         libCSS_symbolsToWeigh
+         , ','
+         , symbolsToWeighIn
+      );
+
+      // load libCSS_symbolNames
+      libCSS_helper_ArrayReserve(libCSS_symbolNames, ArraySize(symbolsToWeighIn));
+
+      for(i = 0; i < ArraySize(symbolsToWeighIn); i++) {
+         string symName = libCSS_symbolHelper_fixSymbolName(symbolsToWeighIn[i]);
+         if(libCSS_symbolHelper_getSymbolUsable(symName)) { libCSS_helper_ArrayPush(libCSS_symbolNames, symName); }
       }
    }
-   
+
    libCSS_symbolCount = ArraySize(libCSS_symbolNames);
-   // Print("symbolCount: ", symbolCount);
+}
 
-   ArrayInitialize( libCSS_currencyOccurrences, 0.0 );
-   for ( i = 0; i < libCSS_symbolCount; i++ )
+//+------------------------------------------------------------------+
+//| getCurrencyIndex(string currency)                                |
+//+------------------------------------------------------------------+
+void libCSS_initCurrencies()
+{
+   ArrayFree(libCSS_currencyNames);
+   ArrayFree(libCSS_currencyOccurrences);
+   ArrayFree(libCSS_currencyValues);
+   
+   for ( int i = 0; i < libCSS_symbolCount; i++ )
    {
+      // If currency not in array, then add to currencyNames
+      string baseCur = libCSS_symbolHelper_getSymbolBaseCurrency(libCSS_symbolNames[i]);
+      string quoteCur = libCSS_symbolHelper_getSymbolQuoteCurrency(libCSS_symbolNames[i]);
+
+      if(libCSS_helper_ArrayTsearch(libCSS_currencyNames, baseCur) < 0) {
+         int newSize = libCSS_helper_ArrayPush(libCSS_currencyNames, baseCur);
+         ArrayResize(libCSS_currencyOccurrences, newSize);
+         ArrayResize(libCSS_currencyValues, newSize);
+         libCSS_currencyCount = newSize;
+      }
+
+      if(libCSS_helper_ArrayTsearch(libCSS_currencyNames, quoteCur) < 0) {
+         int newSize = libCSS_helper_ArrayPush(libCSS_currencyNames, quoteCur);
+         ArrayResize(libCSS_currencyOccurrences, newSize);
+         ArrayResize(libCSS_currencyValues, newSize);
+         libCSS_currencyCount = newSize;
+      }
+      
       // Increase currency occurrence
-      int currencyIndex = libCSS_getCurrencyIndex(StringSubstr(libCSS_symbolNames[i], 0, 3));
-      libCSS_currencyOccurrences[currencyIndex]++;
-      currencyIndex = libCSS_getCurrencyIndex(StringSubstr(libCSS_symbolNames[i], 3, 3));
-      libCSS_currencyOccurrences[currencyIndex]++;
+      libCSS_currencyOccurrences[libCSS_getCurrencyIndex(baseCur)]++;
+      libCSS_currencyOccurrences[libCSS_getCurrencyIndex(quoteCur)]++;
    }
 }
 
@@ -159,7 +148,7 @@ void libCSS_initSymbols()
 //+------------------------------------------------------------------+
 int libCSS_getCurrencyIndex(string currency)
 {
-   for (int i = 0; i < libCSS_CURRENCYCOUNT; i++)
+   for (int i = 0; i < libCSS_currencyCount; i++)
    {
       if (libCSS_currencyNames[i] == currency)
       {
@@ -169,26 +158,6 @@ int libCSS_getCurrencyIndex(string currency)
    return (-1);
 }
 
-void libCSS_setCurrentSymbol(string symbol) {
-    if(symbol != libCSS_currentSymbol) {
-        libCSS_currentBase = StringSubstr(symbol, 0, 3);
-        libCSS_currentQuote = StringSubstr(symbol, 3, 3);
-        libCSS_currentSymbol = symbol;
-    }
-}
-
-string libCSS_getSymbolBase(string symbol)
-{
-    libCSS_setCurrentSymbol(symbol);
-    return libCSS_currentBase;
-}
-
-string libCSS_getSymbolQuote(string symbol)
-{
-    libCSS_setCurrentSymbol(symbol);
-    return libCSS_currentQuote;
-}
-
 //+------------------------------------------------------------------+
 //| getSlope()                                                       |
 //+------------------------------------------------------------------+
@@ -196,7 +165,7 @@ double libCSS_getSlope( string symbol, int tf, int maperiod, int atrperiod, int 
 {
    double dblTma, dblPrev;
    int shiftWithoutSunday = shift;
-   if ( libCSS_addSundayToMonday && libCSS_sundayCandlesDetected && tf == PERIOD_D1 )
+   if ( libCSS_sundayCandlesDetected && tf == PERIOD_D1 )
    {
       if ( TimeDayOfWeek( iTime( symbol, PERIOD_D1, shift ) ) == 0  ) shiftWithoutSunday++;
    }   
@@ -227,12 +196,6 @@ double libCSS_getSlope( string symbol, int tf, int maperiod, int atrperiod, int 
                /251
                ;
          break;
-         
-         //case CalcLibCSS:
-         //default:
-         //  dblTma = libCSS_calcTmaTrue( symbol, tf, maperiod, shiftWithoutSunday );
-         //  dblPrev = libCSS_calcPrevTrue( symbol, tf, maperiod, shiftWithoutSunday );
-         //  break;
       }
 
       gadblSlope = ( dblTma - dblPrev ) / atr;
@@ -243,10 +206,6 @@ double libCSS_getSlope( string symbol, int tf, int maperiod, int atrperiod, int 
 ////+------------------------------------------------------------------+
 ////| calcTmaTrue()                                                    |
 ////+------------------------------------------------------------------+
-//double libCSS_calcTmaTrue( string symbol, int tf, int maperiod, int inx )
-//{
-//   return ( iMA( symbol, tf, maperiod, 0, MODE_LWMA, PRICE_CLOSE, inx ) );
-//}
 
 double libCSS_calcTma(string symbol, int tf, int maperiod, int shift)
 {
@@ -269,28 +228,6 @@ double libCSS_calcTma(string symbol, int tf, int maperiod, int shift)
 
    return ( dblSum / dblSumw );
 }
-
-////+------------------------------------------------------------------+
-////| calcPrevTrue()                                                   |
-////+------------------------------------------------------------------+
-//double libCSS_calcPrevTrue( string symbol, int tf, int maperiod, int inx )
-//{
-//   int maperiodLess = maperiod-1;
-//   double dblSum  = iClose( symbol, tf, inx + 1 ) * maperiod;
-//   double dblSumw = maperiod;
-//   int jnx, knx;
-//   
-//   dblSum  += iClose( symbol, tf, inx ) * maperiodLess;
-//   dblSumw += maperiodLess;
-//         
-//   for ( jnx = 1, knx = maperiodLess; jnx <= maperiodLess; jnx++, knx-- )
-//   {
-//      dblSum  += iClose( symbol, tf, inx + 1 + jnx ) * knx;
-//      dblSumw += knx;
-//   }
-//   
-//   return ( dblSum / dblSumw );
-//}
  
 //+------------------------------------------------------------------+
 //| getCSS( double& CSS[], int tf, int shift )                       |
@@ -302,9 +239,19 @@ void libCSS_getCSS( double &css[], int tf, int maperiod, int atrperiod, int shif
 
 void libCSS_getCSS( double &css[], string symbol, int tf, int maperiod, int atrperiod, int shift, bool flushCache = false )
 {
+   libCSS_calcCSS(symbol, tf, maperiod, atrperiod, shift, flushCache);
+
+   ArrayFree(css);
+   ArrayCopy(css, libCSS_currencyValues);
+}
+
+void libCSS_calcCSS( string symbol, int tf, int maperiod, int atrperiod, int shift, bool flushCache = false ) {
    int i;
 
-   if ( !libCSS_cacheFirstRunComplete || flushCache || libCSS_cacheVolume != iVolume(libCSS_cacheSymbol, libCSS_cacheTimeframe, 0) )
+   if ( !libCSS_doNotCache 
+      || flushCache 
+      || !libCSS_cacheFirstRunComplete 
+      || libCSS_cacheLastTime != SymbolInfoInteger(libCSS_cacheSymbol, SYMBOL_TIME) )
    {
       ArrayInitialize(libCSS_currencyValues, 0.0);
       double slope = 0;
@@ -312,8 +259,8 @@ void libCSS_getCSS( double &css[], string symbol, int tf, int maperiod, int atrp
       switch(libCSS_useCalcMethod) {
          case VerSuperSlope:
             slope = libCSS_getSlope(symbol, tf, maperiod, atrperiod, shift);
-            libCSS_currencyValues[libCSS_getCurrencyIndex(libCSS_getSymbolBase(symbol))] += slope;
-            libCSS_currencyValues[libCSS_getCurrencyIndex(libCSS_getSymbolQuote(symbol))] -= slope;
+            libCSS_currencyValues[libCSS_getCurrencyIndex(libCSS_symbolHelper_getSymbolBaseCurrency(symbol))] += slope;
+            libCSS_currencyValues[libCSS_getCurrencyIndex(libCSS_symbolHelper_getSymbolQuoteCurrency(symbol))] -= slope;
             break;
 
          case VerLibCSS:
@@ -323,10 +270,10 @@ void libCSS_getCSS( double &css[], string symbol, int tf, int maperiod, int atrp
             for ( i = 0; i < libCSS_symbolCount; i++ )
             {
                slope = libCSS_getSlope(libCSS_symbolNames[i], tf, maperiod, atrperiod, shift);
-               libCSS_currencyValues[libCSS_getCurrencyIndex(libCSS_getSymbolBase(libCSS_symbolNames[i]))] += slope;
-               libCSS_currencyValues[libCSS_getCurrencyIndex(libCSS_getSymbolQuote(libCSS_symbolNames[i]))] -= slope;
+               libCSS_currencyValues[libCSS_getCurrencyIndex(libCSS_symbolHelper_getSymbolBaseCurrency(libCSS_symbolNames[i]))] += slope;
+               libCSS_currencyValues[libCSS_getCurrencyIndex(libCSS_symbolHelper_getSymbolQuoteCurrency(libCSS_symbolNames[i]))] -= slope;
             }
-            for ( i = 0; i < libCSS_CURRENCYCOUNT; i++ )
+            for ( i = 0; i < libCSS_currencyCount; i++ )
             {
                // average
                if ( libCSS_currencyOccurrences[i] > 0 ) libCSS_currencyValues[i] /= libCSS_currencyOccurrences[i]; else libCSS_currencyValues[i] = 0;
@@ -334,25 +281,21 @@ void libCSS_getCSS( double &css[], string symbol, int tf, int maperiod, int atrp
             break;
       }
 
-      libCSS_cacheVolume = iVolume( libCSS_cacheSymbol, libCSS_cacheTimeframe, 0 );
+      libCSS_cacheLastTime = SymbolInfoInteger(libCSS_cacheSymbol, SYMBOL_TIME);
       libCSS_cacheFirstRunComplete = true;
    }
-
-   ArrayFree(css);
-   ArrayCopy(css, libCSS_currencyValues);
 }
 //+------------------------------------------------------------------+
 //| getCSSCurrency(string currency, int tf, int shift)               |
 //+------------------------------------------------------------------+
-double libCSS_getCSSCurrency( string currency, int tf, int maperiod, int atrperiod, int shift, bool flushCache = true ) {
-   return libCSS_getCSSCurrency("", currency, tf, maperiod, atrperiod, shift, flushCache);
+double libCSS_getCSSCurrency( string currency, int tf, int maperiod, int atrperiod, int shift ) {
+   return libCSS_getCSSCurrency("", currency, tf, maperiod, atrperiod, shift);
 }
 
-double libCSS_getCSSCurrency( string symbol, string currency, int tf, int maperiod, int atrperiod, int shift, bool flushCache = true )
+double libCSS_getCSSCurrency( string symbol, string currency, int tf, int maperiod, int atrperiod, int shift )
 {
-   double css[];
-   libCSS_getCSS( css, symbol, tf, maperiod, atrperiod, shift, flushCache );
-   return ( css[libCSS_getCurrencyIndex(currency)] );
+   libCSS_calcCSS( symbol, tf, maperiod, atrperiod, shift );
+   return ( libCSS_currencyValues[libCSS_getCurrencyIndex(currency)] );
 }
 
 //+------------------------------------------------------------------+
@@ -360,10 +303,9 @@ double libCSS_getCSSCurrency( string symbol, string currency, int tf, int maperi
 //+------------------------------------------------------------------+
 double libCSS_getCSSDiff( string symbol, int tf, int maperiod, int atrperiod, int shift )
 {
-   double css[];
-   libCSS_getCSS( css, tf, maperiod, atrperiod, shift );
-   double diffLong = css[libCSS_getCurrencyIndex(libCSS_getSymbolBase(symbol))];
-   double diffShort = css[libCSS_getCurrencyIndex(libCSS_getSymbolQuote(symbol))];
+   libCSS_calcCSS( symbol, tf, maperiod, atrperiod, shift );
+   double diffLong = libCSS_currencyValues[libCSS_getCurrencyIndex(libCSS_symbolHelper_getSymbolBaseCurrency(symbol))];
+   double diffShort = libCSS_currencyValues[libCSS_getCurrencyIndex(libCSS_symbolHelper_getSymbolQuoteCurrency(symbol))];
    return ( diffLong - diffShort );
 }
 
@@ -404,17 +346,214 @@ void libCSS_getBBonStoch( double& bb[], string symbol, int tf, int shift )
 //+------------------------------------------------------------------+
 //| getGlobalMarketTrend( int tf, int shift )                        |
 //+------------------------------------------------------------------+
-double libCSS_getGlobalMarketTrend( int tf, int maperiod, int atrperiod, int shift ) 
+double libCSS_getGlobalMarketTrend( string symbol, int tf, int maperiod, int atrperiod, int shift ) 
 {
-   double buffer[libCSS_CURRENCYCOUNT];
-   libCSS_getCSS( buffer, tf, maperiod, atrperiod, shift );
+   libCSS_calcCSS( symbol, tf, maperiod, atrperiod, shift );
       
    double gmt = 0;
-   for ( int i = 0; i < libCSS_CURRENCYCOUNT; i++ )
+   for ( int i = 0; i < libCSS_currencyCount; i++ )
    {
-      gmt += MathPow(buffer[i], 2);
+      gmt += MathPow(libCSS_currencyValues[i], 2);
    }
    
    return ( gmt );
 }
 
+//+------------------------------------------------------------------+
+//| Helpers                                                          |
+//+------------------------------------------------------------------+
+
+// https://github.com/dingmaotu/mql4-lib
+template<typename T>
+void libCSS_helper_ArrayDelete(T &array[],int index, int diff=1, bool resize=true) {
+   int size=ArraySize(array);
+   if(index<0 || index>=size) { return; }
+
+   bool isSeries = ArrayGetAsSeries(array);
+    
+   if(isSeries) { ArraySetAsSeries(array, false); }
+
+   else {
+      for(int i=index; i<size-diff; i++)
+        {
+         array[i]=array[i+diff];
+        }
+   }
+   
+   if(resize) { ArrayResize(array,size-diff); }
+   
+   if(isSeries) { ArraySetAsSeries(array, true); }
+}
+
+template<typename T>
+int libCSS_helper_ArrayPush(T &array[], T unit, int maxSize = -1) {
+    int size = ArraySize(array);
+    int target = size; //int target = (isSeries ? 0 : size);
+    bool isSeries = ArrayGetAsSeries(array);
+    
+    if(isSeries) { ArraySetAsSeries(array, false); }
+        // When ArraySetAsSeries, ArrayResize does not shift elements rightward
+        // as theory ought to be (new blank elements at index 0). Simplest workaround
+        // is to temporarily set to non-series, resize and add, then set back to series.
+        // Theory: https://www.forexfactory.com/showthread.php?p=2878455#post2878455
+        // Workaround: https://www.forexfactory.com/showthread.php?p=4686709#post4686709
+
+    if(maxSize > 0 && target >= maxSize) {
+        int maxDiff = target-maxSize+1;
+        libCSS_helper_ArrayDelete(array, 0, maxDiff, false);
+        ArrayResize(array, maxSize);
+        target = maxSize-1;
+    } else {
+        ArrayResize(array, size+1);
+    }
+    
+    array[target] = unit;
+    
+    if(isSeries) { ArraySetAsSeries(array, true); }
+    
+    return size + 1;
+}
+
+template<typename T>
+int libCSS_helper_ArrayReserve(T &array[], int reserveSize) {
+    int size;
+    
+    size = ArraySize(array);
+    ArrayResize(array, size, reserveSize);
+    
+    return size + reserveSize;
+}
+
+string libCSS_helper_StringTrim(string inputStr) {
+#ifdef __MQL5__
+    string workStr = inputStr;
+    StringTrimRight(workStr);
+    StringTrimLeft(workStr);
+    
+    return workStr;
+#else
+    return StringTrimLeft(StringTrimRight(inputStr));
+#endif  
+}
+
+int libCSS_helper_ArrayTsearch(string &array[], string value, int count=-1, int start=0, int direction=MODE_ASCEND, bool caseSensitive=true) {
+    if(count < 0) { count = ArraySize(array)-start; }
+    if(start >= ArraySize(array)) { return -1; }
+    
+    for(int i = start; i < start+count; i++) {
+        if(StringCompare(array[i], value, caseSensitive) == 0) { return i; }
+    }
+
+    return -1;
+}
+
+//+------------------------------------------------------------------+
+//| Symbol Helpers                                                   |
+//+------------------------------------------------------------------+
+
+int libCSS_symbolHelper_getAllSymbols(string &allSymBuffer[]) {
+    int count = SymbolsTotal(false);
+    libCSS_helper_ArrayReserve(allSymBuffer, count);
+    
+    for(int i = 0; i < count; i++) {
+        string symName = SymbolName(i, false);
+        if(libCSS_symbolHelper_getSymbolUsable(symName)) {
+            libCSS_helper_ArrayPush(allSymBuffer, symName);
+        }
+    }
+    
+    return ArraySize(allSymBuffer);
+}
+
+bool libCSS_symbolHelper_getSymbolUsable(string symName) {
+   return (
+      //SymbolInfoInteger(symName, SYMBOL_TRADE_CALC_MODE) == 0 // forex type
+      /*&& */SymbolInfoInteger(symName, SYMBOL_TRADE_MODE) > 0 // not disabled for trading
+   );
+}
+
+string libCSS_symbolHelper_getCompareSymbol(int symType=0) {
+    int count = SymbolsTotal(false);
+    
+    for(int i = 0; i < count; i++) {
+        string symName = SymbolName(i, false);
+        if(SymbolInfoInteger(symName, SYMBOL_TRADE_CALC_MODE) == symType) { return symName; }
+    }
+    
+    return "";
+}
+
+string libCSS_symbolHelper_getSymbolPrefix(string symName) {
+    string baseCur = libCSS_symbolHelper_getSymbolBaseCurrency(symName);
+    string quoteCur = libCSS_symbolHelper_getSymbolQuoteCurrency(symName);
+    
+    if(StringLen(symName) > StringLen(baseCur) + StringLen(quoteCur)) {
+        int basePos = StringFind(symName, baseCur);
+        if(basePos > 0) {
+            return StringSubstr(symName, 0, basePos);
+        }
+    }
+    
+    return "";
+}
+
+string libCSS_symbolHelper_getSymbolSuffix(string symName) {
+    string baseCur = libCSS_symbolHelper_getSymbolBaseCurrency(symName);
+    string quoteCur = libCSS_symbolHelper_getSymbolQuoteCurrency(symName);
+    
+    if(StringLen(symName) > StringLen(baseCur) + StringLen(quoteCur)) {
+        int quotePos = StringFind(symName, quoteCur);
+        if(quotePos >= StringLen(baseCur)) {
+            return StringSubstr(symName, quotePos+StringLen(quoteCur));
+        }
+    }
+    
+    return "";
+}
+
+string libCSS_symbolHelper_fixSymbolName(string symName, string compareName = NULL) {
+    // todo: remove nonexistant -fixes if necessary
+
+    // we need to compare given symName to a market-provided symName, and add prefix and suffix if necessary
+    if(StringLen(compareName) <= 0) { compareName = libCSS_symbolHelper_getCompareSymbol(); }
+    
+    string prefix = libCSS_symbolHelper_getSymbolPrefix(compareName);
+    string suffix = libCSS_symbolHelper_getSymbolSuffix(compareName);
+    
+    if(StringLen(suffix) > 0 && StringFind(symName, suffix) != StringLen(symName)-StringLen(suffix)) { symName = symName + suffix; }
+    if(StringLen(prefix) > 0 && StringFind(symName, prefix) != 0) { symName = prefix + symName; }
+    
+    return symName;
+}
+
+string libCSS_symbolHelper_stripSymbolName(string symName) {
+    string prefix = libCSS_symbolHelper_getSymbolPrefix(symName);
+    string suffix = libCSS_symbolHelper_getSymbolSuffix(symName);
+
+    if(StringLen(prefix) > 0) { StringReplace(symName, prefix, ""); }
+    if(StringLen(suffix) > 0) { StringReplace(symName, suffix, ""); }
+    
+    return symName;    
+}
+
+string libCSS_symbolHelper_getSymbolBaseCurrency(string symName) {
+        string baseCur;
+    string quoteCur;
+    SymbolInfoString(symName, SYMBOL_CURRENCY_BASE, baseCur);
+    SymbolInfoString(symName, SYMBOL_CURRENCY_PROFIT, quoteCur);
+    
+    // For non-forex (gas, crude, etc.), base and quote may be reported as same (USD/USD)
+    // In this case, return the entire symName as the base currency
+    // fixSymName and stripSymName, prefixes and suffixes, should cooperate
+    // by passing the original symName every time
+    if(baseCur == quoteCur
+        && SymbolInfoInteger(symName, SYMBOL_TRADE_CALC_MODE) != 0 // not forex
+    ) { return symName; }
+    else { return baseCur; }
+}
+
+string libCSS_symbolHelper_getSymbolQuoteCurrency(string symName) {
+    string result;
+    SymbolInfoString(symName, SYMBOL_CURRENCY_PROFIT, result);
+    return result;
+}

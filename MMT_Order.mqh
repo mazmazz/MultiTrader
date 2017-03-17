@@ -11,6 +11,14 @@
 #include "MC_Common/MC_Common.mqh"
 #include "MMT_Symbols.mqh"
 
+enum StopLossMode {
+    StopModeNormal
+    , StopModeValue
+    , StopModeTrailing
+    , StopModeJumping
+    , StopModeBreakeven
+};
+
 class OrderManager {
     public:
     OrderManager();

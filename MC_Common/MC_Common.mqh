@@ -146,9 +146,10 @@ int Common::ArrayReserve(T &array[], int reserveSize) {
 }
 
 int Common::ArrayTsearch(string &array[], string value, int count=-1, int start=0, int direction=MODE_ASCEND, bool caseSensitive=true) {
-    if(count < 0) { count = ArraySize(array); }
+    if(count < 0) { count = ArraySize(array)-start; }
+    if(start >= ArraySize(array)) { return -1; }
     
-    for(int i = start; i < count; i++) {
+    for(int i = start; i < start+count; i++) {
         if(StringCompare(array[i], value, caseSensitive) == 0) { return i; }
     }
 

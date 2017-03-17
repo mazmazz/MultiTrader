@@ -265,9 +265,19 @@ string SymbolManager::stripSymbolName(string symName) {
 }
 
 string SymbolManager::getSymbolBaseCurrency(string symName) {
-    string result;
-    SymbolInfoString(symName, SYMBOL_CURRENCY_BASE, result);
-    return result;
+    string baseCur;
+    string quoteCur;
+    SymbolInfoString(symName, SYMBOL_CURRENCY_BASE, baseCur);
+    SymbolInfoString(symName, SYMBOL_CURRENCY_PROFIT, quoteCur);
+    
+    // For non-forex (gas, crude, etc.), base and quote may be reported as same (USD/USD)
+    // In this case, return the entire symName as the base currency
+    // fixSymName and stripSymName, prefixes and suffixes, should cooperate
+    // by passing the original symName every time
+    if(baseCur == quoteCur
+        && SymbolInfoInteger(symName, SYMBOL_TRADE_CALC_MODE) != 0 // not forex
+    ) { return symName; }
+    else { return baseCur; }
 }
 
 string SymbolManager::getSymbolQuoteCurrency(string symName) {

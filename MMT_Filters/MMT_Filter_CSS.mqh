@@ -38,8 +38,7 @@ extern string CSS_Exit_Modes="a=1|b=1";
 extern string CSS_Exit_Names="a=H1x|b=H1SSx";
 
 extern string Lbl_CSS_General_Settings="---- CSS General Settings ----";
-extern string CSS_SymbolsToWeigh = "AUDCAD,AUDCHF,AUDJPY,AUDNZD,AUDUSD,CADJPY,CHFJPY,EURAUD,EURCAD,EURJPY,EURNZD,EURUSD,GBPAUD,GBPCAD,GBPCHF,GBPJPY,GBPNZD,GBPUSD,NZDCHF,NZDJPY,NZDUSD,USDCAD,USDCHF,USDJPY";
-extern bool   CSS_AddSundayToMonday = true;
+extern string CSS_SymbolsToWeigh = "AUDCAD,AUDCHF,AUDJPY,AUDNZD,AUDUSD,CADJPY,CHFJPY,EURAUD,EURCAD,EURJPY,EURNZD,EURUSD,GBPAUD,GBPCAD,GBPCHF,GBPJPY,GBPNZD,GBPUSD,NZDCHF,NZDJPY,NZDUSD,USDCAD,USDCHF,USDJPY"; // CSS_SymbolsToWeigh: Leave blank to weigh all symbols
 
 extern string Lbl_CSS_Entry_Settings="---- CSS Entry Settings ----";
 extern string CSS_Entry_TimeFrame="a=60|b=60";
@@ -91,7 +90,6 @@ void FilterCss::init() {
      
      // CSS global settings
      libCSS_symbolsToWeigh = CSS_SymbolsToWeigh;
-     libCSS_addSundayToMonday = CSS_AddSundayToMonday;
      libCSS_init();
           
      isInit = true;

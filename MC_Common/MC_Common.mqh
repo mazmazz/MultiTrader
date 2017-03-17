@@ -16,6 +16,13 @@ enum StringType {
     Type_Symbol
 };
 
+struct TimePoint {
+    int milliseconds;
+    datetime dateTime;
+    int cycles;
+    TimePoint() { milliseconds = GetTickCount(); dateTime = TimeCurrent(); cycles = 0; }
+};
+
 string StringZeroArray[1];
 bool BoolZeroArray[1];
 int IntZeroArray[1];
@@ -181,6 +188,7 @@ bool Common::IsAddrAbcValid (string addrAbc) {
 
 int Common::AddrAbcToInt(string addrAbc, bool zeroBased=true) {
     // http://stackoverflow.com/questions/9905533/convert-excel-column-alphabet-e-g-aa-to-number-e-g-25
+    if(GetStringType(addrAbc) == Type_Numeric) { return StringToInteger(addrAbc); }
     
     StringToLower(addrAbc);
     int addrAbcLength = StringLen(addrAbc);

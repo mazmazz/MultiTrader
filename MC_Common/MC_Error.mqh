@@ -7,21 +7,27 @@
 #property link      "https://github.com/mazmazz"
 #property strict
 
+#ifndef _ProjectName
+#define _ProjectName ""
+#define _ProjectShortName ""
+#define _ProjectVersion ""
+#endif
 
 #define FunctionTrace __FILE__+"("+__LINE__+") "+ __FUNCTION__
 
 enum ErrorLevel {
-    ErrorNone,
-    ErrorFatal,
-    ErrorNormal,
-    ErrorInfo,
-    ErrorMinor
+    ErrorNone // Hide all errors
+    , ErrorFatal // Fatal errors
+    , ErrorNormal // Normal errors
+    , ErrorInfo // All errors and normal info
+    , ErrorMinor // All errors and all info
 };
 
 enum ErrorPrintLocation {
-    ErrorDoDefault,
-    ErrorForceFile,
-    ErrorForceTerminal
+    ErrorDoDefault
+    , ErrorForceFile
+    , ErrorForceTerminal
+    , ErrorForceAlert
 };
 
 class Error {
@@ -30,12 +36,13 @@ class Error {
     
     public:
     static string FilePath;
-    static bool LogAllErrorsToFile;
-    static bool LogAllErrorsToTerminal;
+    static ErrorLevel AlertLevel;
+    static ErrorLevel FileLevel;
+    static ErrorLevel TerminalLevel;
     static bool PrintAllFatalErrors;
     static int FatalCounter;
-    static int DebugLevel;
     
+    static void PrintErrorToAlert(string message = "");
     static bool PrintErrorToFile(string message = "");
     static void PrintError(int level, string message = "", string funcTrace = "", bool fatal = false, bool info = false, string params = "", ErrorPrintLocation location = ErrorDoDefault);
     static void ThrowError(int level, string message = "", string funcTrace = "", string params = "", bool fatal = false, ErrorPrintLocation location = ErrorDoDefault);
@@ -45,19 +52,25 @@ class Error {
 
 //#include "MMT_Settings.mqh"
 
+ErrorLevel Error::TerminalLevel = ErrorNormal;
+ErrorLevel Error::AlertLevel = ErrorFatal;
+ErrorLevel Error::FileLevel = ErrorNone;
 int Error::FileHandle = -1;
 string Error::FilePath = "";
 bool Error::PrintAllFatalErrors = false; // because ExpertRemove() does not exit an EA right away, further error messages will print when only the first one is useful.
 int Error::FatalCounter = 0;
-int Error::DebugLevel = 2; // user configurable
-bool Error::LogAllErrorsToFile = false; // user configurable
-bool Error::LogAllErrorsToTerminal = true; // user configurable
+
+void Error::PrintErrorToAlert(string message="") {
+    Alert(_ProjectShortName + " " + message);
+}
 
 bool Error::PrintErrorToFile(string message = "") {
     // todo: how to close upon program exit?
     
     if((FileHandle == INVALID_HANDLE) || FileHandle == -1) {
-        if(StringLen(FilePath) <= 0) { FilePath = "Log_" + (int)TimeLocal() + "_" + (int)GetMicrosecondCount() + ".txt"; }
+        if(StringLen(FilePath) <= 0) { 
+            FilePath = (StringLen(_ProjectShortName) > 0 ? _ProjectShortName : "") +  "Log_" + (int)TimeLocal() + "_" + (int)GetMicrosecondCount() + ".txt"; 
+        }
         FileHandle = FileOpen(FilePath, FILE_TXT|FILE_READ|FILE_WRITE|FILE_SHARE_READ|FILE_SHARE_WRITE);
         if(FileHandle == INVALID_HANDLE) { 
             ThrowError(ErrorNormal, "MC_Error could not open log file for printing: " + GetLastError(), FunctionTrace, FilePath);
@@ -85,10 +98,17 @@ void Error::PrintError(int level, string message = "", string funcTrace = "", bo
         + (StringLen(params) > 0 ? (" - PARAMS: " + params) : "")
         ;
     
-    if(DebugLevel >= level || fatal) { 
-        if(LogAllErrorsToTerminal || !LogAllErrorsToFile || location == ErrorForceTerminal) { Print(errorMsg); }
-        if(location == ErrorForceFile || LogAllErrorsToFile) { if(!Error::PrintErrorToFile(errorMsg)) { Print(errorMsg); } }
-    } 
+    if(TerminalLevel >= level || location == ErrorForceTerminal || fatal) { 
+        Print(errorMsg);
+    }
+    
+    if(FileLevel >= level || location == ErrorForceFile) {
+        if(!Error::PrintErrorToFile(errorMsg)) { Print(errorMsg); } 
+    }
+    
+    if(AlertLevel >= level || location == ErrorForceAlert) {
+        PrintErrorToAlert(errorMsg);
+    }
 }
 
 void Error::ThrowError(int level, string message = "", string funcTrace = "", string params = "", bool fatal = false, ErrorPrintLocation location = ErrorDoDefault) {

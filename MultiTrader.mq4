@@ -6,6 +6,11 @@
 #property copyright "Copyright 2017, Marco Z"
 #property link      "https://github.com/mazmazz"
 #property strict
+
+#define _ProjectName "MultiTrader"
+#define _ProjectShortName "MMT"
+#define _ProjectVersion "v0.1 04/2017"
+
 //+------------------------------------------------------------------+
 //| Comments
 //+------------------------------------------------------------------+
@@ -51,6 +56,13 @@
 //+------------------------------------------------------------------+
 
 int OnInit() {
+    Error::TerminalLevel = ::ErrorTerminalLevel;
+    Error::FileLevel = ::ErrorFileLevel;
+    Error::AlertLevel = ::ErrorAlertLevel;
+    Error::FilePath = ::ErrorLogFileName;
+    
+    if(!ValidateSettings()) { return INIT_PARAMETERS_INCORRECT; }
+
     Main = new MainMultiTrader();
     Main.addFilter(new FilterAtr());
     Main.addFilter(new FilterStdDev());
@@ -60,33 +72,55 @@ int OnInit() {
     Main.addFilter(new FilterCss());
 #endif
 
-    SetTimer();
+    if(!SetCycle()) { return INIT_FAILED; }
 
     return Main.onInit();
 }
 
-bool SetTimer() {
+bool SetCycle() {
     bool result = false;
     
-    //if(firstRun) {
-    //    if(DelayedEntrySeconds > 0) { result = Common::EventSetTimerReliable(DelayedEntrySeconds); }
-    //    else { result = Common::EventSetMillisecondTimerReliable(255); }
-    //} else {
-        result = Common::EventSetTimerReliable(1);
-    //}
+    switch(CycleMode) {
+        case CycleRealTicks:
+            result = true; // we don't set a timer for real ticks, just handle OnTick()
+            break;
+            
+        case CycleTimerTicks: // emulated average ticks, still on timer interval
+            result = Main.setAverageTickTimer();
+            break;
+            
+        case CycleTimerMilliseconds:
+            result = Common::EventSetMillisecondTimerReliable(CycleLength);
+            break;
+            
+        case CycleTimerSeconds:
+        default:
+            result = Common::EventSetTimerReliable(CycleLength);
+            break;
+    }
     
     if(!result) {
-        Error::ThrowFatalError(ErrorFatal, "Could not set run timer; try to reload the EA.", FunctionTrace);
+        Error::ThrowFatalError(ErrorFatal, "Could not set cycle; try to reload the EA.", FunctionTrace);
     }
     
     return result;
 }
 
 void OnTimer() {
+    //EventKillTimer(); 
+        // undecided on this: timer events don't wait until the previous OnTimer call finishes. 
+        // Are there issues to simultaneous OnTimer calls?
     Main.onTimer();
+    //SetCycle();
+}
+
+void OnTick() {
+    if(CycleMode == CycleRealTicks) { Main.onTick(); }
 }
 
 void OnDeinit(const int reason) {
-    Main.onDeinit(reason);
-    delete(Main);
+    if(!Common::IsInvalidPointer(Main)) {
+        Main.onDeinit(reason);
+        delete(Main);
+    }
 }

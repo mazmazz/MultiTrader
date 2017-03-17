@@ -38,17 +38,17 @@ class Filter {
     
     string shortName;
     
-    int subfilterCount(SubfilterType type = SubfilterAllTypes);
+    int getSubfilterCount(SubfilterType type = SubfilterAllTypes);
     
     virtual void init() { Error::ThrowError(ErrorNormal, "Filter: init not implemented", FunctionTrace, shortName); }
-    virtual bool calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut) { Error::ThrowError(ErrorNormal, "Filter: Calculate not implemented", FunctionTrace, shortName); return false; }
+    virtual bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut) { Error::ThrowError(ErrorNormal, "Filter: Calculate not implemented", FunctionTrace, shortName); return false; }
     
     protected:    
     void setupSubfilters(string pairList, string nameList, SubfilterType subfilterTypeIn, bool addToArray = true);
-    bool checkSafe(int subfilterIndex);
+    bool checkSafe(int subfilterId);
 };
 
-int Filter::subfilterCount(SubfilterType type = SubfilterAllTypes) {
+int Filter::getSubfilterCount(SubfilterType type = SubfilterAllTypes) {
     switch(type) {
         case SubfilterEntry: return ArraySize(entrySubfilterId);
         case SubfilterExit: return ArraySize(exitSubfilterId);
@@ -85,14 +85,14 @@ void Filter::setupSubfilters(string pairList, string nameList, SubfilterType sub
     }
 }
 
-bool Filter::checkSafe(int subfilterIndex) {
-    if(subfilterIndex >= subfilterCount()) {
-        Error::ThrowError(ErrorNormal, "Subfilter index does not exist", FunctionTrace, shortName + "-" + subfilterIndex + "|" + subfilterCount());
+bool Filter::checkSafe(int subfilterId) {
+    if(subfilterId >= getSubfilterCount()) {
+        Error::ThrowError(ErrorNormal, "Subfilter index does not exist", FunctionTrace, shortName + "-" + subfilterId + "|" + getSubfilterCount());
         return false;
     }
     
-    if(subfilterMode[subfilterIndex] <= 0) {
-        Error::ThrowError(ErrorMinor, "Subfilter index is disabled, skipping.", FunctionTrace, shortName + "-" + subfilterIndex);
+    if(subfilterMode[subfilterId] <= 0) {
+        Error::ThrowError(ErrorMinor, "Subfilter index is disabled, skipping.", FunctionTrace, shortName + "-" + subfilterId);
         return false;
     }
 
@@ -109,15 +109,25 @@ class FilterManager {
     ~FilterManager();
     
     int addFilter(Filter *unit);
-    int getFilterId(string filterShortName);
-    int filterCount();
+    int getFilterId(string filterName, bool isDualName = false);
+    int getSubfilterId(string filterDualName);
+    int getSubfilterId(string filterName, string subfilterName);
+    int getSubfilterId(int filterId, string subfilterName, bool isDualId = false);
+    int getFilterCount();
     void deleteAllFilters();
     
-    void calculateSubfilterByIndex(int filterIndex, int subfilterIndex, int symbolIndex);
+    void calculateSubfilterByIndex(int filterIndex, int subfilterId, int symbolIndex);
     void calculateSubfilters(int filterIndex, int symbolIndex);
     void calculateFilterByIndex(int index, int symbolIndex);
     void calculateFilters(int symbolIndex);
+    
+    private:
+    static string DualNameDelimiter;
+    static string DualIdDelimiter;
 };
+
+string FilterManager::DualNameDelimiter = "-";
+string FilterManager::DualIdDelimiter = "^";
 
 extern string Lbl_IndisAndFilters="********** Indicators & Filters **********"; // Filter List
 extern string Lbl_FilterLegend="0 = Disabled; 1 = Normal; 2 = Opposite; 3 = Not Opposite"; // Legend
@@ -144,17 +154,72 @@ int FilterManager::addFilter(Filter *unit) {
     return size+1;
 }
 
-int FilterManager::getFilterId(string filterShortName) {
+int FilterManager::getFilterId(string filterName, bool isDualName = false) {
+    if(isDualName) {
+        filterName = Common::StringTrim(filterName);
+        
+        // attempt dual name resolution ("[filterName]-[subfilterName]")
+        int delimPos = StringFind(filterName, DualNameDelimiter);
+        if(delimPos > 0) { filterName = StringSubstr(filterName, 0, delimPos); }
+        else {
+            // attempt ID resolution ("[filterId]^[subfilterId]" in numeric or ABC format)
+            delimPos = StringFind(filterName, DualIdDelimiter);
+            if(delimPos > 0) {
+                filterName = StringSubstr(filterName, 0, delimPos);
+                return Common::AddrAbcToInt(filterName); // return ABC or 123 to int
+            } else { return -1; }
+        }
+    }
+    
     int size = ArraySize(filters);
     
     for(int i = 0; i < size; i++) {
-        if(StringToLower(filters[i].shortName) == StringToLower(filterShortName)) { return i; }
+        if(StringToLower(filters[i].shortName) == StringToLower(filterName)) { return i; }
     }
 
     return -1;
 }
 
-int FilterManager::filterCount() {
+int FilterManager::getSubfilterId(string filterDualName) {
+    return getSubfilterId(-1, filterDualName, true);
+}
+
+int FilterManager::getSubfilterId(string filterName, string subfilterName) {
+    return getSubfilterId(getFilterId(filterName), subfilterName);
+}
+
+int FilterManager::getSubfilterId(int filterId, string subfilterName, bool isDualName = false) {
+    if(isDualName) {
+        subfilterName = Common::StringTrim(subfilterName);
+    
+        if(filterId < 0) { 
+            filterId = getFilterId(subfilterName, true); 
+            if(filterId < 0) { return -1; }
+        }
+        
+        // attempt dual name resolution ("[filterName]-[subfilterName]")
+        int delimPos = StringFind(subfilterName, DualNameDelimiter);
+        if(delimPos > 0) { subfilterName = StringSubstr(subfilterName, delimPos+1); }
+        else {
+            // attempt ID resolution ("[filterId]^[subfilterId]" in numeric or ABC format)
+            delimPos = StringFind(subfilterName, DualIdDelimiter);
+            if(delimPos > 0) {
+                subfilterName = StringSubstr(subfilterName, delimPos+1);
+                return Common::AddrAbcToInt(subfilterName); // return ABC or 123 to int
+            } else { return -1; }
+        }
+    }
+    
+    int size = ArraySize(filters[filterId].subfilterName);
+    
+    for(int i = 0; i < size; i++) {
+        if(StringToLower(filters[filterId].subfilterName[i]) == StringToLower(subfilterName)) { return i; }
+    }
+
+    return -1;
+}
+
+int FilterManager::getFilterCount() {
     return ArraySize(filters);
 }
 
@@ -170,20 +235,20 @@ void FilterManager::deleteAllFilters() {
     return;
 }
 
-void FilterManager::calculateSubfilterByIndex(int filterIndex, int subfilterIndex, int symbolIndex) {
+void FilterManager::calculateSubfilterByIndex(int filterIndex, int subfilterId, int symbolIndex) {
     DataUnit *data = new DataUnit();
     
-    if(filters[filterIndex].calculate(subfilterIndex, symbolIndex, data)) {
+    if(filters[filterIndex].calculate(subfilterId, symbolIndex, data)) {
         data.success = true;
         // data datetime?
-        MainDataMan.getDataHistory(symbolIndex, filterIndex, subfilterIndex).addData(data);
+        MainDataMan.getDataHistory(symbolIndex, filterIndex, subfilterId).addData(data);
     } else {
         delete(data);
     }
 }
 
 void FilterManager::calculateSubfilters(int filterIndex, int symbolIndex) {
-    int size = filters[filterIndex].subfilterCount();
+    int size = filters[filterIndex].getSubfilterCount();
     
     for(int i = 0; i < size; i++) {
         calculateSubfilterByIndex(filterIndex, i, symbolIndex);

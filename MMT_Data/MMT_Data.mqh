@@ -85,7 +85,7 @@ void DataSymbol::DataSymbol(int filterCount) {
     
     for(int i = 0; i < filterCount; i++) {
         filter[i] = new DataFilter(
-            MainFilterMan.filters[i].subfilterCount(),
+            MainFilterMan.filters[i].getSubfilterCount(),
             -1 //MainFilterMan.getFilterHistoryCount(i) //, MainFilterMan.getFilterHistoryCount(i, true)
             );
     }
@@ -125,7 +125,7 @@ void DataManager::DataManager(int symbolCount, int filterCount) {
 }
 
 void DataManager::~DataManager() {
-    int size = MainSymbolMan.symbolCount();
+    int size = MainSymbolMan.getSymbolCount();
     
     //void deleteAllSymbolData();
     for(int i = 0; i < size; i++) {

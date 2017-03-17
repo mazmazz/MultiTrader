@@ -25,7 +25,7 @@ class FilterHgi : public Filter {
     
     public:
     void init();
-    bool calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut);
+    bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
 
 //+------------------------------------------------------------------+
@@ -96,12 +96,12 @@ void FilterHgi::init() {
     isInit = true;
 }
 
-bool FilterHgi::calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut) {
-    if(!checkSafe(subfilterIndex)) { return false; }
-    string symbol = MainSymbolMan.symbols[symbolIndex].formSymName;
+bool FilterHgi::calculate(int subfilterId, int symbolIndex, DataUnit *dataOut) {
+    if(!checkSafe(subfilterId)) { return false; }
+    string symbol = MainSymbolMan.symbols[symbolIndex].name;
     
-    int hgiSignal = getHGISignal(symbol, timeFrame[subfilterIndex], shift[subfilterIndex]);
-    int hgiSlope = getHGISlope(symbol, timeFrame[subfilterIndex], shift[subfilterIndex]);
+    int hgiSignal = getHGISignal(symbol, timeFrame[subfilterId], shift[subfilterId]);
+    int hgiSlope = getHGISlope(symbol, timeFrame[subfilterId], shift[subfilterId]);
     
     // 0 = Do not track, 1 = OR, 2 = AND
     int OR = 1;
@@ -112,26 +112,26 @@ bool FilterHgi::calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut
     SignalType signalFinal;
     
     switch(hgiSignal) {
-        case TRENDUP: signalTrend = onTrend[subfilterIndex] ? SignalBuy  : SignalNone; break;
-        case RANGEUP: signalTrend = onRange[subfilterIndex] ? SignalBuy  : SignalNone; break;
-        case TRENDDN: signalTrend = onTrend[subfilterIndex] ? SignalSell : SignalNone; break;
-        case RANGEDN: signalTrend = onRange[subfilterIndex] ? SignalSell : SignalNone; break;
-        case RADUP:   signalTrend = onRad[subfilterIndex]   ? SignalBuy  : SignalNone; break;
-        case RADDN:   signalTrend = onRad[subfilterIndex]   ? SignalSell : SignalNone; break;
+        case TRENDUP: signalTrend = onTrend[subfilterId] ? SignalBuy  : SignalNone; break;
+        case RANGEUP: signalTrend = onRange[subfilterId] ? SignalBuy  : SignalNone; break;
+        case TRENDDN: signalTrend = onTrend[subfilterId] ? SignalSell : SignalNone; break;
+        case RANGEDN: signalTrend = onRange[subfilterId] ? SignalSell : SignalNone; break;
+        case RADUP:   signalTrend = onRad[subfilterId]   ? SignalBuy  : SignalNone; break;
+        case RADDN:   signalTrend = onRad[subfilterId]   ? SignalSell : SignalNone; break;
         default: break;
     }
     
     switch(hgiSlope) {
-        case TRENDBELOW: signalSlope = onTrend[subfilterIndex] ? SignalBuy  : SignalNone; break;
-        case RANGEBELOW: signalSlope = onRange[subfilterIndex] ? SignalBuy  : SignalNone; break;
-        case TRENDABOVE: signalSlope = onTrend[subfilterIndex] ? SignalSell : SignalNone; break;
-        case RANGEABOVE: signalSlope = onRange[subfilterIndex] ? SignalSell : SignalNone; break;
+        case TRENDBELOW: signalSlope = onTrend[subfilterId] ? SignalBuy  : SignalNone; break;
+        case RANGEBELOW: signalSlope = onRange[subfilterId] ? SignalBuy  : SignalNone; break;
+        case TRENDABOVE: signalSlope = onTrend[subfilterId] ? SignalSell : SignalNone; break;
+        case RANGEABOVE: signalSlope = onRange[subfilterId] ? SignalSell : SignalNone; break;
         default: break;
     }
     
-    if(onSignal[subfilterIndex] == OR && signalTrend != SignalNone) { signalFinal = signalTrend; }
-    else if(onSlope[subfilterIndex] == OR && signalSlope != SignalNone) { signalFinal = signalSlope; }
-    else if(onSignal[subfilterIndex] == AND && onSlope[subfilterIndex] == AND
+    if(onSignal[subfilterId] == OR && signalTrend != SignalNone) { signalFinal = signalTrend; }
+    else if(onSlope[subfilterId] == OR && signalSlope != SignalNone) { signalFinal = signalSlope; }
+    else if(onSignal[subfilterId] == AND && onSlope[subfilterId] == AND
         && signalTrend != SignalNone && signalSlope != SignalNone
         && signalTrend == signalSlope
     ) { signalFinal = signalTrend; }

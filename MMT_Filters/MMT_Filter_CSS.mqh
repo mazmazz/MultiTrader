@@ -24,7 +24,7 @@ class FilterCss : public Filter {
      
      public:
      void init();
-     bool calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut);
+     bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
 
 //+------------------------------------------------------------------+
@@ -71,8 +71,8 @@ void FilterCss::init() {
      setupSubfilters(CSS_Exit_Modes, CSS_Exit_Names, SubfilterExit);
      
      // 3. Set up options per subfilter type.
-     int entrySubfilterCount = subfilterCount(SubfilterEntry);
-     int exitSubfilterCount = subfilterCount(SubfilterExit);
+     int entrySubfilterCount = getSubfilterCount(SubfilterEntry);
+     int exitSubfilterCount = getSubfilterCount(SubfilterExit);
      if(entrySubfilterCount > 0) {
           MultiSettings::Parse(CSS_Entry_TimeFrame, timeFrame, entrySubfilterCount);
           MultiSettings::Parse(CSS_Entry_Shift, shift, entrySubfilterCount);
@@ -97,18 +97,18 @@ void FilterCss::init() {
      isInit = true;
 }
 
-bool FilterCss::calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut) {
-     if(!checkSafe(subfilterIndex)) { return false; }
-     string symbol = MainSymbolMan.symbols[symbolIndex].formSymName;
+bool FilterCss::calculate(int subfilterId, int symbolIndex, DataUnit *dataOut) {
+     if(!checkSafe(subfilterId)) { return false; }
+     string symbol = MainSymbolMan.symbols[symbolIndex].name;
      
-     libCSS_useCalcMethod = calcMethod[subfilterIndex];
+     libCSS_useCalcMethod = calcMethod[subfilterId];
      double value = libCSS_getCSSCurrency(
         symbol
         , MainSymbolMan.symbols[symbolIndex].baseCurName
-        , timeFrame[subfilterIndex]
-        , maPeriod[subfilterIndex]
-        , atrPeriod[subfilterIndex]
-        , shift[subfilterIndex]
+        , timeFrame[subfilterId]
+        , maPeriod[subfilterId]
+        , atrPeriod[subfilterId]
+        , shift[subfilterId]
         );
      
      dataOut.setRawValue(value, 0, DoubleToString(value, 2));

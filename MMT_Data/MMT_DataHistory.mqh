@@ -17,6 +17,9 @@ class DataHistory {
     DataUnit *data[];
     
     public:
+    TimePoint lastSignalTime;
+    // TimePoint lastValueTime;
+    
     DataHistory();
     DataHistory(int historyCount);
     ~DataHistory();
@@ -35,6 +38,11 @@ class DataHistory {
     }
     
     void deleteAllData();
+
+    void updateDataTimes(DataUnit *unit, int checkIndex = 0);
+    
+    template<typename T>
+    void compareRawValues(DataUnit *unit, DataUnit *compareUnit);
 };
 
 void DataHistory::DataHistory() {
@@ -61,6 +69,7 @@ void DataHistory::setHistoryCount(int historyCountIn = -1) {
 }
 
 void DataHistory::addData(DataUnit *unit) {
+    updateDataTimes(unit);
     Common::ArrayPush(data, unit, historyCount);
 }
 
@@ -69,7 +78,7 @@ void DataHistory::addData(bool success, T value, SignalType signal = SignalNone,
     DataUnit *newData;
     newData = new DataUnit(success, value, signal, debugValue, lastUpdate);
     
-    Common::ArrayPush(data, newData, historyCount);
+    addData(newData);
 }
 
 void DataHistory::deleteAllData() {
@@ -77,5 +86,29 @@ void DataHistory::deleteAllData() {
     
     for(int i = 0; i < size; i++) {
         if(CheckPointer(data[i]) == POINTER_DYNAMIC) { delete(data[i]); }
+    }
+}
+
+void DataHistory::updateDataTimes(DataUnit *unit, int checkIndex = 0) {
+    if(ArraySize(data) <= checkIndex || Common::IsInvalidPointer(data[checkIndex])) {
+        lastSignalTime.milliseconds = GetTickCount();
+        lastSignalTime.dateTime = TimeCurrent();
+        lastSignalTime.cycles = 0;
+        //lastValueTime.milliseconds = GetTickCount();
+        //lastValueTime.dateTime = TimeCurrent();
+        //lastValueTime.cycles = 0;
+    } else {
+        if (unit.signal != data[checkIndex].signal) {
+            lastSignalTime.milliseconds = GetTickCount();
+            lastSignalTime.dateTime = TimeCurrent();
+            lastSignalTime.cycles = 0;
+        } else { lastSignalTime.cycles++; }
+        
+        // can't get this to work due to function template weirdness
+        //if (unit.getRawValue() != data[checkIndex].getRawValue();) {
+            //lastValueTime.milliseconds = GetTickCount();
+            //lastValueTime.dateTime = TimeCurrent();
+            //lastValueTime.cycles = 0;
+        //} else { lastValueTime.cycles++; }
     }
 }

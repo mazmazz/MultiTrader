@@ -11,32 +11,6 @@
 #define  SlPrefix "Sl"
 
 //+------------------------------------------------------------------+
-// Points-Pips conversion
-//+------------------------------------------------------------------+
-
-//Calculating the factor needed to turn pip values into their correct points value to accommodate different Digit size.
-//Thanks to Lifesys for providing this code. Coders, you need to briefly turn of Wrap and turn on a mono-spaced font to view this properly and see how easy it is to make changes.
-string         pipFactor[]  = {"JPY","XAG","SILVER","BRENT","WTI","XAU","GOLD","SP500","S&P","UK100","WS30","DAX30","DJ30","NAS100","CAC400"};
-double         pipFactors[] = { 100,  100,  100,     100,    100,  10,   10,    10,     10,   1,      1,     1,      1,     1,       1};
-double         factor;//For pips/points stuff. Set up in int init()
-
-double PFactor(string symbol)
-{
-//This code supplied by Lifesys. Many thanks Paul - we all owe you. Gary was trying to make me see this, but I could not understand his explanation. Paul used Janet and John words
-
-   for(int i=ArraySize(pipFactor)-1; i>=0; i--)
-      if(StringFind(symbol,pipFactor[i],0)!=-1)
-         return (pipFactors[i]);
-   return(10000);
-
-}//End double PFactor(string pair)
-
-int CalcDistance(double price1,double price2) { 
- int pips = NormalizeDouble((MathAbs(price1 - price2) * factor),0);
- return(pips);
-}
-
-//+------------------------------------------------------------------+
 // TPSL - Breakeven, Jumping, Trailing
 //+------------------------------------------------------------------+
 void BreakEvenStopLoss(int ticket) // Move stop loss to breakeven

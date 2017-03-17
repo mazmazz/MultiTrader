@@ -17,25 +17,25 @@
 class SymbolUnit {
     public:
     // bool enabled;
-    string formSymName;
-    string bareSymName;
-    // string prefix;
-    // string suffix;
+    string name;
+    string bareName;
+    //string prefix;
+    //string suffix;
     // SymbolType type; // Forex, Metals, Indexes, ...
     string baseCurName;
     string quoteCurName;
     
     int digits;
     
-    SymbolUnit(string formSymNameIn, string bareSymNameIn = "", string baseCurNameIn = "", string quoteCurNameIn = "");
+    SymbolUnit(string nameIn, string bareNameIn = "", string baseCurNameIn = "", string quoteCurNameIn = "");
 };
 
-void SymbolUnit::SymbolUnit(string formSymNameIn, string bareSymNameIn = "", string baseCurNameIn = "", string quoteCurNameIn = "") {
-    formSymName = formSymNameIn;
-    bareSymName = StringLen(bareSymNameIn) <= 0 ? formSymNameIn : bareSymNameIn;
+void SymbolUnit::SymbolUnit(string nameIn, string bareNameIn = "", string baseCurNameIn = "", string quoteCurNameIn = "") {
+    name = nameIn;
+    bareName = StringLen(bareNameIn) <= 0 ? nameIn : bareNameIn;
     baseCurName = baseCurNameIn;
     quoteCurName = quoteCurNameIn;
-    digits = MarketInfo(formSymName, MODE_DIGITS);
+    digits = MarketInfo(name, MODE_DIGITS);
 }
 
 //+------------------------------------------------------------------+
@@ -43,31 +43,29 @@ void SymbolUnit::SymbolUnit(string formSymNameIn, string bareSymNameIn = "", str
 class SymbolManager {
     public:
     SymbolUnit *symbols[];
-    string symNames[];
     string excludeSym; // not an array, we don't need it for our processing
     string excludeCur[];
-    
-    int symbolCount() { return ArraySize(symbols); }
     
     SymbolManager(string includeSymbols, string excludeSymbols, string excludeCurrencies);
     ~SymbolManager();
     
     void retrieveActiveSymbols(string includeSym, string excludeSym, string excludeCur);
     
-    int addSymbol(string formSymName, string bareSymName = "", string baseCurName = "", string quoteCurName = "");
+    int addSymbol(string name, string bareName = "", string baseCurName = "", string quoteCurName = "");
     int getSymbolId(string symName, bool isFormSymName = false);
-    string getFormSymName(string symName);
-    int getSymbolDigits(string symName);
+    int getSymbolCount();
+    bool isSymbolTradable(string symName);
     bool isSymbolExcluded(string symName, string excludeSym, string &excludeCur[]);
     void removeAllSymbols();
     
     bool retrieveData();
     
     static int getAllSymbols(string &allSymBuffer[]);
-    static bool doesSymbolHaveSuffix(string symName, string symSuffix);
-    static string getCurrencySuffix(string symName);
-    static string formatSymbolName(string symName, string symSuffix, /*string curPrefix*/);
-    static string unformatSymbolName(string symName, string symSuffix);
+    static string getCompareSymbol(int symType = 0);
+    static string getSymbolPrefix(string symName);
+    static string getSymbolSuffix(string symName);
+    static string fixSymbolName(string symName, string compareName = NULL);
+    static string stripSymbolName(string symName);
     static string getSymbolBaseCurrency(string symName);
     static string getSymbolQuoteCurrency(string symName);
 };
@@ -85,9 +83,6 @@ void SymbolManager::~SymbolManager() {
 }
 
 void SymbolManager::retrieveActiveSymbols(string includeSym, string excludeSymIn, string excludeCurIn) {
-    string symSuffix = getCurrencySuffix(Symbol());
-    
-    ArrayFree(symNames);
     ArrayFree(excludeCur);
     string finalSymString;
     
@@ -109,21 +104,16 @@ void SymbolManager::retrieveActiveSymbols(string includeSym, string excludeSymIn
     }
     
     for(int i = 0; i < includeSymCount; i++) {
-        string rawSymName = Common::StringTrim(includeSymSplit[i]);
-        int symLength = StringLen(rawSymName);
-        if(symLength < 6 || Common::GetStringType(StringSubstr(rawSymName, 0, 1)) == Type_Symbol) {
-            if(symLength > 0) { Error::PrintInfo(ErrorInfo, "rawSymName invalid, skipping", FunctionTrace, rawSymName); }
-            continue; 
-        }
+        string rawName = Common::StringTrim(includeSymSplit[i]);
+        string name = fixSymbolName(rawName);
+        string bareName = stripSymbolName(rawName);
         
-        string formSymName = formatSymbolName(rawSymName, symSuffix);
-        string bareSymName = unformatSymbolName(rawSymName, symSuffix);
-        
-        if(SingleSymbolMode || !isSymbolExcluded(bareSymName, excludeSym, excludeCur)) { 
-            // todo: exclude non-forex symbols even if SingleSymbolMode
-            addSymbol(formSymName, bareSymName, getSymbolBaseCurrency(bareSymName), getSymbolQuoteCurrency(bareSymName));
+        if(isSymbolTradable(name) && (SingleSymbolMode || !isSymbolExcluded(bareName, excludeSym, excludeCur))) { 
+            addSymbol(name, bareName, getSymbolBaseCurrency(name), getSymbolQuoteCurrency(name));
             
-            if(DebugLevel >= 2) { finalSymString += ", " + formSymName; }
+            if(ErrorTerminalLevel >= ErrorInfo || ErrorFileLevel >= ErrorInfo || ErrorAlertLevel >= ErrorInfo) { 
+                finalSymString += ", " + name; 
+            }
         }
     }
     
@@ -131,11 +121,14 @@ void SymbolManager::retrieveActiveSymbols(string includeSym, string excludeSymIn
 }
 
 
-int SymbolManager::addSymbol(string formSymName, string bareSymName = "", string baseCurName = "", string quoteCurName = "") {
+int SymbolManager::addSymbol(string name, string bareName = "", string baseCurName = "", string quoteCurName = "") {
     int size = ArraySize(symbols); // assuming 1-based
 
-    Common::ArrayPush(symbols, new SymbolUnit(formSymName, bareSymName, baseCurName, quoteCurName));
-    return Common::ArrayPush(symNames, formSymName);
+    return Common::ArrayPush(symbols, new SymbolUnit(name, bareName, baseCurName, quoteCurName));
+}
+
+int SymbolManager::getSymbolCount() {
+    return ArraySize(symbols);
 }
 
 int SymbolManager::getSymbolId(string symName, bool isBareSymName = false) {
@@ -143,13 +136,21 @@ int SymbolManager::getSymbolId(string symName, bool isBareSymName = false) {
     
     for(int i = 0; i < size; i++) {
         if(isBareSymName) {
-            if(symbols[i].bareSymName == symName) { return i; }
+            if(symbols[i].bareName == symName) { return i; }
         } else {
-            if(symbols[i].formSymName == symName) { return i; }
+            if(symbols[i].name == symName) { return i; }
         }
     }
     
     return -1;
+}
+
+bool SymbolManager::isSymbolTradable(string symName) {
+    // todo: allow non-forex types to be traded?
+    return (
+        SymbolInfoInteger(symName, SYMBOL_TRADE_CALC_MODE) == 0 // forex type
+        && SymbolInfoInteger(symName, SYMBOL_TRADE_MODE) > 0 // not disabled for trading
+        );
 }
 
 bool SymbolManager::isSymbolExcluded(string symName, string excludeSymIn, string &excludeCurIn[]) {
@@ -167,23 +168,10 @@ void SymbolManager::removeAllSymbols() {
     int size = ArraySize(symbols); // assuming 1-based
     
     for(int i=0; i < size; i++) {
-        delete(symbols[i]);
+        Common::SafeDelete(symbols[i]);
     }
     
     ArrayFree(symbols);
-    ArrayFree(symNames);
-}
-
-string SymbolManager::getFormSymName(string symName) {
-    int index = getSymbolId(symName);
-    
-    return symbols[index].formSymName;
-}
-
-int SymbolManager::getSymbolDigits(string symName) {
-    int index = getSymbolId(symName);
-    
-    return symbols[index].digits;
 }
 
 bool SymbolManager::retrieveData() {
@@ -205,76 +193,87 @@ int SymbolManager::getAllSymbols(string &allSymBuffer[]) {
     Common::ArrayReserve(allSymBuffer, count);
     
     for(int i = 0; i < count; i++) {
-        // todo: filter nonforex? we'll filter out prefixed names for now.
         string symName = SymbolName(i, false);
-        uchar prefix = StringGetCharacter(symName, 0);
-        if((prefix >= 65 && prefix <= 90) || (prefix >= 97 && prefix <= 122)) {
-            Common::ArrayPush(allSymBuffer, SymbolName(i, false));
-        }
+        Common::ArrayPush(allSymBuffer, symName);
     }
     
     return ArraySize(allSymBuffer);
 }
 
-//bool DoesSymbolHavePrefix(string curName, string curPrefix) {
-//    bool result;
-//    
-//    return result;
-//}
-//
-//string GetSymbolPrefix(string curName) {
-//    string result;
-//    
-//    return result;
-//}
-
-bool SymbolManager::doesSymbolHaveSuffix(string symName, string symSuffix) {
-    return (StringLen(symName) > 6 && StringCompare(StringSubstr(symName, 6), symSuffix) == 0);
-}
-
-string SymbolManager::getCurrencySuffix(string symName) {
-    return StringSubstr(symName, 6);
-}
-
-string SymbolManager::formatSymbolName(string symName, string symSuffix, /*string curPrefix*/) {
-    if(StringLen(symName) < 6) { 
-        Error::ThrowError(ErrorNormal, "symName is not >=6 chars, assuming invalid, passing as is.", FunctionTrace); 
-        return symName;
+string SymbolManager::getCompareSymbol(int symType=0) {
+    int count = SymbolsTotal(false);
+    
+    for(int i = 0; i < count; i++) {
+        string symName = SymbolName(i, false);
+        if(SymbolInfoInteger(symName, SYMBOL_TRADE_CALC_MODE) == symType) { return symName; }
     }
     
-    if(StringLen(symSuffix) < 1) { return symName; }
-    else if(doesSymbolHaveSuffix(symName, symSuffix)) { return symName; }
-    else if(StringAdd(symName, symSuffix)) { return symName; } 
-    else {
-        Error::ThrowError(ErrorNormal, "Could not figure out how to format symName, passing as is.", FunctionTrace);
-        return symName;
-    }
+    return "";
 }
 
-string SymbolManager::unformatSymbolName(string symName, string symSuffix = "") {
-    if(StringLen(symName) < 6) { 
-        Error::ThrowError(ErrorNormal, "symName is not >=6 chars, assuming invalid, passing as is.", FunctionTrace); 
-        return symName;
+string SymbolManager::getSymbolPrefix(string symName) {
+    string baseCur = getSymbolBaseCurrency(symName);
+    string quoteCur = getSymbolQuoteCurrency(symName);
+    
+    if(StringLen(symName) > StringLen(baseCur) + StringLen(quoteCur)) {
+        int basePos = StringFind(symName, baseCur);
+        if(basePos > 0) {
+            return StringSubstr(symName, 0, basePos);
+        }
     }
     
-    if(StringLen(symSuffix) <= 0) { symSuffix = getCurrencySuffix(symName); }
-    if(StringLen(symSuffix) < 1) { return symName; }
-    else if(!doesSymbolHaveSuffix(symName, symSuffix)) { return symName; }
-    else if(StringReplace(symName, symSuffix, "") > -1) { return symName; } 
-    else {
-        Error::ThrowError(ErrorNormal, "Could not figure out how to unformat symName, passing as is.", FunctionTrace);
-        return symName;
+    return "";
+}
+
+string SymbolManager::getSymbolSuffix(string symName) {
+    string baseCur = getSymbolBaseCurrency(symName);
+    string quoteCur = getSymbolQuoteCurrency(symName);
+    
+    if(StringLen(symName) > StringLen(baseCur) + StringLen(quoteCur)) {
+        int quotePos = StringFind(symName, quoteCur);
+        if(quotePos >= StringLen(baseCur)) {
+            return StringSubstr(symName, quotePos+StringLen(quoteCur));
+        }
     }
+    
+    return "";
+}
+
+string SymbolManager::fixSymbolName(string symName, string compareName = NULL) {
+    // todo: remove nonexistant -fixes if necessary
+
+    // we need to compare given symName to a market-provided symName, and add prefix and suffix if necessary
+    if(StringLen(compareName) <= 0) { compareName = getCompareSymbol(); }
+    
+    string prefix = getSymbolPrefix(compareName);
+    string suffix = getSymbolSuffix(compareName);
+    
+    if(StringLen(suffix) > 0 && StringFind(symName, suffix) != StringLen(symName)-StringLen(suffix)) { symName = symName + suffix; }
+    if(StringLen(prefix) > 0 && StringFind(symName, prefix) != 0) { symName = prefix + symName; }
+    
+    return symName;
+}
+
+string SymbolManager::stripSymbolName(string symName) {
+    string prefix = getSymbolPrefix(symName);
+    string suffix = getSymbolSuffix(symName);
+
+    if(StringLen(prefix) > 0) { StringReplace(symName, prefix, ""); }
+    if(StringLen(suffix) > 0) { StringReplace(symName, suffix, ""); }
+    
+    return symName;    
 }
 
 string SymbolManager::getSymbolBaseCurrency(string symName) {
-    string bareSymName = unformatSymbolName(symName);
-    return StringSubstr(bareSymName, 0, 3);
+    string result;
+    SymbolInfoString(symName, SYMBOL_CURRENCY_BASE, result);
+    return result;
 }
 
 string SymbolManager::getSymbolQuoteCurrency(string symName) {
-    string bareSymName = unformatSymbolName(symName);
-    return StringSubstr(bareSymName, 3, 3);
+    string result;
+    SymbolInfoString(symName, SYMBOL_CURRENCY_PROFIT, result);
+    return result;
 }
 
 SymbolManager *MainSymbolMan;

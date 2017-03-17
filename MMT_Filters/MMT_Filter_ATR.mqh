@@ -21,7 +21,7 @@ class FilterAtr : public Filter {
     
     public:
     void init();
-    bool calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut);
+    bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
 
 //+------------------------------------------------------------------+
@@ -51,7 +51,7 @@ void FilterAtr::init() {
     setupSubfilters(ATR_Value_Modes, ATR_Value_Names, SubfilterValue);
     
     // 3. Set up options per subfilter type.
-    int valueSubfilterCount = subfilterCount(SubfilterValue);
+    int valueSubfilterCount = getSubfilterCount(SubfilterValue);
     if(valueSubfilterCount > 0) {
         MultiSettings::Parse(ATR_Value_TimeFrame, timeFrame, valueSubfilterCount);
         MultiSettings::Parse(ATR_Value_Period, period, valueSubfilterCount);
@@ -61,22 +61,22 @@ void FilterAtr::init() {
     isInit = true;
 }
 
-bool FilterAtr::calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut) {
-    if(!checkSafe(subfilterIndex)) { return false; }
-    string symbol = MainSymbolMan.symbols[symbolIndex].formSymName;
+bool FilterAtr::calculate(int subfilterId, int symbolIndex, DataUnit *dataOut) {
+    if(!checkSafe(subfilterId)) { return false; }
+    string symbol = MainSymbolMan.symbols[symbolIndex].name;
     
 #ifdef __MQL5__
-    int iAtrHandle = iATR(symbol, GetMql5TimeFrame(timeFrame[subfilterIndex]), period[subfilterIndex]);
+    int iAtrHandle = iATR(symbol, GetMql5TimeFrame(timeFrame[subfilterId]), period[subfilterId]);
     if(iAtrHandle == INVALID_HANDLE) { return false; }
     double value = NormalizeDouble(
-        Common::GetSingleValueFromBuffer(iAtrHandle, shift[subfilterIndex])
+        Common::GetSingleValueFromBuffer(iAtrHandle, shift[subfilterId])
         , MarketInfo(symbol, MODE_DIGITS)
         );
     IndicatorRelease(iAtrHandle);
 #else
 #ifdef __MQL4__
     double value = NormalizeDouble(
-        iATR(symbol, timeFrame[subfilterIndex], period[subfilterIndex], shift[subfilterIndex])
+        iATR(symbol, timeFrame[subfilterId], period[subfilterId], shift[subfilterId])
         , MarketInfo(symbol, MODE_DIGITS)
         );
 #endif

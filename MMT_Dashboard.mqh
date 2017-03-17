@@ -7,6 +7,12 @@
 #property link      "https://www.mql5.com"
 #property strict
 
+#ifndef _ProjectName
+#define _ProjectName ""
+#define _ProjectShortName ""
+#define _ProjectVersion ""
+#endif
+
 #include "MMT_Symbols.mqh"
 #include "MMT_Filters/MMT_Filters.mqh"
 #include "MMT_Data/MMT_Data.mqh"
@@ -71,7 +77,7 @@ void DashboardManager::~DashboardManager() {
 }
 
 void DashboardManager::initDashboard() {
-    objPrefix = MMT_EaShortName + "_";
+    objPrefix = _ProjectShortName + "_";
     fontFace = DisplayFont;
     fontSize = 11+(DisplayScale < 1 ? -4 : (DisplayScale-1)*4); //DisplayFontSize;
     fontColorDefault = clrSilver;
@@ -83,8 +89,9 @@ void DashboardManager::initDashboard() {
     posSize = fontSize*1.2;//posSize = getPosSize(); // // guessing at fixed font width
         // http://stackoverflow.com/questions/19113725/what-dependency-between-font-size-and-width-of-char-in-monospace-font
     
-    if(DisplayStyle == ValueAndSignal) { colSize = 10; }
-    else { colSize = 8; } // expressed in pos units
+    colSize = 10;
+    //if(DisplayStyle == ValueAndSignal) { colSize = 10; }
+    //else { colSize = 8; } // expressed in pos units
     
     row = 1;
     col = 1;
@@ -101,10 +108,16 @@ void DashboardManager::initDashboard() {
 }
 
 void DashboardManager::drawHeader() {
-    string headerText = MMT_EaName + " " + MMT_Version +
+    string headerText = _ProjectName + " " + _ProjectVersion +
         spacedSepChar + IntegerToString(MagicNumber) + " " + ConfigComment + spacedSepChar;
     
-    string statusText = "DoTrade: " + (DoTrade ? "True" : "False") + " DoExit: " + (DoExit ? "True" : "False") + spacedSepChar;
+    string statusText = 
+        "Control: "
+        + (TradeEntryEnabled ? "Entry/": "") 
+        + (TradeExitEnabled ? "Exit/" : "") 
+        + (TradeValueEnabled ? "Value" : "")
+        + spacedSepChar
+        ;
     
     /* list of filters
     for(int i = 0; i < MainFilterMan.filterCount; i++) {
@@ -139,11 +152,11 @@ void DashboardManager::drawLegend() {
     
     dataPosStart = StringLen(legendText)+1;
     
-    int filterCount = MainFilterMan.filterCount();
+    int filterCount = MainFilterMan.getFilterCount();
     
     // entries
     for(int i = 0; i < filterCount; i++) {
-        subfilterCount = MainFilterMan.filters[i].subfilterCount();
+        subfilterCount = MainFilterMan.filters[i].getSubfilterCount();
         for(int j = 0; j < subfilterCount; j++) { 
             legendText += padText(truncText(MainFilterMan.filters[i].shortName, maxLabelPos-2) + "-" + MainFilterMan.filters[i].subfilterName[j], colSize);
         }
@@ -169,18 +182,18 @@ void DashboardManager::drawSymbols() {
     int maxLabelPos = colSize-1;
     int maxTextPos = 7; // "Symbols " minus 1
     int subfilterCount = 0;
-    int size = MainSymbolMan.symbolCount();
+    int size = MainSymbolMan.getSymbolCount();
     
     int j = 0; int k = 0;
     for(int i = 0; i < size; i++) {
         col = 0;
-        drawText(prefixName(IntegerToString(i)), truncText(MainSymbolMan.symNames[i], maxTextPos));
+        drawText(prefixName(IntegerToString(i)), truncText(MainSymbolMan.symbols[i].name, maxTextPos));
         
-        int filterCount = MainFilterMan.filterCount();
+        int filterCount = MainFilterMan.getFilterCount();
         
         // todo: order by filter type, or custom
         for(j = 0; j < filterCount; j++) {
-            subfilterCount = MainFilterMan.filters[j].subfilterCount();
+            subfilterCount = MainFilterMan.filters[j].getSubfilterCount();
             for(k = 0; k < subfilterCount; k++) { 
                 drawData(i, j, k);
                 col++;
@@ -202,15 +215,15 @@ void DashboardManager::drawData(int symbolId, int filterId, int subfilterId) {
 }
 
 void DashboardManager::updateDashboard() {
-    int filterCount = MainFilterMan.filterCount();
+    int filterCount = MainFilterMan.getFilterCount();
     int subfilterCount = 0;
-    int size = MainSymbolMan.symbolCount();
+    int size = MainSymbolMan.getSymbolCount();
     
     int j = 0; int k = 0;
     for(int i = 0; i < size; i++) {
         // todo: order by filter type, or custom
         for(j = 0; j < filterCount; j++) {
-            subfilterCount = MainFilterMan.filters[j].subfilterCount();
+            subfilterCount = MainFilterMan.filters[j].getSubfilterCount();
             for(k = 0; k < subfilterCount; k++) { 
                 updateData(i, j, k);
             }
@@ -235,19 +248,19 @@ void DashboardManager::updateData(int symbolId, int filterId, int subfilterId, b
         
         if(data == NULL) { dataResult = "-"; }
         else {
-            switch(DisplayStyle) {
-                case ValueAndSignal:
+            //switch(DisplayStyle) {
+            //    case ValueAndSignal:
                     dataResult = data.getStringValue(MainSymbolMan.symbols[symbolId].digits) + " " + signalToString(data.signal, true);
-                    break;
-                    
-                case SignalOnly:
-                    dataResult = signalToString(data.signal, false);
-                    break;
-                    
-                default: // value only
-                    dataResult = data.getStringValue(MainSymbolMan.symbols[symbolId].digits);
-                    break;
-            }
+//                    break;
+//                    
+//                case SignalOnly:
+//                    dataResult = signalToString(data.signal, false);
+//                    break;
+//                    
+//                default: // value only
+//                    dataResult = data.getStringValue(MainSymbolMan.symbols[symbolId].digits);
+//                    break;
+//            }
             
             fontColor = 
                 data.signal == SignalBuy ? fontColorBuy : 

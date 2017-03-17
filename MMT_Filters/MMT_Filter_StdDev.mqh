@@ -24,7 +24,7 @@ class FilterStdDev : public Filter {
     
     public:
     void init();
-    bool calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut);
+    bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
 
 //+------------------------------------------------------------------+
@@ -57,7 +57,7 @@ void FilterStdDev::init() {
     setupSubfilters(StdDev_Value_Modes, StdDev_Value_Names, SubfilterValue);
     
     // 3. Set up options per subfilter type.
-    int valueSubfilterCount = subfilterCount(SubfilterValue);
+    int valueSubfilterCount = getSubfilterCount(SubfilterValue);
     if(valueSubfilterCount > 0) {
         MultiSettings::Parse(StdDev_Value_TimeFrame, timeFrame, valueSubfilterCount);
         MultiSettings::Parse(StdDev_Value_Period, period, valueSubfilterCount);
@@ -70,22 +70,22 @@ void FilterStdDev::init() {
     isInit = true;
 }
 
-bool FilterStdDev::calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut) {
-    if(!checkSafe(subfilterIndex)) { return false; }
-    string symbol = MainSymbolMan.symbols[symbolIndex].formSymName;
+bool FilterStdDev::calculate(int subfilterId, int symbolIndex, DataUnit *dataOut) {
+    if(!checkSafe(subfilterId)) { return false; }
+    string symbol = MainSymbolMan.symbols[symbolIndex].name;
     
 #ifdef __MQL5__
     int iStdDevHandle = iStdDev(
         symbol
-        , GetMql5TimeFrame(timeFrame[subfilterIndex])
-        , period[subfilterIndex]
-        , shift[subfilterIndex]
-        , (ENUM_MA_METHOD)method[subfilterIndex]
-        , appliedPrice[subfilterIndex]
+        , GetMql5TimeFrame(timeFrame[subfilterId])
+        , period[subfilterId]
+        , shift[subfilterId]
+        , (ENUM_MA_METHOD)method[subfilterId]
+        , appliedPrice[subfilterId]
         );
     if(iStdDevHandle == INVALID_HANDLE) { return false; }
     double value = NormalizeDouble(
-        Common::GetSingleValueFromBuffer(iStdDevHandle, periodShift[subfilterIndex])
+        Common::GetSingleValueFromBuffer(iStdDevHandle, periodShift[subfilterId])
         , MarketInfo(symbol, MODE_DIGITS)
         );
     IndicatorRelease(iStdDevHandle);
@@ -94,12 +94,12 @@ bool FilterStdDev::calculate(int subfilterIndex, int symbolIndex, DataUnit *data
     double value = NormalizeDouble(
         iStdDev(
             symbol
-            , timeFrame[subfilterIndex]
-            , period[subfilterIndex]
-            , shift[subfilterIndex]
-            , method[subfilterIndex]
-            , appliedPrice[subfilterIndex]
-            , periodShift[subfilterIndex]
+            , timeFrame[subfilterId]
+            , period[subfilterId]
+            , shift[subfilterId]
+            , method[subfilterId]
+            , appliedPrice[subfilterId]
+            , periodShift[subfilterId]
             )
         , MarketInfo(symbol, MODE_DIGITS)
         );

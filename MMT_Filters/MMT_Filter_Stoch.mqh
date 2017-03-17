@@ -25,7 +25,7 @@ class FilterStoch : public Filter {
     
     public:
     void init();
-    bool calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut);
+    bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
 
 //+------------------------------------------------------------------+
@@ -100,23 +100,23 @@ void FilterStoch::init() {
     isInit = true;
 }
 
-bool FilterStoch::calculate(int subfilterIndex, int symbolIndex, DataUnit *dataOut) {
-    if(!checkSafe(subfilterIndex)) { return false; }
-    string symbol = MainSymbolMan.symbols[symbolIndex].formSymName;
+bool FilterStoch::calculate(int subfilterId, int symbolIndex, DataUnit *dataOut) {
+    if(!checkSafe(subfilterId)) { return false; }
+    string symbol = MainSymbolMan.symbols[symbolIndex].name;
     
 #ifdef __MQL5__
     int iStochHandle = iStochastic(
         symbol
-        , GetMql5TimeFrame(timeFrame[subfilterIndex])
-        , kPeriod[subfilterIndex]
-        , dPeriod[subfilterIndex]
-        , slowing[subfilterIndex]
-        , (ENUM_MA_METHOD)method[subfilterIndex]
-        , (ENUM_STO_PRICE)priceField[subfilterIndex]
+        , GetMql5TimeFrame(timeFrame[subfilterId])
+        , kPeriod[subfilterId]
+        , dPeriod[subfilterId]
+        , slowing[subfilterId]
+        , (ENUM_MA_METHOD)method[subfilterId]
+        , (ENUM_STO_PRICE)priceField[subfilterId]
         );
     if(iStochHandle == INVALID_HANDLE) { return false; }
     double value = NormalizeDouble(
-        Common::GetSingleValueFromBuffer(iStochHandle, shift[subfilterIndex], 0)
+        Common::GetSingleValueFromBuffer(iStochHandle, shift[subfilterId], 0)
         , MarketInfo(symbol, MODE_DIGITS)
         );
     IndicatorRelease(iStochHandle);
@@ -124,20 +124,20 @@ bool FilterStoch::calculate(int subfilterIndex, int symbolIndex, DataUnit *dataO
 #ifdef __MQL4__
     double value = iStochastic(
         symbol
-        , timeFrame[subfilterIndex]
-        , kPeriod[subfilterIndex]
-        , dPeriod[subfilterIndex]
-        , slowing[subfilterIndex]
-        , method[subfilterIndex]
-        , priceField[subfilterIndex]
+        , timeFrame[subfilterId]
+        , kPeriod[subfilterId]
+        , dPeriod[subfilterId]
+        , slowing[subfilterId]
+        , method[subfilterId]
+        , priceField[subfilterId]
         , 0
-        , shift[subfilterIndex]
+        , shift[subfilterId]
         );
 #endif
 #endif
     
-    double lowerZone = buySellZone[subfilterIndex];
-    double upperZone = 100-buySellZone[subfilterIndex];
+    double lowerZone = buySellZone[subfilterId];
+    double upperZone = 100-buySellZone[subfilterId];
     
     SignalType signal;
     signal = 

@@ -14,7 +14,7 @@
 #endif
 
 #include "MMT_Symbols.mqh"
-#include "MMT_Filters/MMT_Filters.mqh"
+#include "MMT_Filters/MMT_FilterManager.mqh"
 #include "MMT_Data/MMT_Data.mqh"
 
 class DashboardManager {

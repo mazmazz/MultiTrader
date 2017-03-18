@@ -10,7 +10,7 @@
 #include "MMT_Settings.mqh"
 #include "MC_Common/MC_Error.mqh"
 #include "MC_Common/MC_Common.mqh"
-#include "MMT_Filters/MMT_Filters.mqh"
+#include "MMT_Filters/MMT_FilterManager.mqh"
 
 //+------------------------------------------------------------------+
 

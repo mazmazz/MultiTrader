@@ -7,9 +7,10 @@
 #property link      "https://www.mql5.com"
 #property strict
 
-#include "MMT_Filters.mqh"
+#include "MMT_Filter.mqh"
 #include "../MC_Common/MC_MultiSettings.mqh"
 #include "../MMT_Data/MMT_DataUnit.mqh"
+#include "../MMT_Symbols.mqh"
 #include "../depends/PipFactor.mqh"
 
 class FilterStdDev : public Filter {

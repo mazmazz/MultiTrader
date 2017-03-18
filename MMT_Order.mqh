@@ -10,7 +10,7 @@
 
 #include "MC_Common/MC_Common.mqh"
 #include "MMT_Symbols.mqh"
-#include "MMT_Filters/MMT_Filters.mqh"
+#include "MMT_Filters/MMT_FilterManager.mqh"
 #include "MMT_Data/MMT_DataHistory.mqh"
 
 enum StopLossMode {

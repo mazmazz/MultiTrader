@@ -2,7 +2,7 @@
 #property link      ""
 #property strict
 
-#include "MMT_Filters/MMT_Filters.mqh"
+#include "MMT_Filters/MMT_FilterManager.mqh"
 #include "MMT_Symbols.mqh"
 #include "MMT_Data/MMT_Data.mqh"
 #include "MMT_Order.mqh"

@@ -58,7 +58,7 @@ class DashboardManager {
     string truncText(string text, int length);
     string padText(string text, int length);
     int getPosSize();
-    string signalToString(SignalType signal, bool shortCode = false);
+    string signalToString(SignalType signal, int duration, SubfilterType type, bool shortCode = true);
     
     void drawHeader();
     void drawLegend();
@@ -243,14 +243,19 @@ void DashboardManager::updateData(int symbolId, int filterId, int subfilterId, b
     if(!exists) { exists = (ObjectFind(0, objName) >= 0); }
     
     if(exists) {
-        DataUnit *data = MainDataMan.getDataHistory(symbolId, filterId, subfilterId).getData();
+        DataHistory *history = MainDataMan.getDataHistory(symbolId, filterId, subfilterId);
+        DataUnit *data = history.getData();
         color fontColor = fontColorDefault;
         
         if(data == NULL) { dataResult = "-"; }
         else {
             //switch(DisplayStyle) {
             //    case ValueAndSignal:
-                    dataResult = data.getStringValue(MainSymbolMan.symbols[symbolId].digits) + " " + signalToString(data.signal, true);
+                    dataResult = 
+                        data.getStringValue(MainSymbolMan.symbols[symbolId].digits) 
+                        + " " 
+                        + signalToString(data.signal, history.getSignalDuration(TimeSettingUnit), MainFilterMan.filters[filterId].subfilterType[subfilterId]);
+                        ;
 //                    break;
 //                    
 //                case SignalOnly:
@@ -281,10 +286,26 @@ string DashboardManager::getDataSuffix(int filterId, int subfilterId) {
         ;
 }
 
-string DashboardManager::signalToString(SignalType signal, bool shortCode = false) {
+string DashboardManager::signalToString(SignalType signal, int duration, SubfilterType type, bool shortCode = true) {
+    if(signal == SignalNone) { return ""; }
+
+    switch(type) {
+        case SubfilterEntry:
+            if(duration < EntryStableTime) { return IntegerToString(EntryStableTime - duration); }
+            break;
+            
+        case SubfilterExit:
+            if(duration < ExitStableTime) { return IntegerToString(ExitStableTime - duration); }
+            break;
+            
+        case SubfilterValue:
+            return ""; // value filters don't have signals
+    } 
+    
     switch(signal) {
         case SignalBuy: return shortCode ? "B" : "Buy"; break;
         case SignalSell: return shortCode ? "S" : "Sell"; break;
+        case SignalClose: return shortCode ? "C" : "Close"; break;
         case SignalHold: return shortCode ? "H" : "Hold"; break;
         default: return ""; break;
     }

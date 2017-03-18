@@ -34,7 +34,8 @@ extern ErrorLevel ErrorFileLevel=ErrorNone; // ErrorFileLevel: Errors to write t
 extern ErrorLevel ErrorAlertLevel=ErrorFatal; // ErrorAlertLevel: Errors to trigger an alert
 extern string ErrorLogFileName=""; // ErrorLogFileName: Leave blank to generate a filename    
 //extern int HistoryLevel=1; // HistoryLevel: Number of filter values to keep in memory
-int HistoryLevel=1; // not convinced this should be a user setting
+int DataHistoryLevel=1; // not convinced this should be a user setting
+int SignalHistoryLevel=5;
 
 extern string Lbl_CycleSettings="---- Cycle Settings ----";
 extern CycleType CycleMode=CycleTimerSeconds;
@@ -63,6 +64,7 @@ extern string Lbl_TradeDelays="-- Trade Delay Settings --"; // TradeDelays
 extern TimeUnits TimeSettingUnit=UnitSeconds; // TimeSettingUnit: Unit for values below
 extern int EntryStableTime=2;
 extern int ExitStableTime=10;
+//extern int PriorSignalStableTime=60;
 extern int ExitFirstCheckDelay=10;
 extern int TradeBetweenDelay=2; // TradeBetweenDelay: Time to wait between trades
 extern int ValueBetweenDelay=0; // ValueBetweenDelay: Time to wait between value changes

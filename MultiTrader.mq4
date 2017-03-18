@@ -121,6 +121,6 @@ void OnTick() {
 void OnDeinit(const int reason) {
     if(!Common::IsInvalidPointer(Main)) {
         Main.onDeinit(reason);
-        delete(Main);
+        Common::SafeDelete(Main);
     }
 }

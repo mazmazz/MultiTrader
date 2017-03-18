@@ -23,15 +23,15 @@
 
 class DataSubfilter {
     public:
-    DataSubfilter(int historyCount = -1);
+    DataSubfilter(int dataHistoryCount = -1, int signalHistoryCount = -1);
     ~DataSubfilter();
     DataHistory *history;
     
     //void deleteAllDataHistory();
 };
 
-void DataSubfilter::DataSubfilter(int historyCount = -1) {
-    history = new DataHistory(historyCount);
+void DataSubfilter::DataSubfilter(int dataHistoryCount = -1, int signalHistoryCount = -1) {
+    history = new DataHistory(dataHistoryCount, signalHistoryCount);
 }
 
 void DataSubfilter::~DataSubfilter() {

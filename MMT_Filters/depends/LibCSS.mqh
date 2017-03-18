@@ -537,7 +537,7 @@ string libCSS_symbolHelper_stripSymbolName(string symName) {
 }
 
 string libCSS_symbolHelper_getSymbolBaseCurrency(string symName) {
-        string baseCur;
+    string baseCur;
     string quoteCur;
     SymbolInfoString(symName, SYMBOL_CURRENCY_BASE, baseCur);
     SymbolInfoString(symName, SYMBOL_CURRENCY_PROFIT, quoteCur);

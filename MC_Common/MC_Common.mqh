@@ -17,9 +17,9 @@ enum StringType {
 };
 
 struct TimePoint {
-    int milliseconds;
+    uint milliseconds;
     datetime dateTime;
-    int cycles;
+    uint cycles;
     TimePoint() { milliseconds = GetTickCount(); dateTime = TimeCurrent(); cycles = 0; }
 };
 

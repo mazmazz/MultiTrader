@@ -11,6 +11,7 @@
 #include "../MC_Common/MC_MultiSettings.mqh"
 #include "../MMT_Data/MMT_Data.mqh"
 #include "../MMT_Data/MMT_DataUnit.mqh"
+#include "../MMT_Order.mqh"
 
 enum SubfilterMode {
     SubfilterDisabled,
@@ -114,6 +115,7 @@ class FilterManager {
     int getSubfilterId(string filterName, string subfilterName);
     int getSubfilterId(int filterId, string subfilterName, bool isDualId = false);
     int getFilterCount();
+    int getSubfilterCount(int filterId, SubfilterType type = SubfilterAllTypes);
     void deleteAllFilters();
     
     void calculateSubfilterByIndex(int filterIndex, int subfilterId, int symbolIndex);
@@ -223,6 +225,10 @@ int FilterManager::getFilterCount() {
     return ArraySize(filters);
 }
 
+int FilterManager::getSubfilterCount(int filterId, SubfilterType type = 0) {
+    return filters[filterId].getSubfilterCount(type);
+}
+
 void FilterManager::deleteAllFilters() {
     int size = ArraySize(filters); // assuming 1-based
     
@@ -239,9 +245,17 @@ void FilterManager::calculateSubfilterByIndex(int filterIndex, int subfilterId, 
     DataUnit *data = new DataUnit();
     
     if(filters[filterIndex].calculate(subfilterId, symbolIndex, data)) {
+        // todo: find a better place to put data processing
+        // perhaps pass a dataunit as ref to this function
+        // and put processing outside
+        
         data.success = true;
-        // data datetime?
+        
         MainDataMan.getDataHistory(symbolIndex, filterIndex, subfilterId).addData(data);
+        
+        // also collate trade signals and stability in OrderMan here, iteratively
+        // so we don't need to loop again in OrderMan to determine composite signal
+        MainOrderMan.updateSymbolSignals(symbolIndex, filterIndex, subfilterId);
     } else {
         delete(data);
     }

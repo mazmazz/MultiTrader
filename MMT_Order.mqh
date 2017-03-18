@@ -23,12 +23,15 @@ enum StopLossMode {
 
 struct TradeSignal{
     SignalType entryAction;
+    SignalType exitAction;
     SignalType exitLongAction;
     SignalType exitShortAction;
 };
 
 class OrderManager {
     public:
+    TradeSignal tradeSignals[];
+    
     OrderManager();
     ~OrderManager();
     
@@ -40,7 +43,6 @@ class OrderManager {
     // keyed by symbolId
     TimePoint lastTradeBetweenTime[];
     TimePoint lastValueBetweenTime[];
-    TradeSignal tradeSignals[];
     
     void enterPositionsBySymbol(int symbolId);
     void processCurrentPositions();

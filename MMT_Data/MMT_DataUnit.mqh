@@ -16,7 +16,9 @@ enum SignalType {
     SignalSell,
     SignalHold,
     SignalOpen,
-    SignalClose
+    SignalClose,
+    SignalLong,
+    SignalShort
 };
 
 //+------------------------------------------------------------------+

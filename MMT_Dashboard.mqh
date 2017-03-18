@@ -344,8 +344,13 @@ void DashboardManager::updateSymbolSignal(int symbolId,SubfilterType subType, bo
                 fontColor = fontColorAction;
                 break;
             case SubfilterExit: 
-                signal = MainOrderMan.tradeSignals[symbolId].entryAction; 
+                signal = MainOrderMan.tradeSignals[symbolId].exitAction; 
                 fontColor = fontColorCounterAction;
+                // negate signal for display purposes since this is an exit
+                switch(signal) {
+                    case SignalLong: signal = SignalShort; break;
+                    case SignalShort: signal = SignalLong; break;
+                }
                 break;
             default: return;
         }
@@ -382,7 +387,7 @@ string DashboardManager::signalToString(SignalType signal, int duration, Subfilt
             
         case SubfilterValue:
             return ""; // value filters don't have signals
-    } 
+    }
     
     switch(signal) {
         case SignalBuy: return shortCode ? "B" : "Buy"; break;
@@ -391,7 +396,7 @@ string DashboardManager::signalToString(SignalType signal, int duration, Subfilt
         case SignalOpen: return shortCode ? "O" : "Open"; break;
         case SignalClose: return shortCode ? "C" : "Close"; break;
         case SignalLong: return shortCode ? "L" : "Long"; break;
-        case SignalShort: return shortCode ? "H" : "Short"; break;
+        case SignalShort: return shortCode ? "S" : "Short"; break;
         default: return ""; break;
     }
 }

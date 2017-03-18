@@ -24,8 +24,6 @@ enum StopLossMode {
 struct TradeSignal{
     SignalType entryAction;
     SignalType exitAction;
-    SignalType exitLongAction;
-    SignalType exitShortAction;
 };
 
 class OrderManager {
@@ -160,167 +158,103 @@ void OrderManager::updateSymbolSignals(int symbolIdx, int filterIdx, int subfilt
     if(subMode == SubfilterDisabled) { return; }
     //if(subSignalType != SignalBuy && subSignalType != SignalSell) { return; }
     
+    // if(subSignalType != SignalNone) {
     subSignalStable = MainDataMan.getDataHistory(symbolIdx, filterIdx, subfilterIdx).getSignalStable(EntryStableTime, TimeSettingUnit);
+    // }
+    
+    SignalType actSignalType;
+    SignalType resultSignalType;
     
     switch(subType) {
-        case SubfilterEntry:
-            if(tradeSignals[symbolIdx].entryAction == SignalHold) { return; }
-            
-            switch(subMode) {
-                case SubfilterNormal:
-                    if(!subSignalStable) { 
-                        if(subSignalType == SignalBuy || subSignalType == SignalSell) {
-                            tradeSignals[symbolIdx].entryAction = SignalHold; 
-                        }
-                    } else {
-                        switch(subSignalType) {
-                            case SignalBuy:
-                                if(tradeSignals[symbolIdx].entryAction == SignalSell) { 
-                                    tradeSignals[symbolIdx].entryAction = SignalHold;
-                                } else {
-                                    tradeSignals[symbolIdx].entryAction = SignalBuy;
-                                }
-                                return;
-                                
-                            case SignalSell:
-                                if(tradeSignals[symbolIdx].entryAction == SignalBuy) { 
-                                    tradeSignals[symbolIdx].entryAction = SignalHold;
-                                } else {
-                                    tradeSignals[symbolIdx].entryAction = SignalSell;
-                                }
-                                return;
-                        }
-                    }
-                    return;
-                    
-                case SubfilterOpposite:
-                    if(!subSignalStable) {
-                        if(subSignalType == SignalBuy || subSignalType == SignalSell) {
-                            tradeSignals[symbolIdx].entryAction = SignalHold; 
-                        }
-                    } else {
-                        switch(subSignalType) {
-                            case SignalBuy:
-                                if(tradeSignals[symbolIdx].entryAction == SignalBuy) { 
-                                    tradeSignals[symbolIdx].entryAction = SignalHold;
-                                } else {
-                                    tradeSignals[symbolIdx].entryAction = SignalSell;
-                                }
-                                return;
-                                
-                            case SignalSell:
-                                if(tradeSignals[symbolIdx].entryAction == SignalSell) { 
-                                    tradeSignals[symbolIdx].entryAction = SignalHold;
-                                } else {
-                                    tradeSignals[symbolIdx].entryAction = SignalBuy;
-                                }
-                                return;
-                        }
-                    }
-                    
-                    return;
-                    
-                case SubfilterNotOpposite:
-                    if(!subSignalStable) { return; }
-                    
-                    if(
-                        (tradeSignals[symbolIdx].entryAction == SignalBuy && subSignalType == SignalSell)
-                        || (tradeSignals[symbolIdx].entryAction == SignalSell && subSignalType == SignalBuy)
-                    ) {
-                        tradeSignals[symbolIdx].entryAction = SignalHold;
-                    }
-                    return;
-                    
-                default: return;
-            }
-            
-        case SubfilterExit:
-            if(tradeSignals[symbolIdx].exitLongAction == SignalHold 
-                && tradeSignals[symbolIdx].exitShortAction == SignalHold 
-            ) { return; }
-            
-            switch(subMode) {
-                case SubfilterNormal:
-                    if(!subSignalStable) { 
-                        if(subSignalType == SignalBuy || subSignalType == SignalSell) {
-                            tradeSignals[symbolIdx].exitLongAction = SignalHold; 
-                            tradeSignals[symbolIdx].exitShortAction = SignalHold;
-                        }
-                    } else {
-                        switch(subSignalType) {
-                            case SignalBuy:
-                                if(tradeSignals[symbolIdx].exitLongAction == SignalClose) { 
-                                    tradeSignals[symbolIdx].exitLongAction = SignalHold;
-                                }
-                                
-                                tradeSignals[symbolIdx].exitShortAction = SignalClose;
-                                
-                                return;
-                                
-                            case SignalSell:
-                                if(tradeSignals[symbolIdx].exitShortAction == SignalClose) { 
-                                    tradeSignals[symbolIdx].exitShortAction = SignalHold;
-                                }
-                                
-                                tradeSignals[symbolIdx].exitLongAction = SignalClose;
-                                
-                                return;
-                        }
-                    }
-                    return;
-                    
-                case SubfilterOpposite:
-                    if(!subSignalStable) { 
-                        if(subSignalType == SignalBuy || subSignalType == SignalSell) {
-                            tradeSignals[symbolIdx].exitLongAction = SignalHold; 
-                            tradeSignals[symbolIdx].exitShortAction = SignalHold;
-                        }
-                    } else {
-                        switch(subSignalType) {
-                            case SignalBuy:
-                                if(tradeSignals[symbolIdx].exitShortAction == SignalClose) { 
-                                    tradeSignals[symbolIdx].exitShortAction = SignalHold;
-                                }
-                                
-                                tradeSignals[symbolIdx].exitLongAction = SignalClose;
-                                
-                                return;
-                                
-                            case SignalSell:
-                                if(tradeSignals[symbolIdx].exitLongAction == SignalClose) { 
-                                    tradeSignals[symbolIdx].exitLongAction = SignalHold;
-                                }
-                                
-                                tradeSignals[symbolIdx].exitShortAction = SignalClose;
-                                
-                                return;
-                        }
-                    }
-                    return;
-                    
-                case SubfilterNotOpposite:
-                    if(!subSignalStable) { return; }
-                    
-                    if(
-                        (tradeSignals[symbolIdx].exitLongAction == SignalClose && subSignalType == SignalSell)
-                        || (tradeSignals[symbolIdx].exitLongAction == SignalClose && subSignalType == SignalBuy)
-                    ) {
-                        tradeSignals[symbolIdx].exitLongAction = SignalHold;
-                    }
-                    
-                    if(
-                        (tradeSignals[symbolIdx].exitShortAction == SignalClose && subSignalType == SignalSell)
-                        || (tradeSignals[symbolIdx].exitShortAction == SignalClose && subSignalType == SignalBuy)
-                    ) {
-                        tradeSignals[symbolIdx].exitShortAction = SignalHold;
-                    }
-                    return;
-                    
-                default: return;
-            }
-            
+        case SubfilterEntry: actSignalType = tradeSignals[symbolIdx].entryAction; break;
+        case SubfilterExit: actSignalType = tradeSignals[symbolIdx].exitAction; break;
         default: return;
     }
+    
+    if(actSignalType == SignalHold) { return; }
+    
+    switch(subMode) {
+        case SubfilterNormal:
+            if(!subSignalStable) { 
+                if(subSignalType == SignalBuy || subSignalType == SignalSell) {
+                    resultSignalType = SignalHold; 
+                }
+            } else {
+                switch(subSignalType) {
+                    case SignalBuy:
+                        if(actSignalType == SignalShort) { 
+                            resultSignalType = SignalHold;
+                        } else {
+                            resultSignalType = SignalLong;
+                        }
+                        break;
+                        
+                    case SignalSell:
+                        if(actSignalType == SignalLong) { 
+                            resultSignalType = SignalHold;
+                        } else {
+                            resultSignalType = SignalShort;
+                        }
+                        break;
+                        
+                    default:
+                        resultSignalType = SignalHold;
+                        break;
+                }
+            }
+            break;
+            
+        case SubfilterOpposite:
+            if(!subSignalStable) {
+                if(subSignalType == SignalBuy || subSignalType == SignalSell) {
+                    resultSignalType = SignalHold; 
+                }
+            } else {
+                switch(subSignalType) {
+                    case SignalBuy:
+                        if(actSignalType == SignalLong) { 
+                            resultSignalType = SignalHold;
+                        } else {
+                            resultSignalType = SignalShort;
+                        }
+                        break;
+                        
+                    case SignalSell:
+                        if(actSignalType == SignalShort) { 
+                            resultSignalType = SignalHold;
+                        } else {
+                            resultSignalType = SignalLong;
+                        }
+                        break;
+                        
+                    default:
+                        resultSignalType = SignalHold;
+                        break;
+                }
+            }
+            break;
+            
+        case SubfilterNotOpposite:
+            if(!subSignalStable) { break; }
+            
+            if(
+                (actSignalType == SignalLong && subSignalType == SignalSell)
+                || (actSignalType == SignalShort && subSignalType == SignalBuy)
+            ) {
+                resultSignalType = SignalHold;
+            }
+            break;
+            
+        default: break;
+    }
+    
+    if(resultSignalType == SignalNone) { return; }
+    
+    switch(subType) {
+        case SubfilterEntry: tradeSignals[symbolIdx].entryAction = resultSignalType; break;
+        case SubfilterExit: tradeSignals[symbolIdx].exitAction = resultSignalType; break;
+    }
+    
 }
 
 OrderManager *MainOrderMan;

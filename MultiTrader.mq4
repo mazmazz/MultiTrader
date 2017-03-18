@@ -25,10 +25,10 @@
 
 #ifdef __MQL5__
 #include "MC_Common/Mql4Shim.mqh"
-#define _X64 IsX64()
+//#define _X64 IsX64()
 #else
 #ifdef __MQL4__
-#define _X64 false
+//#define _X64 false
 #endif
 #endif
 

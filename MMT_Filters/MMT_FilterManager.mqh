@@ -141,15 +141,7 @@ int FilterManager::getSubfilterCount(int filterId, SubfilterType type = 0) {
 }
 
 void FilterManager::deleteAllFilters() {
-    int size = ArraySize(filters); // assuming 1-based
-    
-    for(int i=0; i < size; i++) {
-        delete(filters[i]);
-    }
-    
-    ArrayFree(filters);
-    
-    return;
+    Common::SafeDeletePointerArray(filters);
 }
 
 void FilterManager::calculateSubfilterByIndex(int filterIndex, int subfilterId, int symbolIndex) {

@@ -67,6 +67,9 @@ class Common {
     static string GetRandomFileName(string prefix = "Log_", string ext = ".txt");
     
     template<typename T>
+    static void SafeDeletePointerArray(T &array[]);
+    
+    template<typename T>
     static void SafeDelete(T *pointer);
     template<typename T>
     static void SafeDelete(T pointer);
@@ -382,6 +385,15 @@ bool Common::EventSetMillisecondTimerReliable(int milliseconds) {
 
 string Common::GetRandomFileName(string prefix = "Log_", string ext = ".txt") {
     return prefix + (int)TimeLocal() + "_" + (int)GetMicrosecondCount() + ext;
+}
+
+template<typename T>
+void Common::SafeDeletePointerArray(T &array[]) {
+    int size = ArraySize(array);
+    
+    for(int i = 0; i < size; i++) {
+        Common::SafeDelete(array[i]);
+    }
 }
 
 //+------------------------------------------------------------------+

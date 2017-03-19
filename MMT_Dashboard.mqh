@@ -338,13 +338,16 @@ void DashboardManager::updateSymbolSignal(int symbolId,SubfilterType subType, bo
         string dataResult;
         color fontColor;
         
+        SignalUnit *signalUnit;
+        signalUnit = MainDataMan.symbol[symbolId].getSignalUnit(subType == SubfilterEntry);
+        if(!Common::IsInvalidPointer(signalUnit)) { signal = signalUnit.type; }
+        else { signal = SignalNone; }
+        
         switch(subType) {
             case SubfilterEntry: 
-                signal = MainOrderMan.tradeSignals[symbolId].entryAction; 
                 fontColor = fontColorAction;
                 break;
-            case SubfilterExit: 
-                signal = MainOrderMan.tradeSignals[symbolId].exitAction; 
+            case SubfilterExit:  
                 fontColor = fontColorCounterAction;
                 // negate signal for display purposes since this is an exit
                 switch(signal) {

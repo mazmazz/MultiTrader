@@ -21,21 +21,13 @@ enum StopLossMode {
     , StopModeBreakeven
 };
 
-struct TradeSignal{
-    SignalType entryAction;
-    SignalType exitAction;
-};
-
 class OrderManager {
     public:
-    TradeSignal tradeSignals[];
-    
     OrderManager();
     ~OrderManager();
     
     void doPositions();
     void updateSymbolSignals(int symbolIdx, int filterIdx, int subfilterIdx);
-    void resetSymbolSignals();
     
     private:
     // keyed by symbolId
@@ -65,7 +57,6 @@ void OrderManager::OrderManager() {
 
     ArrayResize(lastTradeBetweenTime, ArraySize(MainSymbolMan.symbols));
     ArrayResize(lastValueBetweenTime, ArraySize(MainSymbolMan.symbols));
-    resetSymbolSignals();
 }
 
 void OrderManager::~OrderManager() {
@@ -144,11 +135,6 @@ void OrderManager::enterPositionsBySymbol(int symbolId) {
 
 //+------------------------------------------------------------------+
 
-void OrderManager::resetSymbolSignals() {
-    ArrayFree(tradeSignals);
-    ArrayResize(tradeSignals, ArraySize(MainSymbolMan.symbols));
-}
-
 void OrderManager::updateSymbolSignals(int symbolIdx, int filterIdx, int subfilterIdx) {
     SubfilterType subType = MainFilterMan.filters[filterIdx].subfilterType[subfilterIdx];
     SubfilterMode subMode = MainFilterMan.filters[filterIdx].subfilterMode[subfilterIdx];
@@ -156,22 +142,22 @@ void OrderManager::updateSymbolSignals(int symbolIdx, int filterIdx, int subfilt
     bool subSignalStable;
     
     if(subMode == SubfilterDisabled) { return; }
-    //if(subSignalType != SignalBuy && subSignalType != SignalSell) { return; }
-    
-    // if(subSignalType != SignalNone) {
-    subSignalStable = MainDataMan.getDataHistory(symbolIdx, filterIdx, subfilterIdx).getSignalStable(EntryStableTime, TimeSettingUnit);
-    // }
+    if(subSignalType != SignalBuy && subSignalType != SignalSell) { return; }
+    if(subType != SubfilterEntry && subType != SubfilterExit) { return; }
     
     SignalType actSignalType;
     SignalType resultSignalType;
+    SignalUnit *compareUnit;
     
-    switch(subType) {
-        case SubfilterEntry: actSignalType = tradeSignals[symbolIdx].entryAction; break;
-        case SubfilterExit: actSignalType = tradeSignals[symbolIdx].exitAction; break;
-        default: return;
-    }
+    compareUnit = MainDataMan.symbol[symbolIdx].getSignalUnit(subType == SubfilterEntry);
+    if(!Common::IsInvalidPointer(compareUnit)) { actSignalType = compareUnit.type; }
+    else { actSignalType = SignalNone; }
     
     if(actSignalType == SignalHold) { return; }
+    
+    if(subSignalType != SignalNone) {
+        subSignalStable = MainDataMan.getDataHistory(symbolIdx, filterIdx, subfilterIdx).getSignalStable(EntryStableTime, TimeSettingUnit);
+    } else { subSignalStable = true; } // we want this to negate symbolSignals right away
     
     switch(subMode) {
         case SubfilterNormal:
@@ -250,11 +236,7 @@ void OrderManager::updateSymbolSignals(int symbolIdx, int filterIdx, int subfilt
     
     if(resultSignalType == SignalNone) { return; }
     
-    switch(subType) {
-        case SubfilterEntry: tradeSignals[symbolIdx].entryAction = resultSignalType; break;
-        case SubfilterExit: tradeSignals[symbolIdx].exitAction = resultSignalType; break;
-    }
-    
+    MainDataMan.symbol[symbolIdx].addSignalUnit(resultSignalType, subType == SubfilterEntry);
 }
 
 OrderManager *MainOrderMan;

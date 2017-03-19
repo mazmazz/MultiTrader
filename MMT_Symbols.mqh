@@ -165,13 +165,7 @@ bool SymbolManager::isSymbolExcluded(string symName, string excludeSymIn, string
 }
 
 void SymbolManager::removeAllSymbols() {
-    int size = ArraySize(symbols); // assuming 1-based
-    
-    for(int i=0; i < size; i++) {
-        Common::SafeDelete(symbols[i]);
-    }
-    
-    ArrayFree(symbols);
+    Common::SafeDeletePointerArray(symbols);
 }
 
 bool SymbolManager::retrieveData() {

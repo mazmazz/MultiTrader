@@ -17,10 +17,7 @@ class DataHistory {
     DataUnit *data[];
     
     public:
-    SignalType signalLastType[];
-    uint signalLastMilliseconds[];
-    datetime signalLastDatetime[];
-    uint signalLastCycles[];
+    SignalUnit *signal[];
     
     DataHistory();
     DataHistory(int dataHistoryCount, int signalHistoryCount);
@@ -42,7 +39,7 @@ class DataHistory {
     
     void deleteAllData();
 
-    void updateDataTimes(DataUnit *unit, int checkIndex = 0);
+    void addSignalUnit(SignalType curSignal, int checkIndex = 0);
     
     template<typename T>
     void compareRawValues(DataUnit *unit, DataUnit *compareUnit);
@@ -51,28 +48,19 @@ class DataHistory {
     int getSignalDuration(TimeUnits stableUnits);
     bool getSignalStable(int stableLength, TimeUnits stableUnits);
     
-    SignalType getSignalLastType(int index = 0);
-    uint getSignalLastMilliseconds(int index = 0);
-    datetime getSignalLastDatetime(int index = 0);
-    uint getSignalLastCycles(int index = 0);
+    SignalUnit *getSignalUnit(int index = 0);
 };
 
 void DataHistory::DataHistory() {
     ArraySetAsSeries(data, true); 
-    ArraySetAsSeries(signalLastType, true);
-    ArraySetAsSeries(signalLastMilliseconds, true);
-    ArraySetAsSeries(signalLastDatetime, true);
-    ArraySetAsSeries(signalLastCycles, true);
+    ArraySetAsSeries(signal, true);
         // this affects ArrayResize behavior by shifting all values up in index 
         // (i.e., element 0 is copied onto index 1 and then index 0 is freed.)
 }
 
 void DataHistory::DataHistory(int dataHistoryCountIn, int signalHistoryCountIn) {
     ArraySetAsSeries(data, true); 
-    ArraySetAsSeries(signalLastType, true);
-    ArraySetAsSeries(signalLastMilliseconds, true);
-    ArraySetAsSeries(signalLastDatetime, true);
-    ArraySetAsSeries(signalLastCycles, true);
+    ArraySetAsSeries(signal, true);
         // this affects ArrayResize behavior by s
     setHistoryCount(dataHistoryCountIn, signalHistoryCountIn);
 }
@@ -89,22 +77,16 @@ void DataHistory::setHistoryCount(int dataHistoryCountIn = -1, int signalHistory
     if(size > dataHistoryCount) { Common::ArrayDelete(data, 0, size-dataHistoryCount); size = dataHistoryCount; }
     ArrayResize(data, size, dataHistoryCount-size); 
     
-    size = ArraySize(signalLastType);
+    size = ArraySize(signal);
     if(size > signalHistoryCount) { 
-        Common::ArrayDelete(signalLastType, 0, size-signalHistoryCount); 
-        Common::ArrayDelete(signalLastMilliseconds, 0, size-signalHistoryCount);
-        Common::ArrayDelete(signalLastDatetime, 0, size-signalHistoryCount); 
-        Common::ArrayDelete(signalLastCycles, 0, size-signalHistoryCount);
+        Common::ArrayDelete(signal, 0, size-signalHistoryCount);
         size = signalHistoryCount; 
     }
-    ArrayResize(signalLastType, size, signalHistoryCount-size); 
-    ArrayResize(signalLastMilliseconds, size, signalHistoryCount-size); 
-    ArrayResize(signalLastDatetime, size, signalHistoryCount-size); 
-    ArrayResize(signalLastCycles, size, signalHistoryCount-size); 
+    ArrayResize(signal, size, signalHistoryCount-size); 
 }
 
 void DataHistory::addData(DataUnit *unit) {
-    updateDataTimes(unit);
+    addSignalUnit(unit.signal);
     
     Common::ArrayPush(data, unit, dataHistoryCount);
 }
@@ -118,55 +100,59 @@ void DataHistory::addData(bool success, T value, SignalType signal = SignalNone,
 }
 
 void DataHistory::deleteAllData() {
-    int size = ArraySize(data);
-    
-    for(int i = 0; i < size; i++) {
-        if(CheckPointer(data[i]) == POINTER_DYNAMIC) { delete(data[i]); }
-    }
+    Common::SafeDeletePointerArray(data);
+    Common::SafeDeletePointerArray(signal);
 }
 
-void DataHistory::updateDataTimes(DataUnit *unit, int checkIndex = 0) {
-    if(ArraySize(data) <= checkIndex || Common::IsInvalidPointer(data[checkIndex])) { return; }
-    
-    if (unit.signal != data[checkIndex].signal) {
-        Common::ArrayPush(signalLastMilliseconds, GetTickCount(), signalHistoryCount);
-        Common::ArrayPush(signalLastDatetime, TimeCurrent(), signalHistoryCount);
-        Common::ArrayPush(signalLastCycles, (uint)0, signalHistoryCount);
-        Common::ArrayPush(signalLastType, data[checkIndex].signal, signalHistoryCount);
-    } else if(ArraySize(signalLastCycles) > 0 ) { signalLastCycles[0]++; }
-    
-    // can't get this to work due to function template weirdness
-    //if (unit.getRawValue() != data[checkIndex].getRawValue();) {
-        //lastValueTime.milliseconds = GetTickCount();
-        //lastValueTime.dateTime = TimeCurrent();
-        //lastValueTime.cycles = 0;
-    //} else { lastValueTime.cycles++; }
-}
-
-SignalType DataHistory::getSignal(int unitIdx = 0) {
+SignalType DataHistory::getSignal(int unitIdx = 0) { // kept for compatibility, this looks at data history, not signal history
     if(unitIdx >= ArraySize(data) || Common::IsInvalidPointer(data[unitIdx])) { return SignalNone; }
     else { return data[unitIdx].signal; }
 }
 
+void DataHistory::addSignalUnit(SignalType curSignal, int checkIndex = 0) {
+    bool force;
+    SignalType compareSignal;
+    SignalUnit *compareUnit = getSignalUnit(checkIndex);
+    if(Common::IsInvalidPointer(compareUnit)) { force = true; }
+    else { compareSignal = compareUnit.type; }
+
+    if (force || (curSignal != compareSignal)) {
+        SignalUnit *signalUnit = new SignalUnit();
+        signalUnit.timeMilliseconds = GetTickCount();
+        signalUnit.timeDatetime = TimeCurrent();
+        signalUnit.timeCycles = 0;
+        signalUnit.type = curSignal;
+        Common::ArrayPush(signal, signalUnit, signalHistoryCount);
+    } else if(ArraySize(signal) > 0 && !Common::IsInvalidPointer(signal[0])) { signal[0].timeCycles++; }
+}
+
+SignalUnit *DataHistory::getSignalUnit(int index = 0) {
+    if(ArraySize(signal) > index) { return signal[index]; }
+    else { return NULL; }
+}
+
 int DataHistory::getSignalDuration(TimeUnits stableUnits) {
+    SignalUnit *compareUnit = getSignalUnit();
+    if(Common::IsInvalidPointer(compareUnit)) { return -1; }
+    
     //((cur) >= (prev)) ? ((cur)-(prev)) : ((0xFFFFFFFF-(prev))+(cur)+1)
     switch(stableUnits) {
         case UnitSeconds: {
             datetime cur = TimeCurrent();
-            datetime prev = getSignalLastDatetime();
+            datetime prev = compareUnit.timeDatetime;
             int duration = (cur >= prev) ? cur-prev : INT_MAX-prev+cur+1;
             return duration;
         }
         
         case UnitMilliseconds: {
             uint cur = GetTickCount();
-            uint prev = getSignalLastMilliseconds();
+            uint prev = compareUnit.timeMilliseconds;
             uint duration = (cur >= prev) ? cur-prev : UINT_MAX-prev+cur+1;
             return duration;
         }
             
         case UnitTicks: {
-            return getSignalLastCycles(); // this is just added iteratively
+            return compareUnit.timeCycles; // this is just added iteratively
         }
             
         default:
@@ -176,24 +162,4 @@ int DataHistory::getSignalDuration(TimeUnits stableUnits) {
 
 bool DataHistory::getSignalStable(int stableLength, TimeUnits stableUnits) {
     return (getSignalDuration(stableUnits) >= stableLength);
-}
-
-SignalType DataHistory::getSignalLastType(int index = 0) {
-    if(ArraySize(signalLastType) > index) { return signalLastType[index]; }
-    else { return SignalNone; }
-}
-
-uint DataHistory::getSignalLastMilliseconds(int index = 0) {
-    if(ArraySize(signalLastMilliseconds) > index) { return signalLastMilliseconds[index]; }
-    else { return 0; }
-}
-
-datetime DataHistory::getSignalLastDatetime(int index = 0) {
-    if(ArraySize(signalLastDatetime) > index) { return signalLastDatetime[index]; }
-    else { return 0; }
-}
-
-uint DataHistory::getSignalLastCycles(int index = 0) {
-    if(ArraySize(signalLastCycles) > index) { return signalLastCycles[index]; }
-    else { return 0; }
 }

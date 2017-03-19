@@ -64,8 +64,6 @@ void MainMultiTrader::onTimer() {
 }
 
 void MainMultiTrader::doCycle() {
-    MainOrderMan.resetSymbolSignals();
-
     MainSymbolMan.retrieveData();
         // iterates through symbols, calls filters and subs on all of them
         // filters feed data
@@ -78,15 +76,15 @@ void MainMultiTrader::doCycle() {
 }
 
 void MainMultiTrader::onDeinit(const int reason) {
-    delete(MainDashboardMan);
-    delete(MainOrderMan);
-    delete(MainDataMan);
-    delete(MainSymbolMan);
-    delete(MainFilterMan);
+    // cleanup
 }
 
 void MainMultiTrader::~MainMultiTrader() {
-    
+    Common::SafeDelete(MainDashboardMan);
+    Common::SafeDelete(MainOrderMan);
+    Common::SafeDelete(MainDataMan);
+    Common::SafeDelete(MainSymbolMan);
+    Common::SafeDelete(MainFilterMan);
 }
 
 bool MainMultiTrader::setAverageTickTimer() {

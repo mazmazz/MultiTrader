@@ -7,6 +7,7 @@
 #property link      "https://www.mql5.com"
 #property strict
 
+#include "../MMT_Settings.mqh"
 #include "../MC_Common/MC_MultiSettings.mqh"
 #include "../MMT_Symbols.mqh"
 #include "../MMT_Filters/MMT_FilterManager.mqh"
@@ -60,11 +61,7 @@ void DataFilter::DataFilter(int totalSubfilterCount, int historyCount = -1) {
 }
 
 void DataFilter::~DataFilter() {
-    int size = ArraySize(subfilter);
-    
-    for(int i = 0; i < size; i++) {
-        Common::SafeDelete(subfilter[i]);
-    }
+    Common::SafeDeletePointerArray(subfilter);
 }
 
 //+------------------------------------------------------------------+
@@ -72,12 +69,20 @@ void DataFilter::~DataFilter() {
 class DataSymbol {
     public:
     DataFilter *filter[];
+    SignalUnit *entrySignal[];
+    SignalUnit *exitSignal[];
     
     DataSymbol();
     DataSymbol(int filterCount);
     ~DataSymbol();
     
-    // void deleteAllFilterData();
+    void addSignalUnit(SignalType signal, bool isEntry);
+    SignalUnit *getSignalUnit(bool isEntry, int index = 0);
+    
+    private:
+    int signalHistoryCount;
+    
+    void setHistoryCount(int signalHistoryCountIn = -1);
 };
 
 void DataSymbol::DataSymbol(int filterCount) {
@@ -89,15 +94,72 @@ void DataSymbol::DataSymbol(int filterCount) {
             -1 //MainFilterMan.getFilterHistoryCount(i) //, MainFilterMan.getFilterHistoryCount(i, true)
             );
     }
+    
+    setHistoryCount(SignalHistoryLevel);
 }
 
 void DataSymbol::~DataSymbol() {
-    int size = ArraySize(filter);
+    Common::SafeDeletePointerArray(filter);
+    Common::SafeDeletePointerArray(entrySignal);
+    Common::SafeDeletePointerArray(exitSignal);
+}
+
+void DataSymbol::setHistoryCount(int signalHistoryCountIn = -1) {
+    signalHistoryCount = signalHistoryCountIn < 1 ? MathMax(1, SignalHistoryLevel) : signalHistoryCountIn;
+
+    int size = ArraySize(entrySignal);
+    if(size > signalHistoryCount) { 
+        Common::ArrayDelete(entrySignal, 0, size-signalHistoryCount);
+        size = signalHistoryCount; 
+    }
+    ArrayResize(entrySignal, size, signalHistoryCount-size); 
     
-    for(int i = 0; i < size; i++) {
-        Common::SafeDelete(filter[i]);
+    size = ArraySize(exitSignal);
+    if(size > signalHistoryCount) { 
+        Common::ArrayDelete(exitSignal, 0, size-signalHistoryCount);
+        size = signalHistoryCount; 
+    }
+    ArrayResize(exitSignal, size, signalHistoryCount-size); 
+}
+
+void DataSymbol::addSignalUnit(SignalType signal, bool isEntry) {
+    bool force; 
+    SignalType compareSignal;
+    SignalUnit *compareUnit = getSignalUnit(isEntry);
+    if(Common::IsInvalidPointer(compareUnit)) { force = true; }
+    else { compareSignal = compareUnit.type; }
+    
+    if (force && (signal != compareSignal)) {
+        SignalUnit *signalUnit = new SignalUnit();
+        signalUnit.timeMilliseconds = GetTickCount();
+        signalUnit.timeDatetime = TimeCurrent();
+        signalUnit.timeCycles = 0;
+        signalUnit.type = signal;
+        if(isEntry) { Common::ArrayPush(entrySignal, signalUnit, signalHistoryCount); }
+        else { Common::ArrayPush(exitSignal, signalUnit, signalHistoryCount); }
+    } else {
+        if(isEntry) {
+            if(ArraySize(entrySignal) > 0 && !Common::IsInvalidPointer(entrySignal[0])) { 
+                entrySignal[0].timeCycles++;
+            }
+        } else {
+            if(ArraySize(exitSignal) > 0 && !Common::IsInvalidPointer(exitSignal[0])) { 
+                exitSignal[0].timeCycles++;
+            }
+        }
     }
 }
+
+SignalUnit *DataSymbol::getSignalUnit(bool isEntry, int index = 0) {
+    if(isEntry) {
+        if(ArraySize(entrySignal) > index) { return entrySignal[index]; }
+        else { return NULL; }
+    } else {
+        if(ArraySize(exitSignal) > index) { return exitSignal[index]; }
+        else { return NULL; }
+    }
+}
+
 
 //+------------------------------------------------------------------+
 
@@ -125,12 +187,7 @@ void DataManager::DataManager(int symbolCount, int filterCount) {
 }
 
 void DataManager::~DataManager() {
-    int size = MainSymbolMan.getSymbolCount();
-    
-    //void deleteAllSymbolData();
-    for(int i = 0; i < size; i++) {
-        Common::SafeDelete(symbol[i]);
-    }
+    Common::SafeDeletePointerArray(symbol);
 }
 
 DataHistory *DataManager::getDataHistory(int symbolId, int filterId, int subfilterId){

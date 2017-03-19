@@ -21,6 +21,14 @@ enum SignalType {
     SignalShort
 };
 
+class SignalUnit { // ordinarily this would be a struct, but you can't get pointers from structs
+    public: 
+    SignalType type;
+    uint timeMilliseconds;
+    datetime timeDatetime;
+    uint timeCycles;
+};
+
 //+------------------------------------------------------------------+
 // DataList and DataUnit
 //+------------------------------------------------------------------+

@@ -14,6 +14,8 @@ class MultiSettings {
     private:
     static string KeyValDelimiter;
     static string PairDelimiter;
+    static string OptimizeDelimiter;
+    static string OptimizeParamDelimiter;
 
     public:
     static string GetPairValue(string pair);
@@ -31,6 +33,8 @@ class MultiSettings {
 
 string MultiSettings::KeyValDelimiter = "=";
 string MultiSettings::PairDelimiter = "|";
+string MultiSettings::OptimizeDelimiter = "#";
+string MultiSettings::OptimizeParamDelimiter = ",";
 
 // https://docs.mql4.com/convert/chartostr
 

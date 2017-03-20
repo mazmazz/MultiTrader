@@ -40,7 +40,7 @@ class FilterManager {
 };
 
 string FilterManager::DualNameDelimiter = "-";
-string FilterManager::DualIdDelimiter = "^";
+string FilterManager::DualIdDelimiter = "~";
 
 extern string Lbl_IndisAndFilters="********** Indicators & Filters **********"; // Filter List
 extern string Lbl_FilterLegend="0 = Disabled; 1 = Normal; 2 = Opposite; 3 = Not Opposite"; // Legend

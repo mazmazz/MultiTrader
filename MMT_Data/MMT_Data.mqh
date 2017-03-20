@@ -82,6 +82,7 @@ class DataSymbol {
     SignalUnit *getSignalUnit(bool isEntry, int index = 0);
     void updateSymbolSignal(int filterIdx, int subfilterIdx);
     int getSignalDuration(TimeUnits stableUnits, SignalUnit *prevUnit, SignalUnit *curUnit = NULL);
+    bool getSignalStable(int stableLength, TimeUnits stableUnits, SignalUnit *checkUnit);
     
     private:
     int signalHistoryCount;
@@ -312,6 +313,10 @@ int DataSymbol::getSignalDuration(TimeUnits stableUnits, SignalUnit *prevUnit, S
         default:
             return -1;
     }
+}
+
+bool DataSymbol::getSignalStable(int stableLength, TimeUnits stableUnits, SignalUnit *checkUnit) {
+    return (getSignalDuration(stableUnits, checkUnit) >= stableLength);
 }
 
 //+------------------------------------------------------------------+

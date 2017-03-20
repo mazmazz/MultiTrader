@@ -64,11 +64,11 @@ void MainMultiTrader::onTimer() {
 }
 
 void MainMultiTrader::doCycle() {
-    MainSymbolMan.retrieveData();
+    MainDataMan.retrieveDataFromFilters();
         // iterates through symbols, calls filters and subs on all of them
         // filters feed data
         
-    //MainOrderMan.doPositions();
+    MainOrderMan.doPositions();
     
     MainDashboardMan.updateDashboard();
     

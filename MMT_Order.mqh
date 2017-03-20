@@ -27,7 +27,6 @@ class OrderManager {
     ~OrderManager();
     
     void doPositions();
-    void updateSymbolSignals(int symbolIdx, int filterIdx, int subfilterIdx);
     
     private:
     // keyed by symbolId
@@ -95,37 +94,7 @@ void OrderManager::changePositionsBySymbol(int symbolId) {
 
 //+------------------------------------------------------------------+
 
-//void OrderManager::exitPositionsBySymbol(string symbol) {
-//    exitPositionsBySymbol(MainSymbolMan.getSymbolId(symbol));
-//}
 
-//void OrderManager::exitPositionsBySymbol(int symbolId) {
-//    // Check exit signal for symbol and exit the trade
-//    int filterCount = MainFilterMan.getFilterCount();
-//    SignalType finalBuySignal;
-//    SignalType finalSellSignal;
-//    
-//    for(int i = 0; i < filterCount; i++) {
-//        int exitSubfilterCount = MainFilterMan.getSubfilterCount(i, SubfilterExit);
-//        if(exitSubfilterCount <= 0) { continue; }
-//        
-//        for(int j = 0; j < exitSubfilterCount; j++) {
-//            SignalType filterSignal = MainDataMan.getDataHistory(symbolId, i, j).getSignal();
-//            bool signalStable = MainDataMan.getDataHistory(symbolId, i, j).getSignalStable(ExitStableTime, TimeSettingUnit);
-//            
-//            switch(MainFilterMan.filters[i].subfilterMode[j]) {
-//                case SubfilterNormal:
-//                    break;
-//                    
-//                case SubfilterOpposite:
-//                    break;
-//                    
-//                case SubfilterNotOpposite:
-//                    break;
-//            }
-//        }
-//    }
-//}
 
 //+------------------------------------------------------------------+
 
@@ -134,109 +103,5 @@ void OrderManager::enterPositionsBySymbol(int symbolId) {
 }
 
 //+------------------------------------------------------------------+
-
-void OrderManager::updateSymbolSignals(int symbolIdx, int filterIdx, int subfilterIdx) {
-    SubfilterType subType = MainFilterMan.filters[filterIdx].subfilterType[subfilterIdx];
-    SubfilterMode subMode = MainFilterMan.filters[filterIdx].subfilterMode[subfilterIdx];
-    SignalType subSignalType = MainDataMan.getDataHistory(symbolIdx, filterIdx, subfilterIdx).getSignal();
-    bool subSignalStable;
-    
-    if(subMode == SubfilterDisabled) { return; }
-    if(subSignalType != SignalBuy && subSignalType != SignalSell) { return; }
-    if(subType != SubfilterEntry && subType != SubfilterExit) { return; }
-    
-    SignalType actSignalType;
-    SignalType resultSignalType;
-    SignalUnit *compareUnit;
-    
-    compareUnit = MainDataMan.symbol[symbolIdx].getSignalUnit(subType == SubfilterEntry);
-    if(!Common::IsInvalidPointer(compareUnit)) { actSignalType = compareUnit.type; }
-    else { actSignalType = SignalNone; }
-    
-    if(actSignalType == SignalHold) { return; }
-    
-    if(subSignalType != SignalNone) {
-        subSignalStable = MainDataMan.getDataHistory(symbolIdx, filterIdx, subfilterIdx).getSignalStable(EntryStableTime, TimeSettingUnit);
-    } else { subSignalStable = true; } // we want this to negate symbolSignals right away
-    
-    switch(subMode) {
-        case SubfilterNormal:
-            if(!subSignalStable) { 
-                if(subSignalType == SignalBuy || subSignalType == SignalSell) {
-                    resultSignalType = SignalHold; 
-                }
-            } else {
-                switch(subSignalType) {
-                    case SignalBuy:
-                        if(actSignalType == SignalShort) { 
-                            resultSignalType = SignalHold;
-                        } else {
-                            resultSignalType = SignalLong;
-                        }
-                        break;
-                        
-                    case SignalSell:
-                        if(actSignalType == SignalLong) { 
-                            resultSignalType = SignalHold;
-                        } else {
-                            resultSignalType = SignalShort;
-                        }
-                        break;
-                        
-                    default:
-                        resultSignalType = SignalHold;
-                        break;
-                }
-            }
-            break;
-            
-        case SubfilterOpposite:
-            if(!subSignalStable) {
-                if(subSignalType == SignalBuy || subSignalType == SignalSell) {
-                    resultSignalType = SignalHold; 
-                }
-            } else {
-                switch(subSignalType) {
-                    case SignalBuy:
-                        if(actSignalType == SignalLong) { 
-                            resultSignalType = SignalHold;
-                        } else {
-                            resultSignalType = SignalShort;
-                        }
-                        break;
-                        
-                    case SignalSell:
-                        if(actSignalType == SignalShort) { 
-                            resultSignalType = SignalHold;
-                        } else {
-                            resultSignalType = SignalLong;
-                        }
-                        break;
-                        
-                    default:
-                        resultSignalType = SignalHold;
-                        break;
-                }
-            }
-            break;
-            
-        case SubfilterNotOpposite:
-            if(!subSignalStable) { break; }
-            
-            if(
-                (actSignalType == SignalLong && subSignalType == SignalSell)
-                || (actSignalType == SignalShort && subSignalType == SignalBuy)
-            ) {
-                resultSignalType = SignalHold;
-            }
-            break;
-            
-        default: break;
-    }
-    
-    if(resultSignalType == SignalNone) { return; }
-    
-    MainDataMan.symbol[symbolIdx].addSignalUnit(resultSignalType, subType == SubfilterEntry);
-}
 
 OrderManager *MainOrderMan;

@@ -71,6 +71,8 @@ class DataSymbol {
     DataFilter *filter[];
     SignalUnit *entrySignal[];
     SignalUnit *exitSignal[];
+    SignalType pendingEntrySignalType;
+    SignalType pendingExitSignalType;
     
     DataSymbol();
     DataSymbol(int filterCount);
@@ -78,6 +80,7 @@ class DataSymbol {
     
     void addSignalUnit(SignalType signal, bool isEntry);
     SignalUnit *getSignalUnit(bool isEntry, int index = 0);
+    void updateSymbolSignal(int filterIdx, int subfilterIdx);
     
     private:
     int signalHistoryCount;
@@ -95,6 +98,8 @@ void DataSymbol::DataSymbol(int filterCount) {
             );
     }
     
+    ArraySetAsSeries(entrySignal, true);
+    ArraySetAsSeries(exitSignal, true);
     setHistoryCount(SignalHistoryLevel);
 }
 
@@ -129,7 +134,7 @@ void DataSymbol::addSignalUnit(SignalType signal, bool isEntry) {
     if(Common::IsInvalidPointer(compareUnit)) { force = true; }
     else { compareSignal = compareUnit.type; }
     
-    if (force && (signal != compareSignal)) {
+    if (force || (signal != compareSignal)) {
         SignalUnit *signalUnit = new SignalUnit();
         signalUnit.timeMilliseconds = GetTickCount();
         signalUnit.timeDatetime = TimeCurrent();
@@ -160,6 +165,110 @@ SignalUnit *DataSymbol::getSignalUnit(bool isEntry, int index = 0) {
     }
 }
 
+void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx) {
+    SubfilterType subType = MainFilterMan.filters[filterIdx].subfilterType[subfilterIdx];
+    SubfilterMode subMode = MainFilterMan.filters[filterIdx].subfilterMode[subfilterIdx];
+    SignalType subSignalType = filter[filterIdx].subfilter[subfilterIdx].history.getSignal();
+    bool subSignalStable;
+    
+    if(subMode == SubfilterDisabled) { return; }
+    //if(subSignalType != SignalBuy && subSignalType != SignalSell) { return; }
+    if(subType != SubfilterEntry && subType != SubfilterExit) { return; }
+    
+    SignalType compareSignalType;
+    SignalType resultSignalType = SignalNone;
+    
+    if(subType == SubfilterEntry) { compareSignalType = pendingEntrySignalType; }
+    else { compareSignalType = pendingExitSignalType; }
+    
+    if(compareSignalType == SignalHold) { return; }
+    
+    if(subSignalType != SignalNone) {
+        subSignalStable = filter[filterIdx].subfilter[subfilterIdx].history.getSignalStable(
+            subType == SubfilterEntry ? EntryStableTime : ExitStableTime
+            , TimeSettingUnit
+            );
+    } else { subSignalStable = true; } // we want this to negate symbolSignals right away
+    
+    switch(subMode) {
+        case SubfilterNormal:
+            if(!subSignalStable) { 
+                if(subSignalType == SignalBuy || subSignalType == SignalSell) {
+                    resultSignalType = SignalHold; 
+                }
+            } else {
+                switch(subSignalType) {
+                    case SignalBuy:
+                        if(compareSignalType == SignalShort) { 
+                            resultSignalType = SignalHold;
+                        } else {
+                            resultSignalType = SignalLong;
+                        }
+                        break;
+                        
+                    case SignalSell:
+                        if(compareSignalType == SignalLong) { 
+                            resultSignalType = SignalHold;
+                        } else {
+                            resultSignalType = SignalShort;
+                        }
+                        break;
+                        
+                    default:
+                        resultSignalType = SignalHold;
+                        break;
+                }
+            }
+            break;
+            
+        case SubfilterOpposite:
+            if(!subSignalStable) {
+                if(subSignalType == SignalBuy || subSignalType == SignalSell) {
+                    resultSignalType = SignalHold; 
+                }
+            } else {
+                switch(subSignalType) {
+                    case SignalBuy:
+                        if(compareSignalType == SignalLong) { 
+                            resultSignalType = SignalHold;
+                        } else {
+                            resultSignalType = SignalShort;
+                        }
+                        break;
+                        
+                    case SignalSell:
+                        if(compareSignalType == SignalShort) { 
+                            resultSignalType = SignalHold;
+                        } else {
+                            resultSignalType = SignalLong;
+                        }
+                        break;
+                        
+                    default:
+                        resultSignalType = SignalHold;
+                        break;
+                }
+            }
+            break;
+            
+        case SubfilterNotOpposite:
+            if(!subSignalStable) { break; }
+            
+            if(
+                (compareSignalType == SignalLong && subSignalType == SignalSell)
+                || (compareSignalType == SignalShort && subSignalType == SignalBuy)
+            ) {
+                resultSignalType = SignalHold;
+            }
+            break;
+            
+        default: break;
+    }
+    
+    if(subType == SubfilterEntry) { pendingEntrySignalType = resultSignalType; } 
+    else { pendingExitSignalType = resultSignalType; }
+}
+
 
 //+------------------------------------------------------------------+
 
@@ -174,6 +283,8 @@ class DataManager {
     DataHistory *getDataHistory(int symbolId, int filterId, int subfilterId);
     DataHistory *getDataHistory(int symbolId, string filterName, int subfilterId);
     DataHistory *getDataHistory(string symbolId, int filterId, int subfilterId);
+    
+    bool retrieveDataFromFilters();
     
     // void deleteAllSymbolData();
 };
@@ -204,6 +315,21 @@ DataHistory *DataManager::getDataHistory(int symbolId, string filterName, int su
 
 DataHistory *DataManager::getDataHistory(string symName, int filterId, int subfilterId){
     return getDataHistory(MainSymbolMan.getSymbolId(symName), filterId, subfilterId);
+}
+
+bool DataManager::retrieveDataFromFilters() {
+    int size = ArraySize(MainSymbolMan.symbols);
+    
+    for(int i = 0; i < size; i++) {
+        symbol[i].pendingEntrySignalType = SignalNone;
+        symbol[i].pendingExitSignalType = SignalNone;
+        MainFilterMan.calculateFilters(i);
+        symbol[i].addSignalUnit(symbol[i].pendingEntrySignalType, true);
+        symbol[i].addSignalUnit(symbol[i].pendingExitSignalType, false);
+        
+    }
+    
+    return true;
 }
 
 DataManager *MainDataMan;

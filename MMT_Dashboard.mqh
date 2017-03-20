@@ -88,11 +88,17 @@ void DashboardManager::initDashboard() {
     objPrefix = _ProjectShortName + "_";
     fontFace = DisplayFont;
     fontSize = 11+(DisplayScale < 1 ? -4 : (DisplayScale-1)*4); //DisplayFontSize;
+    
     fontColorDefault = C'145,145,145';
-    fontColorBuy = C'0,178,0';
-    fontColorSell = clrRed;
-    fontColorAction = C'0,154,255';
-    fontColorCounterAction = C'255,100,0';
+    if(DisplayColor) {
+        fontColorBuy = C'0,178,0';
+        fontColorSell = clrRed;
+        fontColorAction = C'0,154,255';
+        fontColorCounterAction = C'255,100,0';
+    } else {
+        fontColorBuy = fontColorSell = fontColorAction = fontColorCounterAction = fontColorDefault;
+        // todo: underline/italic styles for buy/sell?
+    }
     
     rowSize = fontSize*2.5;
     posSize = fontSize*1.2;//posSize = getPosSize(); // // guessing at fixed font width

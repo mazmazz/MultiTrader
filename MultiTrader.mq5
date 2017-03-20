@@ -72,9 +72,10 @@ int OnInit() {
     Main.addFilter(new FilterCss());
 #endif
 
-    if(!SetCycle()) { return INIT_FAILED; }
+    int result = Main.onInit();
 
-    return Main.onInit();
+    if(!SetCycle()) { return INIT_FAILED; }
+    else { return result; }
 }
 
 bool SetCycle() {

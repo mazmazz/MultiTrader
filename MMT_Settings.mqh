@@ -146,6 +146,7 @@ extern double JumpingStopFilterFilterFactor=1.0;
 extern string LblDisplay="***** Display Settings *****";
 extern bool DisplayShow=true;
 extern bool DisplayShowTable=true;
+extern bool DisplayColor=true;
 //extern bool DisplayShowOrders=true;
 //extern string DisplayFont="Lucida Console";
 string DisplayFont="Lucida Console"; // Integral font to monospace layout and scaling, should not be user setting

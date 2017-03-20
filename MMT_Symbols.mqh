@@ -168,16 +168,6 @@ void SymbolManager::removeAllSymbols() {
     Common::SafeDeletePointerArray(symbols);
 }
 
-bool SymbolManager::retrieveData() {
-    int size = ArraySize(symbols);
-    
-    for(int i = 0; i < size; i++) {
-        MainFilterMan.calculateFilters(i);
-    }
-    
-    return true;
-}
-
 //+------------------------------------------------------------------+
 // Helpers [HELPERS]
 //+------------------------------------------------------------------+

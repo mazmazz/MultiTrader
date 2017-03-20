@@ -158,7 +158,7 @@ void FilterManager::calculateSubfilterByIndex(int filterIndex, int subfilterId, 
         
         // also collate trade signals and stability in OrderMan here, iteratively
         // so we don't need to loop again in OrderMan to determine composite signal
-        MainOrderMan.updateSymbolSignals(symbolIndex, filterIndex, subfilterId);
+        MainDataMan.symbol[symbolIndex].updateSymbolSignal(filterIndex, subfilterId);
     } else {
         delete(data);
     }

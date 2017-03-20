@@ -81,6 +81,7 @@ class DataSymbol {
     void addSignalUnit(SignalType signal, bool isEntry);
     SignalUnit *getSignalUnit(bool isEntry, int index = 0);
     void updateSymbolSignal(int filterIdx, int subfilterIdx);
+    int getSignalDuration(TimeUnits stableUnits, SignalUnit *prevUnit, SignalUnit *curUnit = NULL);
     
     private:
     int signalHistoryCount;
@@ -135,13 +136,30 @@ void DataSymbol::addSignalUnit(SignalType signal, bool isEntry) {
     else { compareSignal = compareUnit.type; }
     
     if (force || (signal != compareSignal)) {
-        SignalUnit *signalUnit = new SignalUnit();
-        signalUnit.timeMilliseconds = GetTickCount();
-        signalUnit.timeDatetime = TimeCurrent();
-        signalUnit.timeCycles = 0;
-        signalUnit.type = signal;
-        if(isEntry) { Common::ArrayPush(entrySignal, signalUnit, signalHistoryCount); }
-        else { Common::ArrayPush(exitSignal, signalUnit, signalHistoryCount); }
+        SignalUnit *newUnit = new SignalUnit();
+        newUnit.timeMilliseconds = GetTickCount();
+        newUnit.timeDatetime = TimeCurrent();
+        newUnit.timeCycles = 0;
+        newUnit.type = signal;
+        
+        if(isEntry) { 
+            // retracement avoidance: for entry, check last entrySignal[1] if signal type is equal and was fulfilled
+                // if yes, check last entrySignal[0] if signal time is less than SignalChangeStableTime
+                    // if yes, set new SignalUnit fulfilled flag so EA doesn't place orders on a retrace
+            SignalUnit *secondCompareUnit = getSignalUnit(isEntry, 1); // todo: loop through entire buffer to see if current signal exists then check for stability
+            if(!Common::IsInvalidPointer(secondCompareUnit) && !Common::IsInvalidPointer(compareUnit)) {
+                if(signal == secondCompareUnit.type 
+                    && secondCompareUnit.fulfilled
+                    && getSignalDuration(TimeSettingUnit, compareUnit) < SignalChangeStableTime
+                ) {
+                    newUnit.fulfilled = true;
+                    // newUnit.blockFulfillment = true; // if we want to track this avoidance
+                }
+            }
+            
+            Common::ArrayPush(entrySignal, newUnit, signalHistoryCount); 
+        }
+        else { Common::ArrayPush(exitSignal, newUnit, signalHistoryCount); }
     } else {
         if(isEntry) {
             if(ArraySize(entrySignal) > 0 && !Common::IsInvalidPointer(entrySignal[0])) { 
@@ -269,6 +287,32 @@ void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx) {
     else { pendingExitSignalType = resultSignalType; }
 }
 
+int DataSymbol::getSignalDuration(TimeUnits stableUnits, SignalUnit *prevUnit, SignalUnit *curUnit = NULL) {
+    if(Common::IsInvalidPointer(prevUnit)) { return -1; }
+    
+    //((cur) >= (prev)) ? ((cur)-(prev)) : ((0xFFFFFFFF-(prev))+(cur)+1)
+    switch(stableUnits) {
+        case UnitSeconds: {
+            datetime cur = !Common::IsInvalidPointer(curUnit) ? curUnit.timeDatetime : TimeCurrent();
+            datetime prev = prevUnit.timeDatetime;
+            return Common::GetTimeDuration(cur, prev);
+        }
+        
+        case UnitMilliseconds: {
+            uint cur = !Common::IsInvalidPointer(curUnit) ? curUnit.timeMilliseconds : GetTickCount();
+            uint prev = prevUnit.timeMilliseconds;
+            uint duration = (cur >= prev) ? cur-prev : UINT_MAX-prev+cur+1;
+            return Common::GetTimeDuration(cur, prev);
+        }
+            
+        case UnitTicks: {
+            return prevUnit.timeCycles; // this is just added iteratively
+        }
+            
+        default:
+            return -1;
+    }
+}
 
 //+------------------------------------------------------------------+
 

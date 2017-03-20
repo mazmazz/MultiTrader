@@ -45,7 +45,7 @@ class DataHistory {
     void compareRawValues(DataUnit *unit, DataUnit *compareUnit);
     
     SignalType getSignal(int unitIdx = 0);
-    int getSignalDuration(TimeUnits stableUnits);
+    int getSignalDuration(TimeUnits stableUnits, SignalUnit *prevUnit, SignalUnit *curUnit = NULL);
     bool getSignalStable(int stableLength, TimeUnits stableUnits);
     
     SignalUnit *getSignalUnit(int index = 0);
@@ -131,28 +131,27 @@ SignalUnit *DataHistory::getSignalUnit(int index = 0) {
     else { return NULL; }
 }
 
-int DataHistory::getSignalDuration(TimeUnits stableUnits) {
-    SignalUnit *compareUnit = getSignalUnit();
-    if(Common::IsInvalidPointer(compareUnit)) { return -1; }
+int DataHistory::getSignalDuration(TimeUnits stableUnits, SignalUnit *prevUnit = NULL, SignalUnit *curUnit = NULL) {
+    if(Common::IsInvalidPointer(prevUnit)) { prevUnit = getSignalUnit(); }
+    if(Common::IsInvalidPointer(prevUnit)) { return -1; }
     
     //((cur) >= (prev)) ? ((cur)-(prev)) : ((0xFFFFFFFF-(prev))+(cur)+1)
     switch(stableUnits) {
         case UnitSeconds: {
-            datetime cur = TimeCurrent();
-            datetime prev = compareUnit.timeDatetime;
-            int duration = (cur >= prev) ? cur-prev : INT_MAX-prev+cur+1;
-            return duration;
+            datetime cur = !Common::IsInvalidPointer(curUnit) ? curUnit.timeDatetime : TimeCurrent();
+            datetime prev = prevUnit.timeDatetime;
+            return Common::GetTimeDuration(cur, prev);
         }
         
         case UnitMilliseconds: {
-            uint cur = GetTickCount();
-            uint prev = compareUnit.timeMilliseconds;
+            uint cur = !Common::IsInvalidPointer(curUnit) ? curUnit.timeMilliseconds : GetTickCount();
+            uint prev = prevUnit.timeMilliseconds;
             uint duration = (cur >= prev) ? cur-prev : UINT_MAX-prev+cur+1;
-            return duration;
+            return Common::GetTimeDuration(cur, prev);
         }
             
         case UnitTicks: {
-            return compareUnit.timeCycles; // this is just added iteratively
+            return prevUnit.timeCycles; // this is just added iteratively
         }
             
         default:

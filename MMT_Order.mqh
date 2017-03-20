@@ -100,6 +100,12 @@ void OrderManager::changePositionsBySymbol(int symbolId) {
 
 void OrderManager::enterPositionsBySymbol(int symbolId) {
     // if symbolSignal has an entryAction = SignalBuy or SignalCell, given a symbolIdx, then do that action
+    
+    // todo: for exit, check if entrySignal[0] is opposite to pending signal 
+    // if yes, block entrySignal[0] from fulfillment
+    // if no, check stability: if last exitSignal[0] is stable
+        // if yes, allow fulfillment of entrySignal[0]
+        // if no, block fulfillment of entrySignal[0]
 }
 
 //+------------------------------------------------------------------+

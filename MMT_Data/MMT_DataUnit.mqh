@@ -27,6 +27,8 @@ class SignalUnit { // ordinarily this would be a struct, but you can't get point
     uint timeMilliseconds;
     datetime timeDatetime;
     uint timeCycles;
+    
+    bool fulfilled;
 };
 
 //+------------------------------------------------------------------+

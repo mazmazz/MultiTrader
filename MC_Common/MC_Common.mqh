@@ -59,6 +59,9 @@ class Common {
     
     static bool IsDatetimeInRange(datetime subject, int startDayOfWeek, int startHour, int endDayOfWeek, int endHour);
     
+    template<typename T>
+    static int GetTimeDuration(T cur, T prev);
+    
     static string GetSqlDatetime(datetime source, bool appendTimeOffset=false, string timeOffset=""/*, bool calcBrokerOffset=false*/);
     
     static bool EventSetTimerReliable(int seconds);
@@ -320,6 +323,18 @@ bool Common::IsDatetimeInRange(datetime subject, int startDayOfWeek, int startHo
         : currentDayOfWeek == endDayOfWeek ? currentHour < endHour
         : currentDayOfWeek > startDayOfWeek && currentDayOfWeek < fixedEndDayOfWeek
         ;
+}
+
+template<typename T>
+int Common::GetTimeDuration(T cur, T prev) {
+    // todo: long and ulong handling?
+    if(typename(T) == "int" || typename(T) == "datetime") {
+        return (cur >= prev) ? cur-prev : INT_MAX-prev+cur+1;
+    } else if(typename(T) == "uint") {
+        return (cur >= prev) ? cur-prev : UINT_MAX-prev+cur+1;
+    } else {
+        return -1;
+    }
 }
 
 string Common::GetSqlDatetime(datetime source, bool appendTimeOffset=false, string timeOffset=""/*, bool calcBrokerOffset=false*/) {

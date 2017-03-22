@@ -73,6 +73,8 @@ int OnInit() {
 #endif
 
     int result = Main.onInit();
+    
+    Main.doFirstRun();
 
     if(!SetCycle()) { return INIT_FAILED; }
     else { return result; }
@@ -108,11 +110,7 @@ bool SetCycle() {
 }
 
 void OnTimer() {
-    //EventKillTimer(); 
-        // undecided on this: timer events don't wait until the previous OnTimer call finishes. 
-        // Are there issues to simultaneous OnTimer calls?
     Main.onTimer();
-    //SetCycle();
 }
 
 void OnTick() {

@@ -51,10 +51,10 @@ extern string Lbl_Trade="***** Trade Settings *****";
 extern bool TradeEntryEnabled=true;
 extern bool TradeExitEnabled=true;
 extern bool TradeValueEnabled=true;
-extern int MagicNumber=1245;
+extern int MagicNumber=1;
 extern string ConfigComment=""; // ConfigComment: Comment to display on dashboard
 extern string OrderComment_=""; // OrderComment: Comment to attach to orders
-extern double MinTradeMarginLevel=125; // MinTradeMarginLevel (percent)
+extern double MinTradeMarginLevel=5001; // MinTradeMarginLevel (percent)
 
 extern string Lbl_MultipleTrades="-- Multiple Trades Settings --";
 extern int MaxTradesPerSymbol=3;
@@ -64,9 +64,10 @@ extern string Lbl_TradeDelays="-- Trade Delay Settings --"; // TradeDelays
 extern TimeUnits TimeSettingUnit=UnitSeconds; // TimeSettingUnit: Unit for values below
 extern int EntryStableTime=2;
 extern int ExitStableTime=10;
-extern int SignalChangeStableTime=60;
 extern int ExitFirstCheckDelay=10;
-extern int TradeBetweenDelay=2; // TradeBetweenDelay: Time to wait between trades
+extern bool SignalRetraceOpen=true; // SignalRetraceOpen: Enter additional positions on a retrace
+extern int SignalRetraceDelay=3600; // SignalRetraceDelay: Time to wait before entering on a retrace
+extern int TradeBetweenDelay=300; // TradeBetweenDelay: Time to wait between trades
 extern int ValueBetweenDelay=0; // ValueBetweenDelay: Time to wait between value changes
 //
 //extern string LbL_Exit_ExpiryTrade="--- Expiry Trade Exit Settings ---";

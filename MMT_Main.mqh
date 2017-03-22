@@ -12,6 +12,9 @@
 
 class MainMultiTrader {
     public:
+    bool firstRunComplete;
+    bool cycleRunning;
+    
     void MainMultiTrader();
     int onInit();
     void onTick();
@@ -19,6 +22,7 @@ class MainMultiTrader {
     void onDeinit(const int reason);
     void ~MainMultiTrader();
     void doCycle();
+    void doFirstRun();
     
     void addFilter(Filter *inputFilter);
     
@@ -64,15 +68,24 @@ void MainMultiTrader::onTimer() {
 }
 
 void MainMultiTrader::doCycle() {
+    if(cycleRunning) { 
+        return; 
+    }
+    else { cycleRunning = true; }
+        // undecided on this: timer events don't wait until the previous OnTimer call finishes. 
+        // Are there issues to simultaneous OnTimer calls?
+
     MainDataMan.retrieveDataFromFilters();
         // iterates through symbols, calls filters and subs on all of them
         // filters feed data
         
-    MainOrderMan.doPositions();
+    MainOrderMan.doPositions(firstRunComplete);
     
     MainDashboardMan.updateDashboard();
     
     // MainDataWriterMan.writeStuff();
+    
+    cycleRunning = false;
 }
 
 void MainMultiTrader::onDeinit(const int reason) {
@@ -97,6 +110,12 @@ bool MainMultiTrader::setAverageTickTimer() {
     //max value 1000
     
     return Common::EventSetMillisecondTimerReliable(500);
+}
+
+void MainMultiTrader::doFirstRun() {
+    firstRunComplete = false;
+    doCycle();
+    firstRunComplete = true;
 }
 
 MainMultiTrader *Main;

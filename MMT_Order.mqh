@@ -27,14 +27,14 @@ class OrderManager {
     OrderManager();
     ~OrderManager();
     
-    void doPositions();
+    void doPositions(bool firstRun);
     
     private:
     // keyed by symbolId
     TimePoint lastTradeBetweenTime[];
     TimePoint lastValueBetweenTime[];
     
-    void processCurrentPositions();
+    void processCurrentPositions(bool firstRun);
     void changePositionsBySymbol(string symbol);
     void changePositionsBySymbol(int symbolId);
     
@@ -64,9 +64,9 @@ void OrderManager::~OrderManager() {
 
 }
 
-void OrderManager::doPositions() {
+void OrderManager::doPositions(bool firstRun) {
     // todo: separate cycles for updating vs. enter/exit?
-    processCurrentPositions();
+    processCurrentPositions(firstRun);
     
     int symbolCount = MainSymbolMan.getSymbolCount();
     for(int i = 0; i < symbolCount; i++) {
@@ -74,10 +74,22 @@ void OrderManager::doPositions() {
     }
 }
 
-void OrderManager::processCurrentPositions() {
+void OrderManager::processCurrentPositions(bool firstRun) {
     for(int i = 0; i < OrdersTotal(); i++) {
         OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
         if(OrderMagicNumber() != MagicNumber) { continue; }
+        
+        if(firstRun) { // if signal already exists for open order, raise fulfilled flag so no repeat is opened
+            int symbolIdx = MainSymbolMan.getSymbolId(OrderSymbol());
+            int orderAct = OrderType();
+            SignalUnit *checkEntrySignal = MainDataMan.symbol[symbolIdx].getSignalUnit(true);
+            if(!Common::IsInvalidPointer(checkEntrySignal)) {
+                if(
+                    (orderAct == OP_BUY && checkEntrySignal.type == SignalLong)
+                    || (orderAct == OP_SELL && checkEntrySignal.type == SignalShort)
+                ) { checkEntrySignal.fulfilled = true; }
+            }
+        }
         
         // todo: cache pending value and exit updates?
         //changePositionsBySymbol(OrderSymbol());
@@ -128,25 +140,35 @@ bool OrderManager::checkExitPosition(int ticket) {
 //+------------------------------------------------------------------+
 
 int OrderManager::enterPositionBySymbol(int symIdx) {
-    // todo: for exit, check if entrySignal[0] is opposite to pending signal 
-    // if yes, block entrySignal[0] from fulfillment
-    // if no, check stability: if last exitSignal[0] is stable
-        // if yes, allow fulfillment of entrySignal[0]
-        // if no, block fulfillment of entrySignal[0]
-        
     SignalUnit *checkUnit = MainDataMan.symbol[symIdx].getSignalUnit(true);
     if(Common::IsInvalidPointer(checkUnit)) { return 0; }
     else if(checkUnit.fulfilled) { return 0; }
     
     if(checkUnit.type != SignalLong && checkUnit.type != SignalShort) { return 0; }
     
-    if(!MainDataMan.symbol[symIdx].getSignalStable(EntryStableTime, TimeSettingUnit, checkUnit)) { return 0; }
-    
     // check exit signal conflict here
+    //int exitUnitCount = ArraySize(MainDataMan.symbol[symIdx].exitSignal);
+    //for(int i = 0; i < exitUnitCount; i++) {
+    //    if(
+    //        !Common::IsInvalidPointer(MainDataMan.symbol[symIdx].exitSignal[i])
+    //        && ((checkUnit.type == SignalLong && MainDataMan.symbol[symIdx].exitSignal[i].type == SignalShort)
+    //            || (checkUnit.type == SignalShort && MainDataMan.symbol[symIdx].exitSignal[i].type == SignalLong) 
+    //        )
+    //        && MainDataMan.symbol[symIdx].getSignalDuration(TimeSettingUnit, MainDataMan.symbol[symIdx].exitSignal[i]) >= SignalRetraceDelay
+    //    ) {
+    //        return 0;
+    //    }
+    //}
     
+    SignalUnit *checkExitUnit = MainDataMan.symbol[symIdx].getSignalUnit(false);
+    if(!Common::IsInvalidPointer(checkExitUnit)) {
+        // todo: how to handle retraces where exit signal is temporarily not in opposite?
+        // retracement delay? loop through buffer and see if exit signal existed within retracement delay?
+        if(checkUnit.type == SignalLong && checkExitUnit.type == SignalShort) { return 0; }
+        if(checkUnit.type == SignalShort && checkExitUnit.type == SignalLong) { return 0; }
+    }
     
     // todo: check spread for entry
-    
     
     string posSymName = MainSymbolMan.symbols[symIdx].name;
     int posCmd = checkUnit.type == SignalLong ? OP_BUY : OP_SELL; // todo: pending orders?

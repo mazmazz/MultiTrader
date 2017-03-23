@@ -56,6 +56,7 @@
 //+------------------------------------------------------------------+
 
 int OnInit() {
+    Error::ProjectName = _ProjectShortName;
     Error::TerminalLevel = ::ErrorTerminalLevel;
     Error::FileLevel = ::ErrorFileLevel;
     Error::AlertLevel = ::ErrorAlertLevel;
@@ -143,4 +144,6 @@ void OnDeinit(const int reason) {
         Main.onDeinit(reason);
         Common::SafeDelete(Main);
     }
+    
+    Error::CloseErrorFile();
 }

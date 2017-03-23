@@ -16,11 +16,20 @@ enum StringType {
     Type_Symbol
 };
 
-struct TimePoint {
+class TimePoint {
+    public:
     uint milliseconds;
     datetime dateTime;
     uint cycles;
-    TimePoint() { milliseconds = GetTickCount(); dateTime = TimeCurrent(); cycles = 0; }
+    TimePoint(uint millisecondsIn = 0, datetime dateTimeIn = 0, uint cyclesIn = 0) { 
+        update(millisecondsIn, dateTimeIn, cyclesIn);
+    }
+    
+    void update (uint millisecondsIn = 0, datetime dateTimeIn = 0, uint cyclesIn = 0) { 
+        milliseconds = millisecondsIn > 0 ? millisecondsIn : GetTickCount(); 
+        dateTime = dateTimeIn > 0 ? dateTimeIn : TimeCurrent(); 
+        cycles = cyclesIn; 
+    }
 };
 
 string StringZeroArray[1];

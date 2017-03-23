@@ -151,7 +151,7 @@ void DataSymbol::addSignalUnit(SignalType signal, bool isEntry) {
                 
                 if(SignalRetraceOpen) {
                     // todo: more sophisticated rule? should extra lots be allowed to open, after a time?
-                    retraceGuard = getSignalDuration(TimeSettingUnit, compareUnit) < SignalRetraceDelay;
+                    retraceGuard = getSignalDuration(TimeSettingUnit, compareUnit) < SignalRetraceTime;
                 } else {
                     // check if opposite exit signal was fulfilled (i.e., was old trade already closed?)
                     // this should negate a retrace and not set the fulfilled flag

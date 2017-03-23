@@ -22,6 +22,15 @@ enum StopLossMode {
     , StopModeBreakeven
 };
 
+class ValueLocation {
+    public:
+    CalcMethod calcType;
+    int filterIdx;
+    int subIdx;
+    double setVal;
+    double factor;
+};
+
 class OrderManager {
     public:
     OrderManager();
@@ -30,57 +39,103 @@ class OrderManager {
     void doPositions(bool firstRun);
     
     private:
-    // keyed by symbolId
-    TimePoint lastTradeBetweenTime[];
-    TimePoint lastValueBetweenTime[];
+    ValueLocation *stopLossLoc;
+    ValueLocation *takeProfitLoc;
+    ValueLocation *maxSpreadLoc;
+    ValueLocation *maxSlippageLoc;
+    ValueLocation *lotSizeLoc;
+    ValueLocation *breakEvenLoc;
     
-    void processCurrentPositions(bool firstRun);
-    void changePositionsBySymbol(string symbol);
-    void changePositionsBySymbol(int symbolId);
+    TimePoint *lastTradeBetween[]; // keyed by symbolId
+    TimePoint *lastValueBetween[];
+    int positionOpenCount[];
     
-    bool checkExitPosition(int ticket);
+    void initValueLocations();
+    ValueLocation *fillValueLocation(CalcMethod calcTypeIn, double setValIn, string filterNameIn, double factorIn);
     
-    int enterPositionBySymbol(int symIdx);
+    void doCurrentPositions(bool firstRun);
+    void doChangePosition(int ticket, int symIdx);
+    bool doExitPosition(int ticket, int symIdx);
+    int doEnterPosition(int symIdx);
+    
+    double getValue(ValueLocation *loc, int symbolIdx);
+    template <typename T>
+    bool getValue(T outVal, ValueLocation *loc, int symbolIdx);
+    void setLastTimePoint(int symbolIdx, bool isLastTrade, uint millisecondsIn = 0, datetime dateTimeIn = 0, uint cyclesIn = 0);
+    bool getLastTimeElapsed(int symbolIdx, bool isLastTrade, TimeUnits compareUnit, int delayCompare);
+    
+    double calculateStopLoss();
+    double calculateTakeProfit();
+    double calculateLotSize();
+    double calculateMaxSpread();
+    double calculateMaxSlippage();
 };
 
 void OrderManager::OrderManager() {
-//    EntryStable
-//    ExitStable
-//    * Check against lastSignalX in DataHistory
-//    
-//    ExitFirstCheckDelay
-//    * Just compare to order open time
-//    
-//    TradeBetweenDelay
-//    * Record last trade time per symbol in OrderMan
-//    ValueBetweenDelay
-//    * Record last value time per symbol (per trade???) in OrderMan
-
-    ArrayResize(lastTradeBetweenTime, ArraySize(MainSymbolMan.symbols));
-    ArrayResize(lastValueBetweenTime, ArraySize(MainSymbolMan.symbols));
+    ArrayResize(positionOpenCount, ArraySize(MainSymbolMan.symbols));
+    ArrayInitialize(positionOpenCount, 0);
+    if(TradeBetweenDelay > 0 ) { ArrayResize(lastTradeBetween, ArraySize(MainSymbolMan.symbols)); }
+    if(ValueBetweenDelay > 0 ) { ArrayResize(lastValueBetween, ArraySize(MainSymbolMan.symbols)); }
+    
+    initValueLocations();
 }
 
 void OrderManager::~OrderManager() {
+    Common::SafeDeletePointerArray(lastTradeBetween);
+    Common::SafeDeletePointerArray(lastValueBetween);
 
+    Common::SafeDelete(lotSizeLoc);
+    Common::SafeDelete(breakEvenLoc);
+    Common::SafeDelete(stopLossLoc);
+    Common::SafeDelete(takeProfitLoc);
+    Common::SafeDelete(maxSpreadLoc);
+    Common::SafeDelete(maxSlippageLoc);
 }
+
+void OrderManager::initValueLocations() {
+    maxSpreadLoc = fillValueLocation(MaxSpreadCalcMethod, MaxSpreadValue, MaxSpreadFilterName, MaxSpreadFilterFactor);
+    maxSlippageLoc = fillValueLocation(MaxSlippageCalcMethod, MaxSlippageValue, MaxSlippageFilterName, MaxSlippageFilterFactor);
+    lotSizeLoc = fillValueLocation(LotSizeCalcMethod, LotSizeValue, LotSizeFilterName, LotSizeFilterFactor);
+    stopLossLoc = fillValueLocation(StopLossCalcMethod, StopLossValue, StopLossFilterName, StopLossFilterFactor);
+    takeProfitLoc = fillValueLocation(TakeProfitCalcMethod, TakeProfitValue, TakeProfitFilterName, TakeProfitFilterFactor);
+    breakEvenLoc = fillValueLocation(BreakEvenCalcMethod, BreakEvenValue, BreakEvenFilterName, BreakEvenFilterFactor);
+}
+
+ValueLocation *OrderManager::fillValueLocation(CalcMethod calcTypeIn, double setValIn, string filterNameIn, double factorIn) {
+    ValueLocation *targetLoc = new ValueLocation();
+    
+    targetLoc.calcType = calcTypeIn;
+    if(calcTypeIn == CalcValue) {
+        targetLoc.setVal = setValIn;
+    } else {
+        targetLoc.filterIdx = MainFilterMan.getFilterId(filterNameIn);
+        targetLoc.subIdx = MainFilterMan.getSubfilterId(filterNameIn);
+        targetLoc.factor = factorIn;
+    }
+    
+    return targetLoc;
+}
+
+//+------------------------------------------------------------------+
 
 void OrderManager::doPositions(bool firstRun) {
     // todo: separate cycles for updating vs. enter/exit?
-    processCurrentPositions(firstRun);
+    doCurrentPositions(firstRun);
     
     int symbolCount = MainSymbolMan.getSymbolCount();
     for(int i = 0; i < symbolCount; i++) {
-        enterPositionBySymbol(i);
+        doEnterPosition(i);
     }
 }
 
-void OrderManager::processCurrentPositions(bool firstRun) {
+void OrderManager::doCurrentPositions(bool firstRun) {
     for(int i = 0; i < OrdersTotal(); i++) {
         OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
         if(OrderMagicNumber() != MagicNumber) { continue; }
+        int symbolIdx = MainSymbolMan.getSymbolId(OrderSymbol());
+        positionOpenCount[symbolIdx]++;
         
         if(firstRun) { // if signal already exists for open order, raise fulfilled flag so no repeat is opened
-            int symbolIdx = MainSymbolMan.getSymbolId(OrderSymbol());
             int orderAct = OrderType();
             SignalUnit *checkEntrySignal = MainDataMan.symbol[symbolIdx].getSignalUnit(true);
             if(!Common::IsInvalidPointer(checkEntrySignal)) {
@@ -92,29 +147,31 @@ void OrderManager::processCurrentPositions(bool firstRun) {
         }
         
         // todo: cache pending value and exit updates?
-        //changePositionsBySymbol(OrderSymbol());
-        checkExitPosition(OrderTicket());
+        doChangePosition(OrderTicket(), symbolIdx);
+        doExitPosition(OrderTicket(), symbolIdx);
     }
 }
 
 //+------------------------------------------------------------------+
 
-void OrderManager::changePositionsBySymbol(string symbol) {
-    changePositionsBySymbol(MainSymbolMan.getSymbolId(symbol));
-}
-
-void OrderManager::changePositionsBySymbol(int symbolId) {
+void OrderManager::doChangePosition(int ticket, int symIdx) {
     // For each setting (sltp, etc) retrieve filter value and update if necessary
+    if(!TradeValueEnabled) { return; }
+    if(!getLastTimeElapsed(symIdx, false, TimeSettingUnit, ValueBetweenDelay)) { return; }
+    
+    // setLastTimePoint(symIdx, false);
 }
 
 //+------------------------------------------------------------------+
 
-bool OrderManager::checkExitPosition(int ticket) {
+bool OrderManager::doExitPosition(int ticket, int symIdx) {
+    if(!TradeExitEnabled) { return true; }
+
     if(OrderTicket() != ticket) { 
         if(!OrderSelect(ticket, SELECT_BY_TICKET)) { return false; } 
     }
     string posSymName = OrderSymbol();
-    int symIdx = MainSymbolMan.getSymbolId(posSymName);
+    //int symIdx = MainSymbolMan.getSymbolId(posSymName);
     
     SignalUnit *checkUnit = MainDataMan.symbol[symIdx].getSignalUnit(false);
     if(Common::IsInvalidPointer(checkUnit)) { return true; }
@@ -133,13 +190,21 @@ bool OrderManager::checkExitPosition(int ticket) {
     int posSlippage = 40; // todo: get slippage from filter?
     
     bool result = OrderClose(ticket, posLots, posPrice, posSlippage);
-    checkUnit.fulfilled = result;
+    if(result) {
+        checkUnit.fulfilled = true;
+        positionOpenCount[symIdx]--;
+    }
     return result;
 }
 
 //+------------------------------------------------------------------+
 
-int OrderManager::enterPositionBySymbol(int symIdx) {
+int OrderManager::doEnterPosition(int symIdx) {
+    if(!TradeEntryEnabled) { return 0; }
+    if(!getLastTimeElapsed(symIdx, true, TimeSettingUnit, TradeBetweenDelay)) { return 0; }
+    if(AccountInfoDouble(ACCOUNT_MARGIN_LEVEL) < TradeMinMarginLevel) { return 0; }
+    if(MaxTradesPerSymbol > 0 && MaxTradesPerSymbol <= positionOpenCount[symIdx]) { return 0; }
+
     SignalUnit *checkUnit = MainDataMan.symbol[symIdx].getSignalUnit(true);
     if(Common::IsInvalidPointer(checkUnit)) { return 0; }
     else if(checkUnit.fulfilled) { return 0; }
@@ -172,20 +237,121 @@ int OrderManager::enterPositionBySymbol(int symIdx) {
     
     string posSymName = MainSymbolMan.symbols[symIdx].name;
     int posCmd = checkUnit.type == SignalLong ? OP_BUY : OP_SELL; // todo: pending orders?
-    double posVolume = 0.01; // todo: get order size
+    
+    double posVolume = getValue(lotSizeLoc, symIdx);
+    
     double posPrice = posCmd == OP_SELL ? MarketInfo(posSymName, MODE_BID) : MarketInfo(posSymName, MODE_ASK);
+    
     int posSlippage = 40; // todo: get slippage
     double posStoploss = 0; // todo: get stop loss
     double posTakeprofit = 0; // todo: get take profit
+    
     string posComment = OrderComment_;
     int posMagic = MagicNumber;
     // datetime posExpiration
     
     int result = OrderSend(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic);
-    checkUnit.fulfilled = (result > -1);
+    if(result > -1) {
+        checkUnit.fulfilled = true;
+        setLastTimePoint(symIdx, true);
+        positionOpenCount[symIdx]++;
+    }
     return result;
 }
 
 //+------------------------------------------------------------------+
+
+double OrderManager::getValue(ValueLocation *loc, int symbolIdx) {
+    double finalVal;
+    getValue(finalVal, loc, symbolIdx);
+    return finalVal;
+}
+
+template <typename T>
+bool OrderManager::getValue(T outVal, ValueLocation *loc, int symbolIdx) {
+    if(Common::IsInvalidPointer(loc)) { return false; }
+    
+    switch(loc.calcType) {
+        case CalcValue:
+            outVal = loc.setVal;
+            return true;
+        
+        case CalcFilter: {
+            DataHistory *filterHist = MainDataMan.getDataHistory(symbolIdx, loc.filterIdx, loc.subIdx);
+            if(Common::IsInvalidPointer(filterHist)) { return false; }
+            
+            DataUnit* filterData = filterHist.getData();
+            if(Common::IsInvalidPointer(filterData)) { return false; }
+            
+            double val;
+            if(filterData.getRawValue(val)) {
+                outVal = val*loc.factor;
+                return true;
+            } else { return false; }
+        }
+        
+        default: return false;
+    }
+}
+
+void OrderManager::setLastTimePoint(int symbolIdx, bool isLastTrade, uint millisecondsIn = 0, datetime dateTimeIn = 0, uint cyclesIn = 0) {
+    if(isLastTrade) {
+        if(TradeBetweenDelay <= 0) { return; }
+        if(!Common::IsInvalidPointer(lastTradeBetween[symbolIdx])) { lastTradeBetween[symbolIdx].update(); }
+        else { lastTradeBetween[symbolIdx] = new TimePoint(); }
+    } else {
+        if(ValueBetweenDelay <= 0) { return; }
+        if(!Common::IsInvalidPointer(lastValueBetween[symbolIdx])) { lastValueBetween[symbolIdx].update(); }
+        else { lastValueBetween[symbolIdx] = new TimePoint(); }
+    }
+}
+
+bool OrderManager::getLastTimeElapsed(int symbolIdx, bool isLastTrade, TimeUnits compareUnit, int delayCompare) {
+    if(delayCompare <= 0) { return true; }
+    
+    if(isLastTrade) {
+        if(Common::IsInvalidPointer(lastTradeBetween[symbolIdx])) { return true; } // probably uninit'd timepoint, meaning no record, meaning unlimited time passed
+    } else {
+        if(Common::IsInvalidPointer(lastValueBetween[symbolIdx])) { return true; }
+    }
+    
+    switch(compareUnit) {
+        case UnitMilliseconds: 
+            if(isLastTrade) { return Common::GetTimeDuration(GetTickCount(), lastTradeBetween[symbolIdx].milliseconds) >= delayCompare; } 
+            else { return Common::GetTimeDuration(GetTickCount(), lastValueBetween[symbolIdx].milliseconds) >= delayCompare; }
+            
+        case UnitSeconds:
+            if(isLastTrade) { return Common::GetTimeDuration(TimeCurrent(), lastTradeBetween[symbolIdx].dateTime) >= delayCompare; } 
+            else { return Common::GetTimeDuration(TimeCurrent(), lastValueBetween[symbolIdx].dateTime) >= delayCompare; }
+            
+        case UnitTicks:
+            if(isLastTrade) { return lastTradeBetween[symbolIdx].cycles >= delayCompare; } 
+            else { return lastValueBetween[symbolIdx].cycles >= delayCompare; }
+            
+        default: return false;
+    }
+}
+
+//+------------------------------------------------------------------+
+
+double OrderManager::calculateStopLoss() {
+    return 0;
+}
+
+double OrderManager::calculateTakeProfit() {
+    return 0;
+}
+
+double OrderManager::calculateLotSize() {
+    return 0;
+}
+
+double OrderManager::calculateMaxSpread() {
+    return 0;
+}
+
+double OrderManager::calculateMaxSlippage() {
+    return 0;
+}
 
 OrderManager *MainOrderMan;

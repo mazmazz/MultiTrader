@@ -80,6 +80,27 @@ int OnInit() {
     else { return result; }
 }
 
+bool ValidateSettings() {
+    bool finalResult = true;
+    
+    if(!SingleSymbolMode && CycleMode == CycleRealTicks) {
+        Error::ThrowFatalError(ErrorFatal, "Real tick cycle works only in Single Symbol Mode.");
+        finalResult = false;
+    }
+    
+    if(TimeSettingUnit == UnitTicks && CycleMode != CycleRealTicks) {
+        Error::ThrowFatalError(ErrorFatal, "Trade delay time must be specified in seconds or milliseconds when not running in real tick cycles.");
+        finalResult = false;
+    }
+    
+    if(AccountInfoDouble(ACCOUNT_MARGIN_LEVEL) > TradeMinMarginLevel) {
+        TradeMinMarginLevel = AccountInfoDouble(ACCOUNT_MARGIN_LEVEL);
+        Error::PrintInfo(ErrorInfo, "Setting TradeMinMarginLevel to account margin call level: " + AccountInfoDouble(ACCOUNT_MARGIN_LEVEL));
+    }
+    
+    return finalResult;
+}
+
 bool SetCycle() {
     bool result = false;
     

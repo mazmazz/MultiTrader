@@ -86,6 +86,7 @@ void DashboardManager::~DashboardManager() {
 
 void DashboardManager::initDashboard() {
     objPrefix = _ProjectShortName + "_";
+    
     fontFace = DisplayFont;
     fontSize = 11+(DisplayScale < 1 ? -4 : (DisplayScale-1)*4); //DisplayFontSize;
     
@@ -118,7 +119,12 @@ void DashboardManager::initDashboard() {
     
     deleteAllObjects();
     
+    if(!DisplayShow) { return; }
+    
     drawHeader(); row++; pos=1;
+    
+    if(!DisplayShowTable) { return; }
+    
     drawLegend(); row++;
     drawSymbols(); row=0; pos=0;
 }
@@ -279,6 +285,8 @@ void DashboardManager::drawSymbolSignal(int symbolId,SubfilterType subType) {
 }
 
 void DashboardManager::updateDashboard() {
+    if(!DisplayShow || !DisplayShowTable) { return; }
+    
     int filterCount = MainFilterMan.getFilterCount();
     int subfilterCount = 0;
     int size = MainSymbolMan.getSymbolCount();

@@ -9,38 +9,12 @@
 #property version   "1.00"
 #property strict
 //+------------------------------------------------------------------+
-// A structure to be used with the GetPipFactor method
-struct CurrencyFactor
-{
-  string m_symbol;
-  double m_factor;
-};
 
-
-// An array of CurrencyFactors to be used with the getPipFactor method
-const CurrencyFactor PipFactors[] = 
-{
-  { "JPY",    100.0 },
-  { "XAG",    100.0 },
-  { "SILVER", 100.0 },
-  { "BRENT",  100.0 },
-  { "WTI",    100.0 },
-  { "XAU",    10.0  },
-  { "GOLD",   10.0  },
-  { "SP500",  10.0  },
-  { "S&P",    10.0  },
-  { "UK100",  1.0   },
-  { "WS30",   1.0   },
-  { "DAX30",  1.0   },
-  { "DJ30",   1.0   },
-  { "NAS100", 1.0   },
-  { "CAC400", 1.0   },
-};
-
+int BrokerPoints = 1;
 
 //+-------------------------------------------------------------------------------------+
 //| Description : Calculates the point value to of the number of decimal places for the |
-//|             : symbol. From Pascalx at http://www.bunkerforexforum.com/              |      
+//|             : symbol.                                                               |      
 //|                                                                                     |   
 //| Parameters  : symbol    - Sympol that is checked                                    |
 //|                                                                                     |   
@@ -49,14 +23,8 @@ const CurrencyFactor PipFactors[] =
 //+-------------------------------------------------------------------------------------+
 int GetPipFactor(string symbol) export
 {
-  for (int i = 0, count = ArraySize(PipFactors); i < count; ++i)
-  {
-    if (StringFind(symbol, PipFactors[i].m_symbol, 0) >= 0)
-    {
-       return (int)PipFactors[i].m_factor;
-    }
-  }
-  return 10000;
+  int digits = SymbolInfoInteger(symbol, SYMBOL_DIGITS);
+  return MathPow(10, digits-BrokerPoints);
 }
 
 //+-------------------------------------------------------------------------------------+
@@ -71,7 +39,7 @@ double PipsToPrice(string symbol, double pips) export
 {
   double returnVal=0;
   double pipfactor = GetPipFactor(symbol);
-    int digits = (int)MarketInfo(symbol, MODE_DIGITS);
+  int digits = SymbolInfoInteger(symbol, SYMBOL_DIGITS);
 
   returnVal = NormalizeDouble(pips/pipfactor, digits);   
 
@@ -89,7 +57,7 @@ double PipsToPrice(string symbol, double pips) export
 //+-------------------------------------------------------------------------------------+
 double PriceToPips(string symbol, double price) export
 {
-    int digits = (int)MarketInfo(symbol, MODE_DIGITS);
+  int digits = SymbolInfoInteger(symbol, SYMBOL_DIGITS);
   double returnVal=0;
   double pipfactor = GetPipFactor(symbol);
 

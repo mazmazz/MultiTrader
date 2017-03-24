@@ -22,10 +22,16 @@ enum CalcMethod {
 };
 
 enum CycleType {
-    CycleTimerSeconds // Every second: Run on a second-based interval
-    , CycleTimerMilliseconds // Every millisecond: Run on a millisecond-based interval
-    , CycleTimerTicks // Every average tick: Run on an average tick interval
-    , CycleRealTicks // Every real tick: Run on every tick; applies only in Single Symbol Mode
+    CycleTimerSeconds           // Seconds: Run on a second-based interval
+    , CycleTimerMilliseconds    // Milliseconds: Run on a millisecond-based interval
+    , CycleTimerTicks           // Average ticks: Run on an average tick interval
+    , CycleRealTicks            // Real ticks: Run on every tick; applies only in Single Symbol Mode
+};
+
+enum TradeMode {
+    TradeMarket           // Trade with normal market orders
+    , TradeLimitOrders    // Trade with pending limit orders
+    , TradeGrid           // Trade with grid orders
 };
 
 extern string LblRuntime="********** Runtime Settings **********";
@@ -33,9 +39,9 @@ extern int MagicNumber=5001;
 extern string ConfigComment=""; // ConfigComment: Comment to display on dashboard
 
 extern string Lbl_ErrorSettings="---- Error Settings ----";
-extern ErrorLevel ErrorTerminalLevel=ErrorNormal; // ErrorTerminalLevel: Errors to show in terminal
-extern ErrorLevel ErrorFileLevel=ErrorNone; // ErrorFileLevel: Errors to write to log file (Hide=Disable)
-extern ErrorLevel ErrorAlertLevel=ErrorFatal; // ErrorAlertLevel: Errors to trigger an alert
+extern ErrorLevelConfig ErrorTerminalLevel=ErrorConfigFatalNormal; // ErrorTerminalLevel: Errors to show in terminal
+extern ErrorLevelConfig ErrorFileLevel=ErrorConfigNone; // ErrorFileLevel: Errors to write to log file (Hide=Disable)
+extern ErrorLevelConfig ErrorAlertLevel=ErrorConfigFatal; // ErrorAlertLevel: Errors to trigger an alert
 extern string ErrorLogFileName=""; // ErrorLogFileName: Leave blank to generate a filename    
 //extern int HistoryLevel=1; // HistoryLevel: Number of filter values to keep in memory
 int DataHistoryLevel=1; // not convinced this should be a user setting
@@ -75,6 +81,7 @@ extern bool TradeExitEnabled=true;
 extern bool TradeValueEnabled=true;
 
 extern string Lbl_TradeGeneral="---- General Trade Settings ----";
+extern TradeMode TradeModeType=TradeLimitOrders; // TradeModeType: Type of trades to enter
 extern string OrderComment_=""; // OrderComment: Comment to attach to orders
 extern int MaxTradesPerSymbol=0;
 // extern int MaxTradesTimeframe=60;
@@ -92,6 +99,15 @@ extern int ValueBetweenDelay=0; // ValueBetweenDelay: Wait between value changes
 //extern string LbL_Exit_ExpiryTrade="--- Expiry Trade Exit Settings ---";
 //extern bool ExpireTrades=false;
 //extern int Exit_expirySeconds=900;
+//
+//extern string LbL_Exit_ExpiryTrade="---- Grid Settings ----"; // Grid settings: Set TradeModeType above to enable grids
+//extern bool GridHedging=false;
+//extern bool GridDeletePendingsOnSignal = true; // GridDeletePendingsOnSignal: Delete upon close or opposite signal
+//extern int GridCount=5; // GridCount: # of pending orders per direction
+//extern CalcMethod GridDistanceCalcMethod = CalcValue;
+//extern double GridDistanceValue = 10; // GridDistance: Pips between pending orders
+//extern string GridDistanceFilterName = "";
+//extern double GridDistanceFilterFactor = 1.0;
 //
 //extern string LbL_Exit_Basket="--- Basket Exit Settings ---";
 //extern bool UseBaskets=false;

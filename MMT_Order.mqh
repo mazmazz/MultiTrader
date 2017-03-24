@@ -60,7 +60,7 @@ class OrderManager {
     
     double getValue(ValueLocation *loc, int symbolIdx);
     template <typename T>
-    bool getValue(T outVal, ValueLocation *loc, int symbolIdx);
+    bool getValue(T &outVal, ValueLocation *loc, int symbolIdx);
     void setLastTimePoint(int symbolIdx, bool isLastTrade, uint millisecondsIn = 0, datetime dateTimeIn = 0, uint cyclesIn = 0);
     bool getLastTimeElapsed(int symbolIdx, bool isLastTrade, TimeUnits compareUnit, int delayCompare);
     
@@ -182,11 +182,13 @@ bool OrderManager::doExitPosition(int ticket, int symIdx) {
     if(!MainDataMan.symbol[symIdx].getSignalStable(ExitStableTime, TimeSettingUnit, checkUnit)) { return true; }
     
     int posType = OrderType();
-    if(posType == OP_BUY && checkUnit.type == SignalLong) { return true; } // signals are negated for exits -- "SignalLong" means Buy OK, close Shorts.
-    else if(posType == OP_SELL && checkUnit.type == SignalShort) { return true; }
+    if((posType % 2 == 0)/*buy*/ && checkUnit.type == SignalLong) { return true; } // signals are negated for exits -- "SignalLong" means Buy OK, close Shorts.
+    else if((posType % 2 > 0)/*sell*/ && checkUnit.type == SignalShort) { return true; }
     
     double posLots = OrderLots();
-    double posPrice = posType == OP_SELL ? MarketInfo(posSymName, MODE_ASK) : MarketInfo(posSymName, MODE_BID);
+    double posPrice; 
+    if(posType % 2 > 0) { posPrice = MarketInfo(posSymName, MODE_ASK); } // Sell order, odd idx
+    else { MarketInfo(posSymName, MODE_BID); } // Buy order, even idx
     int posSlippage = 40; // todo: get slippage from filter?
     
     bool result = OrderClose(ticket, posLots, posPrice, posSlippage);
@@ -202,7 +204,7 @@ bool OrderManager::doExitPosition(int ticket, int symIdx) {
 int OrderManager::doEnterPosition(int symIdx) {
     if(!TradeEntryEnabled) { return 0; }
     if(!getLastTimeElapsed(symIdx, true, TimeSettingUnit, TradeBetweenDelay)) { return 0; }
-    if(AccountInfoDouble(ACCOUNT_MARGIN_LEVEL) < TradeMinMarginLevel) { return 0; }
+    if(AccountInfoDouble(ACCOUNT_MARGIN) > 0 && AccountInfoDouble(ACCOUNT_MARGIN_LEVEL) < TradeMinMarginLevel) { return 0; }
     if(MaxTradesPerSymbol > 0 && MaxTradesPerSymbol <= positionOpenCount[symIdx]) { return 0; }
 
     SignalUnit *checkUnit = MainDataMan.symbol[symIdx].getSignalUnit(true);
@@ -236,11 +238,19 @@ int OrderManager::doEnterPosition(int symIdx) {
     // todo: check spread for entry
     
     string posSymName = MainSymbolMan.symbols[symIdx].name;
-    int posCmd = checkUnit.type == SignalLong ? OP_BUY : OP_SELL; // todo: pending orders?
+    int posCmd;
+    switch(TradeModeType) {
+        case TradeLimitOrders: posCmd = (checkUnit.type == SignalLong ? OP_BUYLIMIT : OP_SELLLIMIT); break;
+        case TradeGrid: /*return SendGridPendings();*/ return 0;
+        case TradeMarket: 
+        default: posCmd = (checkUnit.type == SignalLong ? OP_BUY : OP_SELL); break;
+    }
     
     double posVolume = getValue(lotSizeLoc, symIdx);
     
-    double posPrice = posCmd == OP_SELL ? MarketInfo(posSymName, MODE_BID) : MarketInfo(posSymName, MODE_ASK);
+    double posPrice;
+    if(posCmd % 2 > 0) { posPrice = MarketInfo(posSymName, MODE_BID); } // Sell, Sell Limit, or Sell Stop (odd idxes)
+    else { posPrice = MarketInfo(posSymName, MODE_ASK); } // Buy, Buy Limit, or Buy Stop (even idxes)
     
     int posSlippage = 40; // todo: get slippage
     double posStoploss = 0; // todo: get stop loss
@@ -268,7 +278,7 @@ double OrderManager::getValue(ValueLocation *loc, int symbolIdx) {
 }
 
 template <typename T>
-bool OrderManager::getValue(T outVal, ValueLocation *loc, int symbolIdx) {
+bool OrderManager::getValue(T &outVal, ValueLocation *loc, int symbolIdx) {
     if(Common::IsInvalidPointer(loc)) { return false; }
     
     switch(loc.calcType) {

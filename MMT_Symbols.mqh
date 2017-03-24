@@ -111,7 +111,7 @@ void SymbolManager::retrieveActiveSymbols(string includeSym, string excludeSymIn
         if(isSymbolTradable(name) && (SingleSymbolMode || !isSymbolExcluded(bareName, excludeSym, excludeCur))) { 
             addSymbol(name, bareName, getSymbolBaseCurrency(name), getSymbolQuoteCurrency(name));
             
-            if(ErrorTerminalLevel >= ErrorInfo || ErrorFileLevel >= ErrorInfo || ErrorAlertLevel >= ErrorInfo) { 
+            if((ErrorTerminalLevel & ErrorInfo) == ErrorInfo || (ErrorFileLevel & ErrorInfo) == ErrorInfo || (ErrorAlertLevel & ErrorInfo) == ErrorInfo) { 
                 finalSymString += ", " + name; 
             }
         }

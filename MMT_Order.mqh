@@ -13,6 +13,7 @@
 #include "MMT_Filters/MMT_FilterManager.mqh"
 #include "MMT_Data/MMT_DataHistory.mqh"
 //#include "depends/OrderReliable.mqh"
+#include "depends/PipFactor.mqh"
 
 enum StopLossMode {
     StopModeNormal
@@ -45,10 +46,15 @@ class OrderManager {
     ValueLocation *maxSlippageLoc;
     ValueLocation *lotSizeLoc;
     ValueLocation *breakEvenLoc;
+    ValueLocation *gridDistanceLoc;
     
     TimePoint *lastTradeBetween[]; // keyed by symbolId
     TimePoint *lastValueBetween[];
     int positionOpenCount[];
+    
+    SignalType gridDirection[];
+    bool gridExit[];
+    bool gridExitByOpposite[];
     
     void initValueLocations();
     ValueLocation *fillValueLocation(CalcMethod calcTypeIn, double setValIn, string filterNameIn, double factorIn);
@@ -57,6 +63,8 @@ class OrderManager {
     void doChangePosition(int ticket, int symIdx);
     bool doExitPosition(int ticket, int symIdx);
     int doEnterPosition(int symIdx);
+    int sendOrder(int symIdx, SignalType signal, bool isPending);
+    int sendGrid(int symIdx, SignalType signal);
     
     double getValue(ValueLocation *loc, int symbolIdx);
     template <typename T>
@@ -74,6 +82,10 @@ class OrderManager {
 void OrderManager::OrderManager() {
     ArrayResize(positionOpenCount, ArraySize(MainSymbolMan.symbols));
     ArrayInitialize(positionOpenCount, 0);
+    if(TradeModeType == TradeGrid) { 
+        ArrayResize(gridDirection, ArraySize(MainSymbolMan.symbols));
+        ArrayInitialize(gridDirection, SignalNone);
+    }
     if(TradeBetweenDelay > 0 ) { ArrayResize(lastTradeBetween, ArraySize(MainSymbolMan.symbols)); }
     if(ValueBetweenDelay > 0 ) { ArrayResize(lastValueBetween, ArraySize(MainSymbolMan.symbols)); }
     
@@ -90,6 +102,7 @@ void OrderManager::~OrderManager() {
     Common::SafeDelete(takeProfitLoc);
     Common::SafeDelete(maxSpreadLoc);
     Common::SafeDelete(maxSlippageLoc);
+    Common::SafeDelete(gridDistanceLoc);
 }
 
 void OrderManager::initValueLocations() {
@@ -99,6 +112,7 @@ void OrderManager::initValueLocations() {
     stopLossLoc = fillValueLocation(StopLossCalcMethod, StopLossValue, StopLossFilterName, StopLossFilterFactor);
     takeProfitLoc = fillValueLocation(TakeProfitCalcMethod, TakeProfitValue, TakeProfitFilterName, TakeProfitFilterFactor);
     breakEvenLoc = fillValueLocation(BreakEvenCalcMethod, BreakEvenValue, BreakEvenFilterName, BreakEvenFilterFactor);
+    gridDistanceLoc = fillValueLocation(GridDistanceCalcMethod, GridDistanceValue, GridDistanceFilterName, GridDistanceFilterFactor);
 }
 
 ValueLocation *OrderManager::fillValueLocation(CalcMethod calcTypeIn, double setValIn, string filterNameIn, double factorIn) {
@@ -124,6 +138,18 @@ void OrderManager::doPositions(bool firstRun) {
     
     int symbolCount = MainSymbolMan.getSymbolCount();
     for(int i = 0; i < symbolCount; i++) {
+        if(gridExit[i]) {
+            if(!gridExitByOpposite[i]) {
+                SignalUnit *checkUnit = MainDataMan.symbol[i].getSignalUnit(false);
+                if(!Common::IsInvalidPointer(checkUnit)) { 
+                    checkUnit.fulfilled = true;
+                }
+            } else { gridExitByOpposite[i] = false; }
+            
+            positionOpenCount[i]--;
+            gridExit[i] = false;
+        }
+    
         doEnterPosition(i);
     }
 }
@@ -140,16 +166,20 @@ void OrderManager::doCurrentPositions(bool firstRun) {
             SignalUnit *checkEntrySignal = MainDataMan.symbol[symbolIdx].getSignalUnit(true);
             if(!Common::IsInvalidPointer(checkEntrySignal)) {
                 if(
-                    (orderAct == OP_BUY && checkEntrySignal.type == SignalLong)
-                    || (orderAct == OP_SELL && checkEntrySignal.type == SignalShort)
+                    ((orderAct % 2 == 0)/*buy*/ && checkEntrySignal.type == SignalLong)
+                    || ((orderAct % 2 > 0)/*sell*/ && checkEntrySignal.type == SignalShort)
                 ) { checkEntrySignal.fulfilled = true; }
             }
         }
         
         // todo: cache pending value and exit updates?
-        doChangePosition(OrderTicket(), symbolIdx);
-        doExitPosition(OrderTicket(), symbolIdx);
+        bool exitResult = doExitPosition(OrderTicket(), symbolIdx);
+        if(!exitResult) {
+            doChangePosition(OrderTicket(), symbolIdx);
+        }
     }
+    
+    // set symbol exit signal fulfilled and positionOpenCount[symIdx]-- in doPositions loop so we don't loop an extra time
 }
 
 //+------------------------------------------------------------------+
@@ -165,25 +195,64 @@ void OrderManager::doChangePosition(int ticket, int symIdx) {
 //+------------------------------------------------------------------+
 
 bool OrderManager::doExitPosition(int ticket, int symIdx) {
-    if(!TradeExitEnabled) { return true; }
+    if(TradeModeType != TradeGrid && !TradeExitEnabled) { return false; }
 
     if(OrderTicket() != ticket) { 
         if(!OrderSelect(ticket, SELECT_BY_TICKET)) { return false; } 
     }
     string posSymName = OrderSymbol();
-    //int symIdx = MainSymbolMan.getSymbolId(posSymName);
     
+    // todo: grid -- how to close pendings when encountering an opposite signal?
     SignalUnit *checkUnit = MainDataMan.symbol[symIdx].getSignalUnit(false);
-    if(Common::IsInvalidPointer(checkUnit)) { return true; }
-    else if(checkUnit.fulfilled) { return true; }
+    if(Common::IsInvalidPointer(checkUnit)) { return false; }
     
-    if(checkUnit.type != SignalLong && checkUnit.type != SignalShort) { return true; }
+    bool checkOpp;
+    SignalUnit *oppCheckUnit;
+    if(CloseOrderOnOppositeSignal || TradeModeType == TradeGrid) {
+        oppCheckUnit = MainDataMan.symbol[symIdx].getSignalUnit(true);
+        checkOpp = !Common::IsInvalidPointer(oppCheckUnit);
+    }
     
-    if(!MainDataMan.symbol[symIdx].getSignalStable(ExitStableTime, TimeSettingUnit, checkUnit)) { return true; }
+    if(
+        (checkOpp && checkUnit.fulfilled && oppCheckUnit.fulfilled)
+        || (!checkOpp && checkUnit.fulfilled)
+    ) { return false; }
     
     int posType = OrderType();
-    if((posType % 2 == 0)/*buy*/ && checkUnit.type == SignalLong) { return true; } // signals are negated for exits -- "SignalLong" means Buy OK, close Shorts.
-    else if((posType % 2 > 0)/*sell*/ && checkUnit.type == SignalShort) { return true; }
+    bool posIsBuy = (posType % 2 == 0);
+    
+    bool oppIsTrigger,exitIsTrigger;
+    if(!checkOpp) { 
+        if(checkUnit.type != SignalLong && checkUnit.type != SignalShort) { return false; }
+        if(posIsBuy && checkUnit.type == SignalLong) { return false; } // signals are negated for exits -- "SignalLong" means Buy OK, close Shorts.
+        else if(!posIsBuy && checkUnit.type == SignalShort) { return false; }
+        else { exitIsTrigger = true; }
+    }
+    else {
+        bool checkIsEmpty, oppIsEmpty;
+        if(checkUnit.type != SignalLong && checkUnit.type != SignalShort) { checkIsEmpty = true; }
+        if(oppCheckUnit.type != SignalLong && oppCheckUnit.type != SignalShort) { oppIsEmpty = true; }
+        if(checkIsEmpty && oppIsEmpty) { return false; }
+        if(posIsBuy) {
+            if(!checkIsEmpty && checkUnit.type == SignalLong) { return false; }
+            if(!oppIsEmpty && oppCheckUnit.type == SignalLong) { return false; }
+            
+            if(!checkIsEmpty && checkUnit.type == SignalShort) { exitIsTrigger = true; }
+            if(!exitIsTrigger && !oppIsEmpty && oppCheckUnit.type == SignalShort) { oppIsTrigger = true; }
+        } else {
+            if(!checkIsEmpty && checkUnit.type == SignalShort) { return false; }
+            if(!oppIsEmpty && oppCheckUnit.type == SignalShort) { return false; }
+            
+            if(!checkIsEmpty && checkUnit.type == SignalLong) { exitIsTrigger = true; }
+            if(!exitIsTrigger && !oppIsEmpty && oppCheckUnit.type == SignalLong) { oppIsTrigger = true; }
+        } 
+    }
+    
+    if(!exitIsTrigger && !oppIsTrigger) { 
+        Error::ThrowError(ErrorNormal, "Neither exit nor opp is trigger", FunctionTrace, posSymName +"|"+posType, true);
+    }
+    
+    // todo: retracement protection?
     
     double posLots = OrderLots();
     double posPrice; 
@@ -191,10 +260,20 @@ bool OrderManager::doExitPosition(int ticket, int symIdx) {
     else { MarketInfo(posSymName, MODE_BID); } // Buy order, even idx
     int posSlippage = 40; // todo: get slippage from filter?
     
-    bool result = OrderClose(ticket, posLots, posPrice, posSlippage);
+    bool result = 
+        posType == OP_BUY || posType == OP_SELL ? OrderClose(ticket, posLots, posPrice, posSlippage)
+        : OrderDelete(ticket) // pending order
+        ;
     if(result) {
-        checkUnit.fulfilled = true;
-        positionOpenCount[symIdx]--;
+        if(TradeModeType != TradeGrid) { 
+            if(exitIsTrigger) { checkUnit.fulfilled = true; } // do not set opposite entry fulfilled; that's set by entry action
+            positionOpenCount[symIdx]--;
+        } else {
+            // set flag to indicate fulfillment set
+            // todo: how to handle failures?
+            gridExit[symIdx] = true;
+            gridExitByOpposite[symIdx] = oppIsTrigger;
+        }
     }
     return result;
 }
@@ -205,7 +284,7 @@ int OrderManager::doEnterPosition(int symIdx) {
     if(!TradeEntryEnabled) { return 0; }
     if(!getLastTimeElapsed(symIdx, true, TimeSettingUnit, TradeBetweenDelay)) { return 0; }
     if(AccountInfoDouble(ACCOUNT_MARGIN) > 0 && AccountInfoDouble(ACCOUNT_MARGIN_LEVEL) < TradeMinMarginLevel) { return 0; }
-    if(MaxTradesPerSymbol > 0 && MaxTradesPerSymbol <= positionOpenCount[symIdx]) { return 0; }
+    if(TradeModeType != TradeGrid && MaxTradesPerSymbol > 0 && MaxTradesPerSymbol <= positionOpenCount[symIdx]) { return 0; }
 
     SignalUnit *checkUnit = MainDataMan.symbol[symIdx].getSignalUnit(true);
     if(Common::IsInvalidPointer(checkUnit)) { return 0; }
@@ -237,36 +316,129 @@ int OrderManager::doEnterPosition(int symIdx) {
     
     // todo: check spread for entry
     
-    string posSymName = MainSymbolMan.symbols[symIdx].name;
-    int posCmd;
+    int posCmd, result;
     switch(TradeModeType) {
-        case TradeLimitOrders: posCmd = (checkUnit.type == SignalLong ? OP_BUYLIMIT : OP_SELLLIMIT); break;
-        case TradeGrid: /*return SendGridPendings();*/ return 0;
+        case TradeGrid: 
+            result = sendGrid(symIdx, checkUnit.type);
+            break;
+            
         case TradeMarket: 
-        default: posCmd = (checkUnit.type == SignalLong ? OP_BUY : OP_SELL); break;
+        case TradeLimitOrders:
+        default: 
+            result = sendOrder(symIdx, checkUnit.type, TradeModeType == TradeLimitOrders);
+            break;
     }
     
-    double posVolume = getValue(lotSizeLoc, symIdx);
-    
-    double posPrice;
-    if(posCmd % 2 > 0) { posPrice = MarketInfo(posSymName, MODE_BID); } // Sell, Sell Limit, or Sell Stop (odd idxes)
-    else { posPrice = MarketInfo(posSymName, MODE_ASK); } // Buy, Buy Limit, or Buy Stop (even idxes)
-    
-    int posSlippage = 40; // todo: get slippage
-    double posStoploss = 0; // todo: get stop loss
-    double posTakeprofit = 0; // todo: get take profit
-    
-    string posComment = OrderComment_;
-    int posMagic = MagicNumber;
-    // datetime posExpiration
-    
-    int result = OrderSend(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic);
     if(result > -1) {
         checkUnit.fulfilled = true;
         setLastTimePoint(symIdx, true);
         positionOpenCount[symIdx]++;
     }
     return result;
+}
+
+int OrderManager::sendOrder(int symIdx, SignalType signal, bool isPending) {
+    string posSymName = MainSymbolMan.symbols[symIdx].name;
+    
+    int posCmd;
+    if(isPending) { posCmd = (signal == SignalLong ? OP_BUYLIMIT : OP_SELLLIMIT); }
+    else { posCmd = (signal == SignalLong ? OP_BUY : OP_SELL); }
+    
+    double posVolume;
+    if(!getValue(posVolume, lotSizeLoc, symIdx)) { return -1; }
+    
+    double posPrice;
+    double oppPrice;
+    if(signal == SignalLong) { // posCmd % 2 > 0
+        // Buy, Buy Limit, or Buy Stop (even idxes)
+        posPrice = SymbolInfoDouble(posSymName, SYMBOL_ASK); 
+        oppPrice = SymbolInfoDouble(posSymName, SYMBOL_BID); 
+    } else { 
+        // Sell, Sell Limit, or Sell Stop (odd idxes)
+        posPrice = SymbolInfoDouble(posSymName, SYMBOL_BID); 
+        oppPrice = SymbolInfoDouble(posSymName, SYMBOL_ASK); 
+    } 
+    
+    int posSlippage = 40; // todo: get slippage
+    
+    double stoplossOffsetPips;
+    if(!getValue(stoplossOffsetPips, stopLossLoc, symIdx)) { return -1; }
+    double takeprofitOffsetPips;
+    if(!getValue(takeprofitOffsetPips, takeProfitLoc, symIdx)) { return -1; }
+    double stoplossOffset = PipsToPrice(posSymName, stoplossOffsetPips);
+    double takeprofitOffset = PipsToPrice(posSymName, takeprofitOffsetPips);
+    
+    double posStoploss = stoplossOffset == 0 ? 0
+        : (signal == SignalLong) ? oppPrice + stoplossOffset : oppPrice - stoplossOffset
+        ;
+    double posTakeprofit = takeprofitOffset == 0 ? 0
+        : (signal == SignalLong) ? oppPrice + takeprofitOffset : oppPrice - takeprofitOffset
+        ;
+    
+    string posComment = OrderComment_;
+    int posMagic = MagicNumber;
+    // datetime posExpiration
+    
+    return OrderSend(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic);
+}
+
+int OrderManager::sendGrid(int symIdx, SignalType signal) {
+    if(signal == gridDirection[symIdx]) { return 0; /* closeGridPendings(); */ } // only one grid set at a time // or close current grid and reset with new price? 
+        // gridDirection is set after successful setup, and reset after closing
+
+    string posSymName = MainSymbolMan.symbols[symIdx].name;
+    double posVolume;
+    if(!getValue(posVolume, lotSizeLoc, symIdx)) { return -1; }
+    
+    int posSlippage = 40; // todo: get slippage
+    
+    double stoplossOffsetPips;
+    if(!getValue(stoplossOffsetPips, stopLossLoc, symIdx)) { return -1; }
+    double takeprofitOffsetPips;
+    if(!getValue(takeprofitOffsetPips, takeProfitLoc, symIdx)) { return -1; }
+    double stoplossOffset = PipsToPrice(posSymName, stoplossOffsetPips);
+    double takeprofitOffset = PipsToPrice(posSymName, takeprofitOffsetPips);
+    
+    string posComment = OrderComment_;
+    int posMagic = MagicNumber;
+    // datetime posExpiration
+    
+    double priceBaseSignal = (signal == SignalLong) ? SymbolInfoDouble(posSymName, SYMBOL_ASK) : SymbolInfoDouble(posSymName, SYMBOL_BID);
+    double priceBaseHedge = (signal == SignalLong) ? SymbolInfoDouble(posSymName, SYMBOL_BID) : SymbolInfoDouble(posSymName, SYMBOL_ASK);
+    
+    double priceDistPips; 
+    if(!getValue(priceDistPips, gridDistanceLoc, symIdx)) { return -1; }
+    double priceDistPoints = PipsToPrice(posSymName, priceDistPips);
+    int priceDistSignal = (signal == SignalLong) ? priceDistPoints : priceDistPoints*-1;
+    int priceDistHedge = priceDistSignal*-1;
+    
+    int cmdSignal = (signal == SignalLong) ? OP_BUYSTOP : OP_SELLSTOP;
+    int cmdHedge = (signal == SignalLong) ? OP_SELLSTOP : OP_BUYSTOP;
+    int resultSignal, resultHedge;
+    for(int i = 1; i <= GridCount; i++) {
+        // todo: calc stoploss and takeprofit here based on price
+        double posPriceSignal = priceBaseSignal+(priceDistSignal*i);
+        double posPriceHedge = priceBaseHedge+(priceDistHedge*i);
+        double posStoploss = stoplossOffset == 0 ? 0
+            : cmdSignal == OP_BUYSTOP ? posPriceHedge + stoplossOffset : posPriceHedge - stoplossOffset
+            ; // opposite price of signal
+        double posTakeprofit = takeprofitOffset == 0 ? 0
+            : cmdSignal == OP_BUYSTOP ? posPriceHedge + takeprofitOffset : posPriceHedge - takeprofitOffset
+            ;
+            
+        resultSignal = OrderSend(posSymName, cmdSignal, posVolume, posPriceSignal, posSlippage, posStoploss, posTakeprofit, posComment, posMagic);
+        
+        if(GridHedging) {
+            posStoploss = cmdHedge == OP_BUYSTOP ? posPriceSignal + stoplossOffset : posPriceSignal - stoplossOffset; // opposite price of hedge
+            posTakeprofit = cmdHedge == OP_BUYSTOP ? posPriceSignal + takeprofitOffset : posPriceSignal - takeprofitOffset;
+            resultHedge = OrderSend(posSymName, cmdHedge, posVolume, posPriceHedge, posSlippage, posStoploss, posTakeprofit, posComment, posMagic);
+        }
+    }
+    
+    // todo: check if all pendings succeeded
+    gridDirection[symIdx] = signal;
+    
+    return 0;
 }
 
 //+------------------------------------------------------------------+

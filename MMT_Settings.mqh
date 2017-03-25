@@ -60,7 +60,7 @@ extern bool DisplayColor=true;
 //extern bool DisplayShowOrders=true;
 //extern string DisplayFont="Lucida Console";
 string DisplayFont="Lucida Console"; // Integral font to monospace layout and scaling, should not be user setting
-extern int DisplayScale=0; // DisplayScale: 0 = Half, 1 = Normal, 2+ = Large
+extern int DisplayScale=0; // DisplayScale: 0 = Normal, 1+ = Large
 //extern int DisplayFontSize=11;
 //extern int DisplaySpacing=13;
 //extern DisplayStyleEnum DisplayStyle=ValueAndSignal;
@@ -83,15 +83,16 @@ extern bool TradeValueEnabled=true;
 extern string Lbl_TradeGeneral="---- General Trade Settings ----";
 extern TradeMode TradeModeType=TradeLimitOrders; // TradeModeType: Type of trades to enter
 extern string OrderComment_=""; // OrderComment: Comment to attach to orders
+extern bool CloseOrderOnOppositeSignal=true; // CloseOrderOnOppositeSignal: Close when entry signal is opposite
+extern bool SignalRetraceOpen=false; // SignalRetraceOpen: Enter additional positions on a retrace
 extern int MaxTradesPerSymbol=0;
 // extern int MaxTradesTimeframe=60;
 extern double TradeMinMarginLevel=200; // MinTradeMarginLevel (percent)
-extern bool SignalRetraceOpen=false; // SignalRetraceOpen: Enter additional positions on a retrace
 
 extern string Lbl_TradeDelays="---- Trade Delay Settings ----";
 extern TimeUnits TimeSettingUnit=UnitSeconds; // TimeSettingUnit: Unit for values below
-extern int EntryStableTime=2;
-extern int ExitStableTime=10;
+extern int EntryStableTime=5;
+extern int ExitStableTime=5;
 extern int SignalRetraceTime=3600; // SignalRetraceTime: Repeating signal change is seen as retrace
 extern int TradeBetweenDelay=0; // TradeBetweenDelay: Wait between trades
 extern int ValueBetweenDelay=0; // ValueBetweenDelay: Wait between value changes
@@ -100,15 +101,15 @@ extern int ValueBetweenDelay=0; // ValueBetweenDelay: Wait between value changes
 //extern bool ExpireTrades=false;
 //extern int Exit_expirySeconds=900;
 //
-//extern string LbL_Exit_ExpiryTrade="---- Grid Settings ----"; // Grid settings: Set TradeModeType above to enable grids
-//extern bool GridHedging=false;
-//extern bool GridDeletePendingsOnSignal = true; // GridDeletePendingsOnSignal: Delete upon close or opposite signal
-//extern int GridCount=5; // GridCount: # of pending orders per direction
-//extern CalcMethod GridDistanceCalcMethod = CalcValue;
-//extern double GridDistanceValue = 10; // GridDistance: Pips between pending orders
-//extern string GridDistanceFilterName = "";
-//extern double GridDistanceFilterFactor = 1.0;
-//
+extern string LbL_Exit_ExpiryTrade="---- Grid Settings ----"; // Grid settings: Set TradeModeType above to enable grids
+extern bool GridHedging=false; // GridHedging: Set pendings in both directions 
+extern bool GridDeletePendingsOnSignal = true; // GridDeletePendingsOnSignal: Delete upon close or opposite signal
+extern int GridCount=5; // GridCount: # of pendings per direction
+extern CalcMethod GridDistanceCalcMethod = CalcValue;
+extern double GridDistanceValue = 10; // GridDistance: Pips between pending orders
+extern string GridDistanceFilterName = "";
+extern double GridDistanceFilterFactor = 1.0;
+
 //extern string LbL_Exit_Basket="--- Basket Exit Settings ---";
 //extern bool UseBaskets=false;
 //extern int ProfitCalcMethod=3; //ProfitCalcMethod //enum

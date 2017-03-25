@@ -26,7 +26,10 @@ class MainMultiTrader {
     
     void addFilter(Filter *inputFilter);
     
-    bool setAverageTickTimer();
+    bool setAverageTickTimer(bool setValueOnly = false);
+    
+    private:
+    int averageTickLength;
 };
 
 void MainMultiTrader::MainMultiTrader() {
@@ -50,15 +53,6 @@ int MainMultiTrader::onInit() {
 }
 
 void MainMultiTrader::onTick() {
-    // Toggle to do OnTimer or OnTick
-    // Per order update, risk calc, or filter calc
-    // Per tick or per cycle time (whichever method is picked)
-    //uint newTickCount = GetTickCount(); //GetMicrosecondCount();
-    
-    //((cur) >= (prev)) ? ((cur)-(prev)) : ((0xFFFFFFFF-(prev))+(cur)+1)
-    
-    // Procedure to check cycle time goes here
-    // If cycle time, then do cycle
     
     doCycle();
 }
@@ -100,7 +94,7 @@ void MainMultiTrader::~MainMultiTrader() {
     Common::SafeDelete(MainFilterMan);
 }
 
-bool MainMultiTrader::setAverageTickTimer() {
+bool MainMultiTrader::setAverageTickTimer(bool setValueOnly = false) {
     //Start at 500 milliseconds
     //Compare total symbol changes (track volume?)
     //If # changes < last # changes, then slow down (timer runs too fast for ticks to occur)
@@ -109,7 +103,10 @@ bool MainMultiTrader::setAverageTickTimer() {
     //min value 100
     //max value 1000
     
-    return Common::EventSetMillisecondTimerReliable(500);
+    averageTickLength = 500;
+    
+    if(setValueOnly) { return true; }
+    else { return Common::EventSetMillisecondTimerReliable(averageTickLength); }
 }
 
 void MainMultiTrader::doFirstRun() {

@@ -35,6 +35,8 @@
 #include "MMT_Settings.mqh"
 #include "MMT_Main.mqh"
 
+TimePoint LastTickTime;
+
 //+------------------------------------------------------------------+
 // 1. Include filter includes here [INCLUDES]
 //    Include order affects settings order in config window
@@ -45,7 +47,7 @@
 #include "MMT_Filters/MMT_Filter_Stoch.mqh"
 #ifdef __MQL4__
 #include "MMT_Filters/MMT_Filter_HGI.mqh"
-#include "MMT_Filters/MMT_Filter_CSS.mqh"
+//#include "MMT_Filters/MMT_Filter_CSS.mqh"
 #endif
 
 //+------------------------------------------------------------------+
@@ -70,7 +72,7 @@ int OnInit() {
     Main.addFilter(new FilterStoch());
 #ifdef __MQL4__
     Main.addFilter(new FilterHgi());
-    Main.addFilter(new FilterCss());
+    //Main.addFilter(new FilterCss());
 #endif
 
     int result = Main.onInit();
@@ -81,8 +83,24 @@ int OnInit() {
     else { return result; }
 }
 
+void OnDeinit(const int reason) {
+    if(!Common::IsInvalidPointer(Main)) {
+        Main.onDeinit(reason);
+        Common::SafeDelete(Main);
+    }
+    
+    Error::CloseErrorFile();
+}
+
 bool ValidateSettings() {
     bool finalResult = true;
+    
+#ifdef __MQL4__
+    if((IsTesting() || IsOptimization()) && !SingleSymbolMode) {
+        Error::ThrowFatalError(ErrorFatal, "Strategy tester requires Single Symbol Mode.");
+        finalResult = false;
+    }
+#endif
     
     if(!SingleSymbolMode && CycleMode == CycleRealTicks) {
         Error::ThrowFatalError(ErrorFatal, "Real tick cycle works only in Single Symbol Mode.");
@@ -111,16 +129,19 @@ bool SetCycle() {
             break;
             
         case CycleTimerTicks: // emulated average ticks, still on timer interval
-            result = Main.setAverageTickTimer();
+            result = Main.setAverageTickTimer((IsTesting() || IsOptimization()));
+            if(IsTesting() || IsOptimization()) { LastTickTime.update(); }
             break;
             
         case CycleTimerMilliseconds:
-            result = Common::EventSetMillisecondTimerReliable(CycleLength);
+            if(IsTesting() || IsOptimization()) { result = true; LastTickTime.update(); } // go by ticks
+            else { result = Common::EventSetMillisecondTimerReliable(CycleLength); }
             break;
             
         case CycleTimerSeconds:
         default:
-            result = Common::EventSetTimerReliable(CycleLength);
+            if(IsTesting() || IsOptimization()) { result = true; LastTickTime.update(); } // go by ticks
+            else { result = Common::EventSetTimerReliable(CycleLength); }
             break;
     }
     
@@ -136,14 +157,24 @@ void OnTimer() {
 }
 
 void OnTick() {
-    if(CycleMode == CycleRealTicks) { Main.onTick(); }
-}
-
-void OnDeinit(const int reason) {
-    if(!Common::IsInvalidPointer(Main)) {
-        Main.onDeinit(reason);
-        Common::SafeDelete(Main);
+    if(CycleMode == CycleRealTicks) { 
+        Main.onTick(); 
+    } else if(IsTesting() || IsOptimization()) {
+        bool proceed;
+        switch(CycleMode) {
+            case CycleTimerMilliseconds:
+                proceed = (Common::GetTimeDuration(GetTickCount(), LastTickTime.milliseconds) >= CycleLength);
+                break;
+                
+            case CycleTimerSeconds:
+            default:
+                proceed = (Common::GetTimeDuration(TimeCurrent(), LastTickTime.dateTime) >= CycleLength);
+                break;
+        }
+        
+        if(proceed) { 
+            Main.onTick(); 
+            LastTickTime.update();
+        }
     }
-    
-    Error::CloseErrorFile();
 }

@@ -80,14 +80,17 @@ class OrderManager {
 };
 
 void OrderManager::OrderManager() {
-    ArrayResize(positionOpenCount, ArraySize(MainSymbolMan.symbols));
+    int symCount = ArraySize(MainSymbolMan.symbols);
+    ArrayResize(positionOpenCount, symCount);
     ArrayInitialize(positionOpenCount, 0);
     if(TradeModeType == TradeGrid) { 
-        ArrayResize(gridDirection, ArraySize(MainSymbolMan.symbols));
+        ArrayResize(gridDirection, symCount);
         ArrayInitialize(gridDirection, SignalNone);
+        ArrayResize(gridExit, symCount);
+        ArrayResize(gridExitByOpposite, symCount);
     }
-    if(TradeBetweenDelay > 0 ) { ArrayResize(lastTradeBetween, ArraySize(MainSymbolMan.symbols)); }
-    if(ValueBetweenDelay > 0 ) { ArrayResize(lastValueBetween, ArraySize(MainSymbolMan.symbols)); }
+    if(TradeBetweenDelay > 0 ) { ArrayResize(lastTradeBetween, symCount); }
+    if(ValueBetweenDelay > 0 ) { ArrayResize(lastValueBetween, symCount); }
     
     initValueLocations();
 }
@@ -138,7 +141,7 @@ void OrderManager::doPositions(bool firstRun) {
     
     int symbolCount = MainSymbolMan.getSymbolCount();
     for(int i = 0; i < symbolCount; i++) {
-        if(gridExit[i]) {
+        if(TradeModeType == TradeGrid && gridExit[i]) {
             if(!gridExitByOpposite[i]) {
                 SignalUnit *checkUnit = MainDataMan.symbol[i].getSignalUnit(false);
                 if(!Common::IsInvalidPointer(checkUnit)) { 
@@ -273,6 +276,7 @@ bool OrderManager::doExitPosition(int ticket, int symIdx) {
             // todo: how to handle failures?
             gridExit[symIdx] = true;
             gridExitByOpposite[symIdx] = oppIsTrigger;
+            gridDirection[symIdx] = SignalNone;
         }
     }
     return result;

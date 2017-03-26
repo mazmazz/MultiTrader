@@ -107,7 +107,8 @@ bool FilterStdDev::calculate(int subfilterId, int symbolIndex, DataUnit *dataOut
 #endif
 #endif
     
-    dataOut.setRawValue(value, 0, DoubleToString(PriceToPips(symbol, value), 1));
+    double pips = PriceToPips(symbol, value);
+    dataOut.setRawValue(pips, SignalNone, NormalizeDouble(pips, 2));
     
     return true;
 }

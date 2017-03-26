@@ -18,7 +18,8 @@ enum TimeUnits {
 
 enum CalcMethod {
     CalcValue // Use exact value below
-    , CalcFilter // Use value from filter
+    , CalcFilterExact // Use exact value from filter
+    , CalcFilterFactor // Factor value from filter
 };
 
 enum CycleType {

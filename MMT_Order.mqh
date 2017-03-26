@@ -282,8 +282,6 @@ bool OrderManager::doExitPosition(int ticket, int symIdx) {
     
     // todo: retracement protection?
     
-    Error::PrintInfo("Closing Ticket " + ticket + " - " + "Type: " + posType + " - " + (exitIsTrigger ? "Exit: " + checkUnit.type : oppIsTrigger ? "Entry: " + oppCheckUnit.type : "No trigger"), NULL, NULL, true);
-    
     double posLots = OrderLots();
     double posPrice;
     if(posType % 2 == 0) { posPrice = SymbolInfoDouble(posSymName, SYMBOL_BID); } // Buy order, even idx
@@ -313,6 +311,8 @@ bool OrderManager::doExitPosition(int ticket, int symIdx) {
             gridExit[symIdx] = true;
             gridExitByOpposite[symIdx] = oppIsTrigger;
         }
+    } else {
+        Error::PrintNormal("Failed Closing Ticket " + ticket + " - " + "Type: " + posType + " - " + (exitIsTrigger ? "Exit: " + checkUnit.type : oppIsTrigger ? "Entry: " + oppCheckUnit.type : "No trigger"), NULL, NULL, true);
     }
     return result;
 }
@@ -352,7 +352,6 @@ int OrderManager::doEnterPosition(int symIdx) {
     
     SignalUnit *checkExitUnit = MainDataMan.symbol[symIdx].getSignalUnit(false);
     if(!Common::IsInvalidPointer(checkExitUnit)) {
-        Error::ThrowError(ErrorNormal, "exitUnit " + checkExitUnit.type);
         // todo: how to handle retraces where exit signal is temporarily not in opposite?
         // retracement delay? loop through buffer and see if exit signal existed within retracement delay?
         if(checkUnit.type == SignalLong && checkExitUnit.type == SignalShort) { return 0; }
@@ -410,6 +409,7 @@ int OrderManager::sendOrder(int symIdx, SignalType signal, bool isPending) {
     if(StopLossEnabled) {
         double stoplossOffsetPips;
         if(!getValue(stoplossOffsetPips, stopLossLoc, symIdx)) { return -1; }
+        Error::PrintInfo("stoplossOffsetPips: " + stoplossOffsetPips);
         stoplossOffset = PipsToPrice(posSymName, stoplossOffsetPips);
     }
     if(TakeProfitEnabled) {
@@ -427,12 +427,22 @@ int OrderManager::sendOrder(int symIdx, SignalType signal, bool isPending) {
     
     string posComment = OrderComment_;
     int posMagic = MagicNumber;
-    // datetime posExpiration
+    datetime posExpiration = 0;
     
 #ifdef _OrderReliable
-    return OrderSendReliable(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic);
+    return OrderSendReliable(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
 #else
-    return OrderSend(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic);
+    if(BrokerTwoStep && (posStoploss > 0 || posTakeprofit > 0)) {
+        int result = OrderSend(posSymName, posCmd, posVolume, posPrice, posSlippage, 0, 0, posComment, posMagic, posExpiration);
+        if(result > -1) {
+            if(!OrderModify(result, posPrice, posStoploss, posTakeprofit, posExpiration)) {
+                Error::PrintError(ErrorFatal, "Could not set stop loss/take profit for order " + result, FunctionTrace, NULL, true);
+            }
+        }
+        return result;
+    } else {
+        return OrderSend(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
+    }
 #endif
 }
 
@@ -462,6 +472,7 @@ int OrderManager::sendGrid(int symIdx, SignalType signal) {
     
     string posComment = OrderComment_;
     int posMagic = MagicNumber;
+    datetime posExpiration = 0;
     // datetime posExpiration
     
     double priceBaseSignal = (signal == SignalLong) ? SymbolInfoDouble(posSymName, SYMBOL_ASK) : SymbolInfoDouble(posSymName, SYMBOL_BID);
@@ -487,10 +498,19 @@ int OrderManager::sendGrid(int symIdx, SignalType signal) {
             : cmdSignal == OP_BUYSTOP ? posPriceHedge + (takeprofitOffset*i) : posPriceHedge - (takeprofitOffset*i)
             ;
             
-#ifdef _OrderReliable            
-        resultSignal = OrderSendReliable(posSymName, cmdSignal, posVolume, posPriceSignal, posSlippage, posStoploss, posTakeprofit, posComment, posMagic);
+#ifdef _OrderReliable
+        resultSignal = OrderSendReliable(posSymName, cmdSignal, posVolume, posPriceSignal, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
 #else
-        resultSignal = OrderSend(posSymName, cmdSignal, posVolume, posPriceSignal, posSlippage, posStoploss, posTakeprofit, posComment, posMagic);
+        if(BrokerTwoStep && (posStoploss > 0 || posTakeprofit > 0)) {
+            resultSignal = OrderSend(posSymName, cmdSignal, posVolume, posPriceSignal, posSlippage, 0, 0, posComment, posMagic, posExpiration);
+            if(resultSignal > -1) {
+                if(!OrderModify(resultSignal, posPriceSignal, posStoploss, posTakeprofit, posExpiration)) {
+                    Error::PrintError(ErrorFatal, "Could not set stop loss/take profit for order " + resultSignal, FunctionTrace, NULL, true);
+                }
+            }
+        } else {
+            resultSignal = OrderSend(posSymName, cmdSignal, posVolume, posPriceSignal, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
+        }
 #endif
         if(resultSignal > -1) { finalResult++; }
         
@@ -503,10 +523,20 @@ int OrderManager::sendGrid(int symIdx, SignalType signal) {
                 takeprofitOffset == 0 ? 0 
                 : cmdHedge == OP_BUYSTOP ? posPriceSignal + (takeprofitOffset*i) : posPriceSignal - (takeprofitOffset*i)
                 ;
-#ifdef _OrderReliable
-            resultHedge = OrderSendReliable(posSymName, cmdHedge, posVolume, posPriceHedge, posSlippage, posStoploss, posTakeprofit, posComment, posMagic);
-#else                
-            resultHedge = OrderSend(posSymName, cmdHedge, posVolume, posPriceHedge, posSlippage, posStoploss, posTakeprofit, posComment, posMagic);
+
+#ifdef _OrderReliable            
+            resultHedge = OrderSendReliable(posSymName, cmdHedge, posVolume, posPriceHedge, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
+#else
+            if(BrokerTwoStep && (posStoploss > 0 || posTakeprofit > 0)) {
+                resultHedge = OrderSend(posSymName, cmdHedge, posVolume, posPriceHedge, posSlippage, 0, 0, posComment, posMagic, posExpiration);
+                if(resultHedge > -1) {
+                    if(!OrderModify(resultHedge, posPriceHedge, posStoploss, posTakeprofit, posExpiration)) {
+                        Error::PrintError(ErrorFatal, "Could not set stop loss/take profit for order " + resultHedge, FunctionTrace, NULL, true);
+                    }
+                }
+            } else {
+                resultHedge = OrderSend(posSymName, cmdHedge, posVolume, posPriceHedge, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
+            }
 #endif
             if(resultHedge > -1) { finalResult++; }
         }
@@ -535,7 +565,8 @@ bool OrderManager::getValue(T &outVal, ValueLocation *loc, int symbolIdx) {
             outVal = loc.setVal;
             return true;
         
-        case CalcFilter: {
+        case CalcFilterFactor:
+        case CalcFilterExact: {
             DataHistory *filterHist = MainDataMan.getDataHistory(symbolIdx, loc.filterIdx, loc.subIdx);
             if(Common::IsInvalidPointer(filterHist)) { return false; }
             
@@ -544,7 +575,8 @@ bool OrderManager::getValue(T &outVal, ValueLocation *loc, int symbolIdx) {
             
             double val;
             if(filterData.getRawValue(val)) {
-                outVal = val*loc.factor;
+                if(loc.calcType == CalcFilterFactor) { outVal = val*loc.factor; }
+                else { outVal = val; }
                 return true;
             } else { return false; }
         }

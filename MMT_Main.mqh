@@ -73,7 +73,7 @@ void MainMultiTrader::doCycle() {
         // iterates through symbols, calls filters and subs on all of them
         // filters feed data
         
-    MainOrderMan.doPositions(firstRunComplete);
+    MainOrderMan.doPositions(!firstRunComplete);
     
     MainDashboardMan.updateDashboard();
     

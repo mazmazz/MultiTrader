@@ -1,6 +1,6 @@
 // MC_Error Library
-// v0.2
-// 2017/03/24
+// v0.3
+// 2017/03/26
 //
 // Copyright (c) 2017 Marco Z
 //
@@ -21,16 +21,6 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-//
-// Changelog
-//
-// v0.2
-// * Added printCurrentTime option to public calls
-// * Changed severity triggers from less-than-equals to bitwise
-//   * User-facing settings should use ErrorLevelConfig enum instead of ErrorLevel
-//   * Param settings should be changed to an ErrorLevelConfig value or a
-//     bitwise OR of ErrorLevels (e.g., ErrorNormal | ErrorInfo; )
-//   * Public calls remain the same, except you can combine error levels and locations
 
 #property copyright "Copyright 2017, Marco Z"
 #property link      "https://github.com/mazmazz"
@@ -70,19 +60,23 @@ class Error {
     static int FileLevel;
     static int FatalStateLevel;
 
-    static void ThrowError(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault);
-    static void ThrowFatalError(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault);
-    static void PrintInfo(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault);
+    static void ThrowFatal(string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault);
+    static void PrintNormal(string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault);
+    static void PrintInfo(string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault);
+    static void PrintMinor(string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault);
+    static void PrintError(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault);
+    static void ThrowFatalError(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault); // kept for back compat
+    static void ThrowError(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault); // kept for back compat
+    static void PrintInfo_v02(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault); // kept for back compat
     static void CloseErrorFile();
     
     private:
     static int FileHandle;
     static int FatalCounter;
     
-    static void ThrowErrorInternal(int level, string message = "", string funcTrace = "", string extraInfo = "", bool fatal = false, bool printCurrentTime = false, int location = ErrorDefault);
-    static void PrintError(int level, string message = "", string funcTrace = "", bool fatal = false, bool info=false, string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault);
-    static bool PrintErrorToFile(string message = "");
-    static void PrintErrorToAlert(string message = "");
+    static void OutputError(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault);
+    static bool OutputErrorToFile(string message = "");
+    static void OutputErrorToAlert(string message = "");
 };
 
 string Error::ProjectName = "";
@@ -97,16 +91,43 @@ int Error::FatalCounter = 0;
 
 //+------------------------------------------------------------------+
 
-void Error::ThrowError(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault) {
-    ThrowErrorInternal(level, message, funcTrace, extraInfo, false, printCurrentTime, location);
+void Error::ThrowFatal(string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault) {
+    OutputError(ErrorFatal, message, funcTrace, extraInfo, printCurrentTime, location);
+    FatalCounter++; 
+    ExpertRemove();
 }
 
+void Error::PrintNormal(string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault) {
+    OutputError(ErrorNormal, message, funcTrace, extraInfo, printCurrentTime, location);
+}
+
+void Error::PrintInfo(string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault) {
+    OutputError(ErrorInfo, message, funcTrace, extraInfo, printCurrentTime, location);
+}
+
+void Error::PrintMinor(string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault) {
+    OutputError(ErrorMinor, message, funcTrace, extraInfo, printCurrentTime, location);
+}
+
+void Error::PrintError(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault) {
+    OutputError(level, message, funcTrace, extraInfo, printCurrentTime, location);
+}
+
+// kept for back compat
 void Error::ThrowFatalError(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault) {
-    ThrowErrorInternal(level, message, funcTrace, extraInfo, true, printCurrentTime, location);
+    OutputError(level, message, funcTrace, extraInfo, printCurrentTime, location);
+    FatalCounter++; 
+    ExpertRemove();
 }
 
-void Error::PrintInfo(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault) {
-    PrintError(level, message, funcTrace, false, true, extraInfo, printCurrentTime, location);
+// kept for back compat
+void Error::ThrowError(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault) {
+    OutputError(level, message, funcTrace, extraInfo, printCurrentTime, location);
+}
+
+// kept for back compat, can't overload so must be renamed
+void Error::PrintInfo_v02(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault) {
+    OutputError(level, message, funcTrace, extraInfo, printCurrentTime, location);
 }
 
 void Error::CloseErrorFile() {
@@ -115,18 +136,13 @@ void Error::CloseErrorFile() {
 
 //+------------------------------------------------------------------+
 
-void Error::ThrowErrorInternal(int level, string message = "", string funcTrace = "", string extraInfo = "", bool fatal = false, bool printCurrentTime = false, int location = ErrorDefault) {
-    PrintError(level, message, funcTrace, fatal, false, extraInfo, printCurrentTime, location);
-    if(fatal) { FatalCounter++; ExpertRemove(); } // this calls OnDeinit then exits. this won't exit right away; event handler finishes processing.
-}
-
-void Error::PrintError(int level, string message = "", string funcTrace = "", bool fatal = false, bool info=false, string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault) {
-    if(FatalCounter > 0 && (FatalStateLevel & level) == level) { return; } // if fatal, only print necessary errors
+void Error::OutputError(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault) {
+    if(FatalCounter > 0 && (FatalStateLevel & level) != level) { return; } // if fatal, only print necessary errors
     
     string errorMsg = 
         (printCurrentTime ? TimeCurrent() + " - " : "")
         + ProjectName + " "
-        + (fatal ? "FATAL " : "")
+        + (level == ErrorFatal ? "FATAL " : "")
         + (level == ErrorInfo ? "INFO: " : level == ErrorMinor ? "MINOR: " : "ERROR: ")
         + funcTrace 
         + (StringLen(funcTrace) > 0 ? " - " : "")
@@ -137,7 +153,7 @@ void Error::PrintError(int level, string message = "", string funcTrace = "", bo
     if(
         (TerminalLevel & level) == level
         || (location & ErrorTerminal) == ErrorTerminal
-        || fatal
+        || level == ErrorFatal
     ) { 
         Print(errorMsg);
     }
@@ -146,18 +162,18 @@ void Error::PrintError(int level, string message = "", string funcTrace = "", bo
         (FileLevel & level) == level
         || (location & ErrorFile) == ErrorFile
     ) {
-        if(!Error::PrintErrorToFile(errorMsg)) { Print(errorMsg); } 
+        if(!Error::OutputErrorToFile(errorMsg)) { Print(errorMsg); } 
     }
     
     if(
         (AlertLevel & level) == level
         || (location & ErrorAlert) == ErrorAlert
     ) {
-        PrintErrorToAlert(errorMsg);
+        OutputErrorToAlert(errorMsg);
     }
 }
 
-bool Error::PrintErrorToFile(string message = "") {
+bool Error::OutputErrorToFile(string message = "") {
     if((FileHandle == INVALID_HANDLE) || FileHandle == -1) {
         if(StringLen(FilePath) <= 0) { 
             FilePath = ProjectName + "Log_" + (int)TimeLocal() + "_" + (int)GetMicrosecondCount() + ".txt"; 
@@ -176,6 +192,21 @@ bool Error::PrintErrorToFile(string message = "") {
     } else { return false; }
 }
 
-void Error::PrintErrorToAlert(string message="") {
+void Error::OutputErrorToAlert(string message="") {
     Alert(message);
 }
+
+// Changelog
+//
+// v0.3
+// * Minor refactoring: simplified public calls to not require error level as first param
+//   * New public calls are shortcuts for error level: ThrowFatal, PrintNormal, PrintInfo, PrintMinor
+//   * Old calls will work, but PrintInfo calls must be renamed to PrintInfo_v02, or changed to new call pattern
+//
+// v0.2
+// * Added printCurrentTime option to public calls
+// * Changed severity triggers from less-than-equals to bitwise
+//   * User-facing settings should use ErrorLevelConfig enum instead of ErrorLevel
+//   * Param settings should be changed to an ErrorLevelConfig value or a
+//     bitwise OR of ErrorLevels (e.g., ErrorNormal | ErrorInfo; )
+//   * Public calls remain the same, except you can combine error levels and locations

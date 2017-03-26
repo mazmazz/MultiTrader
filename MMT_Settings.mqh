@@ -81,7 +81,8 @@ extern bool TradeExitEnabled=true;
 extern bool TradeValueEnabled=true;
 
 extern string Lbl_TradeGeneral="---- General Trade Settings ----";
-extern TradeMode TradeModeType=TradeLimitOrders; // TradeModeType: Type of trades to enter
+extern TradeMode TradeModeType=TradeMarket; // TradeModeType: Type of trades to enter
+extern bool BrokerTwoStep=true; // IsTwoStep: Broker is ECN and needs two-step order sending for SL/TP
 extern string OrderComment_=""; // OrderComment: Comment to attach to orders
 extern bool CloseOrderOnOppositeSignal=true; // CloseOrderOnOppositeSignal: Close when entry signal is opposite
 extern bool SignalRetraceOpen=false; // SignalRetraceOpen: Enter additional positions on a retrace
@@ -103,20 +104,20 @@ extern int ValueBetweenDelay=0; // ValueBetweenDelay: Wait between value changes
 //
 extern string LbL_Exit_ExpiryTrade="---- Grid Settings ----"; // Grid settings: Set TradeModeType above to enable grids
 extern bool GridHedging=false; // GridHedging: Set pendings in both directions 
-extern bool GridDeletePendingsOnSignal = true; // GridDeletePendingsOnSignal: Delete upon close or opposite signal
+extern bool GridCloseOrdersOnSignal = true; // GridCloseOrdersOnSignal: Close market orders upon signal
 extern int GridCount=5; // GridCount: # of pendings per direction
 extern CalcMethod GridDistanceCalcMethod = CalcValue;
 extern double GridDistanceValue = 10; // GridDistance: Pips between pending orders
 extern string GridDistanceFilterName = "";
 extern double GridDistanceFilterFactor = 1.0;
 
-//extern string LbL_Exit_Basket="--- Basket Exit Settings ---";
-//extern bool UseBaskets=false;
-//extern int ProfitCalcMethod=3; //ProfitCalcMethod //enum
-//extern double BasketTP=1.0;
-//extern double BasketSL=-100.0;
-//extern int MaxBasketsPerDay=10;
-//extern int MaxLossBasketsPerDay=0;
+extern string LbL_Exit_Basket="--- Basket Exit Settings ---";
+extern bool UseBaskets=false;
+extern int ProfitCalcMethod=3; //ProfitCalcMethod //enum
+extern double BasketTP=1.0;
+extern double BasketSL=-100.0;
+extern int MaxBasketsPerDay=10;
+extern int MaxLossBasketsPerDay=0;
 
 extern string Lbl_MaxSpread="---- Max Spread Settings ----";
 extern CalcMethod MaxSpreadCalcMethod=CalcValue;

@@ -117,7 +117,7 @@ void SymbolManager::retrieveActiveSymbols(string includeSym, string excludeSymIn
         }
     }
     
-    Error::PrintInfo(ErrorInfo, "Active symbols: " + finalSymString, FunctionTrace);
+    Error::PrintInfo_v02(ErrorInfo, "Active symbols: " + finalSymString, FunctionTrace);
 }
 
 

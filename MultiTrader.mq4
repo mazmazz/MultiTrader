@@ -34,6 +34,7 @@
 
 #include "MMT_Settings.mqh"
 #include "MMT_Main.mqh"
+//#include "depends/OrderReliable.mqh"
 
 TimePoint LastTickTime;
 
@@ -63,6 +64,13 @@ int OnInit() {
     Error::FileLevel = ::ErrorFileLevel;
     Error::AlertLevel = ::ErrorAlertLevel;
     Error::FilePath = ::ErrorLogFileName;
+    
+#ifdef _OrderReliable
+    O_R_Config_use2step(BrokerTwoStep);
+    O_R_Config_UseInBacktest(true); // order closes fail without this
+    O_R_SetVerbosity(1);
+    O_R_Config_FinetuneEntries(true);
+#endif
     
     if(!ValidateSettings()) { return INIT_PARAMETERS_INCORRECT; }
 
@@ -114,7 +122,7 @@ bool ValidateSettings() {
     
     if(AccountInfoDouble(ACCOUNT_MARGIN_LEVEL) > TradeMinMarginLevel) {
         TradeMinMarginLevel = AccountInfoDouble(ACCOUNT_MARGIN_LEVEL);
-        Error::PrintInfo(ErrorInfo, "Setting TradeMinMarginLevel to account margin call level: " + AccountInfoDouble(ACCOUNT_MARGIN_LEVEL));
+        Error::PrintInfo_v02(ErrorInfo, "Setting TradeMinMarginLevel to account margin call level: " + AccountInfoDouble(ACCOUNT_MARGIN_LEVEL));
     }
     
     return finalResult;

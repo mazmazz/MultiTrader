@@ -88,6 +88,8 @@
 #property link      "mbkennelfx@gmail.com"
 //#property library
 
+#define _OrderReliable
+
 #include <stdlib.mqh>
 #include <stderror.mqh>
 
@@ -280,7 +282,7 @@ int OrderSendReliable1Step(string symbol, int cmd, double volume, double price,
             break;  // we can apparently retry immediately according to MT docs.
 
          case ERR_INVALID_PRICE:
-         case ERR_INVALID_STOPS:
+         case ERR_INVALID_STOPS: {
             cnt++;
             double servers_min_stop = MarketInfo(symbol, MODE_STOPLEVEL) * realPoint;
             double old_price;
@@ -418,7 +420,8 @@ int OrderSendReliable1Step(string symbol, int cmd, double volume, double price,
                }
             }
             break;
-
+         }
+        
          case ERR_INVALID_TRADE_PARAMETERS:
          default:
             // an apparently serious error.
@@ -555,6 +558,8 @@ int OrderSendReliable1Step(string symbol, int cmd, double volume, double price,
       OrderReliablePrint(2, "�  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �");
       return(-1);
    }
+   
+   return ticket;
 }
 
 
@@ -742,6 +747,8 @@ int OrderSendReliableMKT1Step(string symbol, int cmd, double volume, double pric
       OrderReliablePrint(2, "�  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �  �");
       return(-1);
    }
+   
+   return ticket;
 }
 
 
@@ -1562,7 +1569,8 @@ bool O_R_CheckForHistory(int ticket) export
    while (!exit_loop) {
       /* loop through open trades */
       int total=OrdersTotal();
-      for(int c = 0; c < total; c++) {
+      int c = 0;
+      for(c = 0; c < total; c++) {
          if(OrderSelect(c,SELECT_BY_POS,MODE_TRADES) == true) {
             if (OrderTicket() == ticket) {
                success = true;

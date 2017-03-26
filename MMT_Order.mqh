@@ -150,6 +150,7 @@ void OrderManager::doPositions(bool firstRun) {
             } else { gridExitByOpposite[i] = false; }
             
             positionOpenCount[i]--;
+            gridDirection[i] = SignalNone;
             gridExit[i] = false;
         }
     
@@ -160,18 +161,24 @@ void OrderManager::doPositions(bool firstRun) {
 void OrderManager::doCurrentPositions(bool firstRun) {
     for(int i = 0; i < OrdersTotal(); i++) {
         OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
-        if(OrderMagicNumber() != MagicNumber) { continue; }
+        if(OrderMagicNumber() != MagicNumber) { 
+            continue; 
+        }
         int symbolIdx = MainSymbolMan.getSymbolId(OrderSymbol());
-        positionOpenCount[symbolIdx]++;
         
         if(firstRun) { // if signal already exists for open order, raise fulfilled flag so no repeat is opened
+            if(TradeModeType != TradeGrid) { positionOpenCount[symbolIdx]++; }
+            else { positionOpenCount[symbolIdx] = 1; }
             int orderAct = OrderType();
             SignalUnit *checkEntrySignal = MainDataMan.symbol[symbolIdx].getSignalUnit(true);
             if(!Common::IsInvalidPointer(checkEntrySignal)) {
-                if(
-                    ((orderAct % 2 == 0)/*buy*/ && checkEntrySignal.type == SignalLong)
-                    || ((orderAct % 2 > 0)/*sell*/ && checkEntrySignal.type == SignalShort)
-                ) { checkEntrySignal.fulfilled = true; }
+                if(TradeModeType != TradeGrid) {
+                    if(
+                        ((orderAct % 2 == 0)/*buy*/ && checkEntrySignal.type == SignalLong)
+                        || ((orderAct % 2 > 0)/*sell*/ && checkEntrySignal.type == SignalShort)
+                    ) { checkEntrySignal.fulfilled = true; }
+                } else if(checkEntrySignal.type == SignalLong || checkEntrySignal.type == SignalShort) { checkEntrySignal.fulfilled = true; }
+                    // todo: grid - better firstRun rules. set gridDirection by checking if all buy stops are above current price point, etc. ???
             }
         }
         
@@ -179,6 +186,8 @@ void OrderManager::doCurrentPositions(bool firstRun) {
         bool exitResult = doExitPosition(OrderTicket(), symbolIdx);
         if(!exitResult) {
             doChangePosition(OrderTicket(), symbolIdx);
+        } else {
+            i--; // deleting a position mid-loop changes the index, attempt same index as orders shift
         }
     }
     
@@ -199,30 +208,35 @@ void OrderManager::doChangePosition(int ticket, int symIdx) {
 
 bool OrderManager::doExitPosition(int ticket, int symIdx) {
     if(TradeModeType != TradeGrid && !TradeExitEnabled) { return false; }
-
+    if(TradeModeType == TradeGrid && gridDirection[symIdx] != SignalLong && gridDirection[symIdx] != SignalShort) { return false; }
+    
     if(OrderTicket() != ticket) { 
-        if(!OrderSelect(ticket, SELECT_BY_TICKET)) { return false; } 
+        if(!OrderSelect(ticket, SELECT_BY_TICKET)) { 
+            return false; 
+        } 
     }
+    
+    int posType = OrderType();
+    if(TradeModeType == TradeGrid && (posType == OP_BUY || posType == OP_SELL) && !GridCloseOrdersOnSignal) { return false; }
+    // todo: grid - smarter exit rules on pendings. Don't delete them at all?
+    
     string posSymName = OrderSymbol();
     
-    // todo: grid -- how to close pendings when encountering an opposite signal?
+    // todo: grid - how to close pendings when encountering an opposite signal?
+    bool checkSig;
     SignalUnit *checkUnit = MainDataMan.symbol[symIdx].getSignalUnit(false);
-    if(Common::IsInvalidPointer(checkUnit)) { return false; }
+    checkSig = !Common::IsInvalidPointer(checkUnit) && !checkUnit.fulfilled; // todo: how is this affected by retrace?
+    if(!checkSig && !CloseOrderOnOppositeSignal && TradeModeType != TradeGrid) { return false; }
     
     bool checkOpp;
     SignalUnit *oppCheckUnit;
     if(CloseOrderOnOppositeSignal || TradeModeType == TradeGrid) {
         oppCheckUnit = MainDataMan.symbol[symIdx].getSignalUnit(true);
-        checkOpp = !Common::IsInvalidPointer(oppCheckUnit);
+        checkOpp = !Common::IsInvalidPointer(oppCheckUnit) && !oppCheckUnit.fulfilled;
+        if(!checkSig && !checkOpp) { return false; }
     }
     
-    if(
-        (checkOpp && checkUnit.fulfilled && oppCheckUnit.fulfilled)
-        || (!checkOpp && checkUnit.fulfilled)
-    ) { return false; }
-    
-    int posType = OrderType();
-    bool posIsBuy = (posType % 2 == 0);
+    bool posIsBuy = (TradeModeType == TradeGrid) ? (gridDirection[symIdx] == SignalLong) : (posType % 2 == 0);
     
     bool oppIsTrigger,exitIsTrigger;
     if(!checkOpp) { 
@@ -236,6 +250,7 @@ bool OrderManager::doExitPosition(int ticket, int symIdx) {
         if(checkUnit.type != SignalLong && checkUnit.type != SignalShort) { checkIsEmpty = true; }
         if(oppCheckUnit.type != SignalLong && oppCheckUnit.type != SignalShort) { oppIsEmpty = true; }
         if(checkIsEmpty && oppIsEmpty) { return false; }
+        
         if(posIsBuy) {
             if(!checkIsEmpty && checkUnit.type == SignalLong) { return false; }
             if(!oppIsEmpty && oppCheckUnit.type == SignalLong) { return false; }
@@ -252,31 +267,51 @@ bool OrderManager::doExitPosition(int ticket, int symIdx) {
     }
     
     if(!exitIsTrigger && !oppIsTrigger) { 
-        Error::ThrowError(ErrorNormal, "Neither exit nor opp is trigger", FunctionTrace, posSymName +"|"+posType, true);
+        Error::PrintNormal("Neither exit nor opp is trigger", FunctionTrace, posSymName +"|"+posType, true);
+    }
+    
+    if(TradeModeType == TradeGrid) { // if order is market, not pending, then close according to signal
+        if(exitIsTrigger) {
+            if(posType == OP_BUY && checkUnit.type == SignalLong) { return false; }
+            if(posType == OP_SELL && checkUnit.type == SignalShort) { return false; }
+        } else if(oppIsTrigger) {
+            if(posType == OP_BUY && oppCheckUnit.type == SignalLong) { return false; }
+            if(posType == OP_SELL && oppCheckUnit.type == SignalShort) { return false; }
+        }
     }
     
     // todo: retracement protection?
     
-    double posLots = OrderLots();
-    double posPrice; 
-    if(posType % 2 > 0) { posPrice = MarketInfo(posSymName, MODE_ASK); } // Sell order, odd idx
-    else { MarketInfo(posSymName, MODE_BID); } // Buy order, even idx
-    int posSlippage = 40; // todo: get slippage from filter?
+    Error::PrintInfo("Closing Ticket " + ticket + " - " + "Type: " + posType + " - " + (exitIsTrigger ? "Exit: " + checkUnit.type : oppIsTrigger ? "Entry: " + oppCheckUnit.type : "No trigger"), NULL, NULL, true);
     
+    double posLots = OrderLots();
+    double posPrice;
+    if(posType % 2 == 0) { posPrice = SymbolInfoDouble(posSymName, SYMBOL_BID); } // Buy order, even idx
+    else { posPrice = SymbolInfoDouble(posSymName, SYMBOL_ASK); } // Sell order, odd idx
+    int posSlippage = 40; // todo: slippage
+
+#ifdef _OrderReliable
     bool result = 
-        posType == OP_BUY || posType == OP_SELL ? OrderClose(ticket, posLots, posPrice, posSlippage)
+        posType == OP_BUY || posType == OP_SELL ? 
+        OrderCloseReliable(ticket, posLots, posPrice, posSlippage)
+        : OrderDeleteReliable(ticket) // pending order
+        ;
+#else
+    bool result = 
+        posType == OP_BUY || posType == OP_SELL ? 
+        OrderClose(ticket, posLots, posPrice, posSlippage)
         : OrderDelete(ticket) // pending order
         ;
+#endif
     if(result) {
         if(TradeModeType != TradeGrid) { 
             if(exitIsTrigger) { checkUnit.fulfilled = true; } // do not set opposite entry fulfilled; that's set by entry action
             positionOpenCount[symIdx]--;
         } else {
-            // set flag to indicate fulfillment set
-            // todo: how to handle failures?
+            // set flag to trigger fulfilled in aggregate at end of loop
+            // todo: grid - how to handle failures?
             gridExit[symIdx] = true;
             gridExitByOpposite[symIdx] = oppIsTrigger;
-            gridDirection[symIdx] = SignalNone;
         }
     }
     return result;
@@ -292,7 +327,12 @@ int OrderManager::doEnterPosition(int symIdx) {
 
     SignalUnit *checkUnit = MainDataMan.symbol[symIdx].getSignalUnit(true);
     if(Common::IsInvalidPointer(checkUnit)) { return 0; }
-    else if(checkUnit.fulfilled) { return 0; }
+    else if(checkUnit.fulfilled) { 
+        //Error::ThrowError(ErrorNormal, "checkUnit fulfilled " + checkUnit.type);
+        return 0; 
+    }
+    
+    //Error::ThrowError(ErrorNormal, "checkUnit " + checkUnit.type);
     
     if(checkUnit.type != SignalLong && checkUnit.type != SignalShort) { return 0; }
     
@@ -312,6 +352,7 @@ int OrderManager::doEnterPosition(int symIdx) {
     
     SignalUnit *checkExitUnit = MainDataMan.symbol[symIdx].getSignalUnit(false);
     if(!Common::IsInvalidPointer(checkExitUnit)) {
+        Error::ThrowError(ErrorNormal, "exitUnit " + checkExitUnit.type);
         // todo: how to handle retraces where exit signal is temporarily not in opposite?
         // retracement delay? loop through buffer and see if exit signal existed within retracement delay?
         if(checkUnit.type == SignalLong && checkExitUnit.type == SignalShort) { return 0; }
@@ -363,14 +404,19 @@ int OrderManager::sendOrder(int symIdx, SignalType signal, bool isPending) {
         oppPrice = SymbolInfoDouble(posSymName, SYMBOL_ASK); 
     } 
     
-    int posSlippage = 40; // todo: get slippage
+    int posSlippage = 40; // todo: slippage
     
-    double stoplossOffsetPips;
-    if(!getValue(stoplossOffsetPips, stopLossLoc, symIdx)) { return -1; }
-    double takeprofitOffsetPips;
-    if(!getValue(takeprofitOffsetPips, takeProfitLoc, symIdx)) { return -1; }
-    double stoplossOffset = PipsToPrice(posSymName, stoplossOffsetPips);
-    double takeprofitOffset = PipsToPrice(posSymName, takeprofitOffsetPips);
+    double stoplossOffset, takeprofitOffset;
+    if(StopLossEnabled) {
+        double stoplossOffsetPips;
+        if(!getValue(stoplossOffsetPips, stopLossLoc, symIdx)) { return -1; }
+        stoplossOffset = PipsToPrice(posSymName, stoplossOffsetPips);
+    }
+    if(TakeProfitEnabled) {
+        double takeprofitOffsetPips;
+        if(!getValue(takeprofitOffsetPips, takeProfitLoc, symIdx)) { return -1; }
+        takeprofitOffset = PipsToPrice(posSymName, takeprofitOffsetPips);
+    }
     
     double posStoploss = stoplossOffset == 0 ? 0
         : (signal == SignalLong) ? oppPrice + stoplossOffset : oppPrice - stoplossOffset
@@ -383,25 +429,36 @@ int OrderManager::sendOrder(int symIdx, SignalType signal, bool isPending) {
     int posMagic = MagicNumber;
     // datetime posExpiration
     
+#ifdef _OrderReliable
+    return OrderSendReliable(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic);
+#else
     return OrderSend(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic);
+#endif
 }
 
 int OrderManager::sendGrid(int symIdx, SignalType signal) {
-    if(signal == gridDirection[symIdx]) { return 0; /* closeGridPendings(); */ } // only one grid set at a time // or close current grid and reset with new price? 
+    // todo: grid - smarter entry rules on pendings. Only enter when no pendings exist on the symbol? Or no trades at all on the symbol?
+
+    if(signal == gridDirection[symIdx]) { return -1; } // only one grid set at a time
         // gridDirection is set after successful setup, and reset after closing
 
     string posSymName = MainSymbolMan.symbols[symIdx].name;
     double posVolume;
     if(!getValue(posVolume, lotSizeLoc, symIdx)) { return -1; }
     
-    int posSlippage = 40; // todo: get slippage
+    int posSlippage = 40; // todo: slippage
     
-    double stoplossOffsetPips;
-    if(!getValue(stoplossOffsetPips, stopLossLoc, symIdx)) { return -1; }
-    double takeprofitOffsetPips;
-    if(!getValue(takeprofitOffsetPips, takeProfitLoc, symIdx)) { return -1; }
-    double stoplossOffset = PipsToPrice(posSymName, stoplossOffsetPips);
-    double takeprofitOffset = PipsToPrice(posSymName, takeprofitOffsetPips);
+    double stoplossOffset, takeprofitOffset;
+    if(StopLossEnabled) {
+        double stoplossOffsetPips;
+        if(!getValue(stoplossOffsetPips, stopLossLoc, symIdx)) { return -1; }
+        stoplossOffset = PipsToPrice(posSymName, stoplossOffsetPips);
+    }
+    if(TakeProfitEnabled) {
+        double takeprofitOffsetPips;
+        if(!getValue(takeprofitOffsetPips, takeProfitLoc, symIdx)) { return -1; }
+        takeprofitOffset = PipsToPrice(posSymName, takeprofitOffsetPips);
+    }
     
     string posComment = OrderComment_;
     int posMagic = MagicNumber;
@@ -413,36 +470,52 @@ int OrderManager::sendGrid(int symIdx, SignalType signal) {
     double priceDistPips; 
     if(!getValue(priceDistPips, gridDistanceLoc, symIdx)) { return -1; }
     double priceDistPoints = PipsToPrice(posSymName, priceDistPips);
-    int priceDistSignal = (signal == SignalLong) ? priceDistPoints : priceDistPoints*-1;
-    int priceDistHedge = priceDistSignal*-1;
+    double priceDistSignal = (signal == SignalLong) ? priceDistPoints : priceDistPoints*-1;
+    double priceDistHedge = priceDistSignal*-1;
     
     int cmdSignal = (signal == SignalLong) ? OP_BUYSTOP : OP_SELLSTOP;
     int cmdHedge = (signal == SignalLong) ? OP_SELLSTOP : OP_BUYSTOP;
     int resultSignal, resultHedge;
+    int finalResult;
     for(int i = 1; i <= GridCount; i++) {
-        // todo: calc stoploss and takeprofit here based on price
         double posPriceSignal = priceBaseSignal+(priceDistSignal*i);
         double posPriceHedge = priceBaseHedge+(priceDistHedge*i);
         double posStoploss = stoplossOffset == 0 ? 0
-            : cmdSignal == OP_BUYSTOP ? posPriceHedge + stoplossOffset : posPriceHedge - stoplossOffset
+            : cmdSignal == OP_BUYSTOP ? posPriceHedge + (stoplossOffset*i) : posPriceHedge - (stoplossOffset*i)
             ; // opposite price of signal
         double posTakeprofit = takeprofitOffset == 0 ? 0
-            : cmdSignal == OP_BUYSTOP ? posPriceHedge + takeprofitOffset : posPriceHedge - takeprofitOffset
+            : cmdSignal == OP_BUYSTOP ? posPriceHedge + (takeprofitOffset*i) : posPriceHedge - (takeprofitOffset*i)
             ;
             
+#ifdef _OrderReliable            
+        resultSignal = OrderSendReliable(posSymName, cmdSignal, posVolume, posPriceSignal, posSlippage, posStoploss, posTakeprofit, posComment, posMagic);
+#else
         resultSignal = OrderSend(posSymName, cmdSignal, posVolume, posPriceSignal, posSlippage, posStoploss, posTakeprofit, posComment, posMagic);
+#endif
+        if(resultSignal > -1) { finalResult++; }
         
         if(GridHedging) {
-            posStoploss = cmdHedge == OP_BUYSTOP ? posPriceSignal + stoplossOffset : posPriceSignal - stoplossOffset; // opposite price of hedge
-            posTakeprofit = cmdHedge == OP_BUYSTOP ? posPriceSignal + takeprofitOffset : posPriceSignal - takeprofitOffset;
+            posStoploss = 
+                stoplossOffset == 0 ? 0 
+                : cmdHedge == OP_BUYSTOP ? posPriceSignal + (stoplossOffset*i) : posPriceSignal - (stoplossOffset*i)
+                ; // opposite price of hedge
+            posTakeprofit = 
+                takeprofitOffset == 0 ? 0 
+                : cmdHedge == OP_BUYSTOP ? posPriceSignal + (takeprofitOffset*i) : posPriceSignal - (takeprofitOffset*i)
+                ;
+#ifdef _OrderReliable
+            resultHedge = OrderSendReliable(posSymName, cmdHedge, posVolume, posPriceHedge, posSlippage, posStoploss, posTakeprofit, posComment, posMagic);
+#else                
             resultHedge = OrderSend(posSymName, cmdHedge, posVolume, posPriceHedge, posSlippage, posStoploss, posTakeprofit, posComment, posMagic);
+#endif
+            if(resultHedge > -1) { finalResult++; }
         }
     }
     
-    // todo: check if all pendings succeeded
+    // todo: grid - check if all pendings succeeded
     gridDirection[symIdx] = signal;
     
-    return 0;
+    return finalResult;
 }
 
 //+------------------------------------------------------------------+

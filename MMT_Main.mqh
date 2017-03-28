@@ -5,7 +5,7 @@
 #include "MMT_Filters/MMT_FilterManager.mqh"
 #include "MMT_Symbols.mqh"
 #include "MMT_Data/MMT_Data.mqh"
-#include "MMT_Order.mqh"
+#include "MMT_Order/MMT_OrderManager.mqh"
 #include "MMT_Dashboard.mqh"
 
 //+------------------------------------------------------------------+

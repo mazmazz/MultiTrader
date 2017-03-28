@@ -11,7 +11,7 @@
 #include "../MC_Common/MC_MultiSettings.mqh"
 #include "MMT_Filter.mqh"
 #include "../MMT_Data/MMT_Data.mqh"
-#include "../MMT_Order.mqh"
+#include "../MMT_Order/MMT_OrderManager.mqh"
 
 class FilterManager {
     public:

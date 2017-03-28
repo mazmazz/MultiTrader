@@ -10,7 +10,7 @@
 #include "MMT_Filter.mqh"
 #include "../MC_Common/MC_MultiSettings.mqh"
 #include "../MMT_Data/MMT_DataUnit.mqh"
-#include "../MMT_Symbols.mqh"
+#include "../MMT_Symbol.mqh"
 #include "../depends/PipFactor.mqh"
 #include "depends/LibCSS.mqh"
 

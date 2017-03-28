@@ -5,7 +5,7 @@
 #include "../MC_Common/MC_Common.mqh"
 #include "../MC_Common/MC_Error.mqh"
 #include "../MMT_Data/MMT_Data.mqh"
-#include "../MMT_Symbols.mqh"
+#include "../MMT_Symbol.mqh"
 //#include "../depends/OrderReliable.mqh"
 #include "../depends/PipFactor.mqh"
 

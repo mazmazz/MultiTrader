@@ -9,8 +9,8 @@
 
 #include "../MMT_Settings.mqh"
 #include "../MC_Common/MC_MultiSettings.mqh"
-#include "../MMT_Symbols.mqh"
-#include "../MMT_Filters/MMT_FilterManager.mqh"
+#include "../MMT_Symbol.mqh"
+#include "../MMT_Filter/MMT_FilterManager.mqh"
 #include "MMT_DataHistory.mqh"
 
 //+------------------------------------------------------------------+

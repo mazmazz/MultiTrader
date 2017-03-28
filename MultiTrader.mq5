@@ -43,12 +43,12 @@ TimePoint LastTickTime;
 //    Include order affects settings order in config window
 //+------------------------------------------------------------------+
 
-#include "MMT_Filters/MMT_Filter_ATR.mqh"
-#include "MMT_Filters/MMT_Filter_StdDev.mqh"
-#include "MMT_Filters/MMT_Filter_Stoch.mqh"
+#include "MMT_Filter/MMT_Filter_ATR.mqh"
+#include "MMT_Filter/MMT_Filter_StdDev.mqh"
+#include "MMT_Filter/MMT_Filter_Stoch.mqh"
 #ifdef __MQL4__
-#include "MMT_Filters/MMT_Filter_HGI.mqh"
-//#include "MMT_Filters/MMT_Filter_CSS.mqh"
+#include "MMT_Filter/MMT_Filter_HGI.mqh"
+//#include "MMT_Filter/MMT_Filter_CSS.mqh"
 #endif
 
 //+------------------------------------------------------------------+

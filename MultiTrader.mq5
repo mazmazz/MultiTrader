@@ -65,14 +65,14 @@ int OnInit() {
     Error::AlertLevel = ::ErrorAlertLevel;
     Error::FilePath = ::ErrorLogFileName;
     
+    if(!ValidateSettings()) { return INIT_PARAMETERS_INCORRECT; }
+    
 #ifdef _OrderReliable
     O_R_Config_use2step(BrokerTwoStep);
     O_R_Config_UseInBacktest(true); // order closes fail without this
     O_R_SetVerbosity(1);
     O_R_Config_FinetuneEntries(true);
 #endif
-    
-    if(!ValidateSettings()) { return INIT_PARAMETERS_INCORRECT; }
 
     Main = new MainMultiTrader();
     Main.addFilter(new FilterAtr());
@@ -107,6 +107,10 @@ bool ValidateSettings() {
     if((IsTesting() || IsOptimization()) && !SingleSymbolMode) {
         Error::ThrowFatalError(ErrorFatal, "Strategy tester requires Single Symbol Mode.");
         finalResult = false;
+    }
+    
+    if((IsTesting() || IsOptimization()) && BrokerTwoStep) {
+        BrokerTwoStep = false; // Strat tester does not hit SLTP if modified after open
     }
 #endif
     

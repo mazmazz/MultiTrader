@@ -16,6 +16,11 @@ enum TimeUnits {
     , UnitTicks // Ticks: Applies only in tick mode
 };
 
+enum BalanceUnits {
+    UnitAccountCurrency // Account currency
+    , UnitPips // Pips
+};
+
 enum CalcMethod {
     CalcValue // Use exact value below
     , CalcFilterExact // Use exact value from filter
@@ -86,7 +91,7 @@ extern TradeMode TradeModeType=TradeMarket; // TradeModeType: Type of trades to 
 extern bool BrokerTwoStep=true; // IsTwoStep: Broker is ECN and needs two-step order sending for SL/TP
 extern string OrderComment_=""; // OrderComment: Comment to attach to orders
 extern bool CloseOrderOnOppositeSignal=true; // CloseOrderOnOppositeSignal: Close when entry signal is opposite
-extern bool SignalRetraceOpen=false; // SignalRetraceOpen: Enter additional positions on a retrace
+extern bool SignalRetraceOpen=true; // SignalRetraceOpen: Enter additional positions on a retrace
 extern int MaxTradesPerSymbol=0;
 // extern int MaxTradesTimeframe=60;
 extern double TradeMinMarginLevel=200; // MinTradeMarginLevel (percent)
@@ -113,12 +118,13 @@ extern string GridDistanceFilterName = "";
 extern double GridDistanceFilterFactor = 1.0;
 
 extern string LbL_Exit_Basket="--- Basket Exit Settings ---";
-extern bool UseBaskets=false;
-extern int ProfitCalcMethod=3; //ProfitCalcMethod //enum
-extern double BasketTP=1.0;
-extern double BasketSL=-100.0;
-extern int MaxBasketsPerDay=10;
-extern int MaxLossBasketsPerDay=0;
+extern BalanceUnits BasketSettingUnit=UnitAccountCurrency; // BasketSettingUnit: Set SLTP according to currency or pips
+extern bool BasketIncludeFees=false; // BasketIncludeFees: Deduct fees from profit calculation
+extern bool BasketEnableStopLoss=false;
+extern double BasketStopLossValue=-100.0;
+// todo: basket filter values. Complicated because we may need to aggregate filters across symbols for a proper basket sltp
+extern bool BasketEnableTakeProfit=false;
+extern double BasketTakeProfitValue=50.0;
 
 extern string Lbl_MaxSpread="---- Max Spread Settings ----";
 extern CalcMethod MaxSpreadCalcMethod=CalcValue;
@@ -140,6 +146,9 @@ extern double LotSizeFilterFactor=1.0;
 
 extern string Lbl_StopLoss="---- Stop Loss Settings ----";
 extern bool StopLossEnabled=false;
+extern bool StopLossBroker=true; // StopLossBroker: Send SL to broker
+extern bool StopLossInternal=true; // StopLossInternal: Track and fire SL using EA
+extern double StopLossBrokerFactor=1.0; // StopLossBrokerFactor: Factor broker SL if Internal enabled
 extern CalcMethod StopLossCalcMethod=CalcValue;
 extern double StopLossValue=-30.0;
 extern string StopLossFilterName="";
@@ -147,6 +156,9 @@ extern double StopLossFilterFactor=-1.0;
 
 extern string Lbl_TakeProfit="---- Take Profit Settings ----";
 extern bool TakeProfitEnabled=false;
+extern bool TakeProfitBroker=true; // TakeProfitBroker: Send TP to broker
+extern bool TakeProfitInternal=true; // TakeProfitInternal: Track and fire TP using EA
+extern double TakeProfitBrokerFactor=1.0; // TakeProfitBrokerFactor: Factor broker TP if Internal enabled
 extern CalcMethod TakeProfitCalcMethod=CalcValue;
 extern double TakeProfitValue=30.0;
 extern string TakeProfitFilterName="";

@@ -37,6 +37,12 @@ class Filter {
     
     string shortName;
     
+    bool signalMaster; // overrides all signals when getting symbolSignal
+    bool alwaysStable; 
+        // consider implementing as custom stable seconds, per subfilter
+        // changes in MMT_Data.mqh where updateSymbolSignal checks for filter signal stability
+        // and MMT_Dashboard.mqh where signalToString checks for stable seconds
+    
     int getSubfilterCount(SubfilterType type = SubfilterAllTypes);
     
     virtual void init() { Error::ThrowError(ErrorNormal, "Filter: init not implemented", FunctionTrace, shortName); }

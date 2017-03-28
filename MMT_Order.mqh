@@ -191,7 +191,7 @@ void OrderManager::doCurrentPositions(bool firstRun) {
         }
     }
     
-    // set symbol exit signal fulfilled and positionOpenCount[symIdx]-- in doPositions loop so we don't loop an extra time
+    // grid - set symbol exit signal fulfilled and positionOpenCount[symIdx] in doPositions loop so we don't loop an extra time
 }
 
 //+------------------------------------------------------------------+
@@ -240,29 +240,29 @@ bool OrderManager::doExitPosition(int ticket, int symIdx) {
     
     bool oppIsTrigger,exitIsTrigger;
     if(!checkOpp) { 
-        if(checkUnit.type != SignalLong && checkUnit.type != SignalShort) { return false; }
+        if(checkUnit.type != SignalLong && checkUnit.type != SignalShort && checkUnit.type != SignalClose) { return false; }
         if(posIsBuy && checkUnit.type == SignalLong) { return false; } // signals are negated for exits -- "SignalLong" means Buy OK, close Shorts.
         else if(!posIsBuy && checkUnit.type == SignalShort) { return false; }
         else { exitIsTrigger = true; }
     }
     else {
         bool checkIsEmpty, oppIsEmpty;
-        if(checkUnit.type != SignalLong && checkUnit.type != SignalShort) { checkIsEmpty = true; }
-        if(oppCheckUnit.type != SignalLong && oppCheckUnit.type != SignalShort) { oppIsEmpty = true; }
+        if(checkUnit.type != SignalLong && checkUnit.type != SignalShort && checkUnit.type != SignalClose) { checkIsEmpty = true; }
+        if(oppCheckUnit.type != SignalLong && oppCheckUnit.type != SignalShort && oppCheckUnit.type != SignalClose) { oppIsEmpty = true; }
         if(checkIsEmpty && oppIsEmpty) { return false; }
         
         if(posIsBuy) {
             if(!checkIsEmpty && checkUnit.type == SignalLong) { return false; }
             if(!oppIsEmpty && oppCheckUnit.type == SignalLong) { return false; }
             
-            if(!checkIsEmpty && checkUnit.type == SignalShort) { exitIsTrigger = true; }
-            if(!exitIsTrigger && !oppIsEmpty && oppCheckUnit.type == SignalShort) { oppIsTrigger = true; }
+            if(!checkIsEmpty && (checkUnit.type == SignalShort || checkUnit.type == SignalClose)) { exitIsTrigger = true; }
+            if(!exitIsTrigger && !oppIsEmpty && (oppCheckUnit.type == SignalShort || checkUnit.type == SignalClose)) { oppIsTrigger = true; }
         } else {
             if(!checkIsEmpty && checkUnit.type == SignalShort) { return false; }
             if(!oppIsEmpty && oppCheckUnit.type == SignalShort) { return false; }
             
-            if(!checkIsEmpty && checkUnit.type == SignalLong) { exitIsTrigger = true; }
-            if(!exitIsTrigger && !oppIsEmpty && oppCheckUnit.type == SignalLong) { oppIsTrigger = true; }
+            if(!checkIsEmpty && (checkUnit.type == SignalLong || checkUnit.type == SignalClose)) { exitIsTrigger = true; }
+            if(!exitIsTrigger && !oppIsEmpty && (oppCheckUnit.type == SignalLong || checkUnit.type == SignalClose)) { oppIsTrigger = true; }
         } 
     }
     

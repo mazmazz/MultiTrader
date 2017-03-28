@@ -61,8 +61,8 @@ class DashboardManager {
     string truncText(string text, int length);
     string padText(string text, int length);
     int getPosSize();
-    string signalToString(SignalType signal, bool shortCode = true);
-    string signalToString(SignalType signal, int duration, SubfilterType type, bool shortCode = true);
+    string signalToString(SignalType signal, bool shortCode = true, bool alwaysStable = false);
+    string signalToString(SignalType signal, int duration, SubfilterType type, bool shortCode = true, bool alwaysStable = false);
     
     void drawHeader();
     void drawLegend();
@@ -327,7 +327,7 @@ void DashboardManager::updateData(int symbolId, int filterId, int subfilterId, b
             dataResult = 
                 data.getStringValue(MainSymbolMan.symbols[symbolId].digits) 
                 + " " 
-                + signalToString(data.signal, history.getSignalDuration(TimeSettingUnit), MainFilterMan.filters[filterId].subfilterType[subfilterId]);
+                + signalToString(data.signal, history.getSignalDuration(TimeSettingUnit), MainFilterMan.filters[filterId].subfilterType[subfilterId], MainFilterMan.filters[filterId].alwaysStable);
                 ;
             
             switch(data.signal) {
@@ -386,20 +386,20 @@ string DashboardManager::getDataSuffix(int filterId, int subfilterId) {
         ;
 }
 
-string DashboardManager::signalToString(SignalType signal, bool shortCode = true) {
-    return signalToString(signal, -1, SubfilterAllTypes, shortCode);
+string DashboardManager::signalToString(SignalType signal, bool shortCode = true, bool alwaysStable = false) {
+    return signalToString(signal, -1, SubfilterAllTypes, shortCode, alwaysStable);
 }
 
-string DashboardManager::signalToString(SignalType signal, int duration, SubfilterType type, bool shortCode = true) {
+string DashboardManager::signalToString(SignalType signal, int duration, SubfilterType type, bool shortCode = true, bool alwaysStable = false) {
     if(signal == SignalNone) { return ""; }
 
     switch(type) {
         case SubfilterEntry:
-            if(duration < EntryStableTime) { return IntegerToString(EntryStableTime - duration); }
+            if(!alwaysStable && (duration < EntryStableTime)) { return IntegerToString(EntryStableTime - duration); }
             break;
             
         case SubfilterExit:
-            if(duration < ExitStableTime) { return IntegerToString(ExitStableTime - duration); }
+            if(!alwaysStable && (duration < ExitStableTime)) { return IntegerToString(ExitStableTime - duration); }
             break;
             
         case SubfilterValue:

@@ -40,6 +40,18 @@ enum TradeMode {
     , TradeGrid           // Trade with grid orders
 };
 
+enum OrderProfitType {
+    OrderBothProfitLoss    // All orders
+    , OrderOnlyProfitable  // Profitable orders only
+    , OrderOnlyLoss        // Losing orders only
+};
+
+enum OrderOpType {
+    OrderBothLongShort     // All orders
+    , OrderOnlyLong        // Long positions only
+    , OrderOnlyShort       // Short positions only
+};
+
 extern string LblRuntime="********** Runtime Settings **********";
 extern int MagicNumber=5001;
 extern string ConfigComment=""; // ConfigComment: Comment to display on dashboard
@@ -103,6 +115,18 @@ extern int ExitStableTime=5;
 extern int SignalRetraceTime=3600; // SignalRetraceTime: Repeating signal change is seen as retrace
 extern int TradeBetweenDelay=0; // TradeBetweenDelay: Wait between trades
 extern int ValueBetweenDelay=0; // ValueBetweenDelay: Wait between value changes
+
+extern string Lbl_TradeSchedule="---- Schedule Settings ----";
+extern bool ScheduleCloseDaily = false; // ScheduleCloseDaily: Exit trades before day close to prevent swap
+extern bool ScheduleClose3DaySwap = true; // ScheduleClose3DaySwap: Exit trades before 3-day swap per symbol
+extern bool ScheduleCloseOffSessions = true; // ScheduleCloseOffSessions: Exit trades before next session is closed
+extern OrderProfitType ScheduleCloseOrderProfit = OrderBothProfitLoss; // ScheduleCloseOrderProfit: Close only profitable trades
+extern OrderOpType ScheduleCloseOrderOp = OrderBothLongShort; // ScheduleCloseOrderOp: Close only longs or shorts
+extern int ScheduleSecondsOpen = 10800; // ScheduleSecondsOpen: Open X seconds after session open
+extern int ScheduleSecondsClose = 300; // ScheduleSecondsClose: Exit X seconds before session close
+// todo: close depending on swap value: does order profit exceed current swap value? compare to some filter value like ATR?
+    // track separately for longs and shorts -- swap can vary widely
+
 //
 //extern string LbL_Exit_ExpiryTrade="--- Expiry Trade Exit Settings ---";
 //extern bool ExpireTrades=false;

@@ -337,7 +337,14 @@ void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx) {
             
             // todo: if compareSignalType == SignalNone && subSignalStable, then resultSignalType == matching signal?
             
-            if(
+            if(compareSignalType == SignalNone) {
+                switch(subSignalType) {
+                    case SignalBuy: resultSignalType = SignalLong; break;
+                    case SignalSell: resultSignalType = SignalShort; break;
+                    case SignalClose: resultSignalType = SignalClose; break;
+                    // default: break; // do nothing, only set signal if affirmative
+                }
+            } else if(
                 (compareSignalType == SignalLong && subSignalType == SignalSell)
                 || (compareSignalType == SignalShort && subSignalType == SignalBuy)
                 || (compareSignalType == SignalClose && subSignalType == SignalNone) // or subSignalType != SignalClose ?

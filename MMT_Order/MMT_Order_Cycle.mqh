@@ -16,12 +16,12 @@ void OrderManager::doPositions(bool firstRun) {
 
     // todo: separate cycles for updating vs. enter/exit?
     doCurrentPositions(firstRun);
-    doBasketCheckExit();
+    checkDoBasketExit();
     
     int symbolCount = MainSymbolMan.getSymbolCount();
     for(int i = 0; i < symbolCount; i++) {
         fillGridExitFlags(i);
-        doEnterPosition(i);
+        checkDoEntrySignals(i);
     }
 }
 
@@ -46,12 +46,12 @@ void OrderManager::doCurrentPositions(bool firstRun) {
         if(schedExit) {
             exitResult = sendClose(OrderTicket(), symbolIdx);
         } else {
-            exitResult = doExitPosition(OrderTicket(), symbolIdx);
+            exitResult = checkDoExitSignals(OrderTicket(), symbolIdx);
         }
         
         if(!exitResult) {
             basketProfit += profit;
-            doChangePosition(OrderTicket(), symbolIdx);
+            doModifyPosition(OrderTicket(), symbolIdx);
         } else {
             basketBookedProfit += profit;
             i--; // deleting a position mid-loop changes the index, attempt same index as orders shift
@@ -62,7 +62,7 @@ void OrderManager::doCurrentPositions(bool firstRun) {
 }
 
 void OrderManager::evaluateFulfilledFromOrder(int ticket, int symbolIdx) {
-    if(!checkSelectOrder(ticket)) { return; }
+    if(!checkDoSelectOrder(ticket)) { return; }
 
     // if signal already exists for open order, raise fulfilled flag so no repeat is opened
     
@@ -96,7 +96,7 @@ void OrderManager::fillGridExitFlags(int symbolIdx) {
     }
 }
 
-bool OrderManager::checkSelectOrder(int ticket) {
+bool OrderManager::checkDoSelectOrder(int ticket) {
     if(OrderTicket() != ticket) { 
         if(!OrderSelect(ticket, SELECT_BY_TICKET)) { 
             return false; 

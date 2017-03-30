@@ -19,7 +19,7 @@
 
 bool OrderManager::getCloseByMarketSchedule(int ticket, int symIdx) {
     if(!SchedCloseDaily && !SchedCloseOffSessions && !SchedClose3DaySwap && !SchedCloseWeekend) { return false;}
-    if(!checkSelectOrder(ticket)) { return false; }
+    if(!checkDoSelectOrder(ticket)) { return false; }
     
     int orderOp = OrderType();
     
@@ -164,34 +164,6 @@ int OrderManager::getCurrentSessionIdx(int symIdx, datetime &fromOut, datetime &
     
     return -1;
 }
-
-//bool OrderManager::isInsideOfSession(int symIdx, datetime dt = 0, int weekday = -1) {
-//    return (getCurrentSessionIdx(symIdx, from, to dt, weekday) > -1);
-//}
-//
-//int OrderManager::getLastSessionIdx(int symIdx, datetime dt = 0, int weekday = -1) {
-//    if(dt <= 0) { dt = TimeCurrent(); }
-//    dt = dt - (86400*MathFloor(dt/86400)); // strip date, just get time
-//    
-//    datetime from, to; int sessCount = -1; int weekday = DayOfWeek(); string symName = MainSymbolMan.symbols[symIdx].name;
-//    while(SymbolInfoSessionTrade(symName, weekday, ++sessCount, from, to)) { 
-//        
-//    }
-//    
-//    return -1;
-//}
-//
-//int OrderManager::getNextSessionIdx(int symIdx, datetime dt = 0, int weekday = -1) {
-//    if(dt <= 0) { dt = TimeCurrent(); }
-//    dt = dt - (86400*MathFloor(dt/86400)); // strip date, just get time
-//    
-//    datetime from, to; int sessCount = -1; int weekday = DayOfWeek(); string symName = MainSymbolMan.symbols[symIdx].name;
-//    while(SymbolInfoSessionTrade(symName, weekday, ++sessCount, from, to)) { 
-//        
-//    }
-//    
-//    return -1;
-//}
 
 int OrderManager::getSessionCountByWeekday(int symIdx, int weekday) {
     datetime from, to; int sessCount = -1; string symName = MainSymbolMan.symbols[symIdx].name;

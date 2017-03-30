@@ -11,12 +11,12 @@
 
 #include "MMT_Order_Defines.mqh"
 
-void OrderManager::doChangePosition(int ticket, int symIdx) {
+void OrderManager::doModifyPosition(int ticket, int symIdx) {
     // For each setting (sltp, etc) retrieve filter value and update if necessary
     if(!TradeValueEnabled) { return; }
     if(!getLastTimeElapsed(symIdx, false, TimeSettingUnit, ValueBetweenDelay)) { return; }
     
-    if(!checkSelectOrder(ticket)) { return; }
+    if(!checkDoSelectOrder(ticket)) { return; }
     
     // setLastTimePoint(symIdx, false);
 }

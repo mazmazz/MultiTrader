@@ -114,6 +114,8 @@ bool OrderManager::getValue(T &outVal, ValueLocation *loc, int symbolIdx) {
     }
 }
 
+//+------------------------------------------------------------------+
+
 void OrderManager::setLastTimePoint(int symbolIdx, bool isLastTrade, uint millisecondsIn = 0, datetime dateTimeIn = 0, uint cyclesIn = 0) {
     if(isLastTrade) {
         if(TradeBetweenDelay <= 0) { return; }
@@ -154,24 +156,24 @@ bool OrderManager::getLastTimeElapsed(int symbolIdx, bool isLastTrade, TimeUnits
 
 //+------------------------------------------------------------------+
 
-double OrderManager::calculateStopLoss() {
-    return 0;
-}
-
-double OrderManager::calculateTakeProfit() {
-    return 0;
-}
-
-double OrderManager::calculateLotSize() {
-    return 0;
-}
-
-double OrderManager::calculateMaxSpread() {
-    return 0;
-}
-
-double OrderManager::calculateMaxSlippage() {
-    return 0;
-}
+//double OrderManager::calculateStopLoss() {
+//    return 0;
+//}
+//
+//double OrderManager::calculateTakeProfit() {
+//    return 0;
+//}
+//
+//double OrderManager::calculateLotSize() {
+//    return 0;
+//}
+//
+//double OrderManager::calculateMaxSpread() {
+//    return 0;
+//}
+//
+//double OrderManager::calculateMaxSlippage() {
+//    return 0;
+//}
 
 OrderManager *MainOrderMan;

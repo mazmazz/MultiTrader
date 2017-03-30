@@ -17,31 +17,27 @@
 
 #include "MMT_Order_Defines.mqh"
 
-void OrderManager::fillBasketFlags() {
-    basketProfit = 0;
-    if(!BasketTotalPerDay || basketDay != DayOfWeek()) { basketBookedProfit = 0; } // basketDay != DayOfWeek() is done in doBasketCheckExit()
-    if(basketDay != DayOfWeek()) { // todo: basket - period length: hours? days? weeks?
-        basketLosses = 0;
-        basketWins = 0;
-        basketDay = DayOfWeek();
-    }
+//+------------------------------------------------------------------+
+
+bool OrderManager::checkBasketSafe() {
+    return (basketLosses < MathMax(1, BasketMaxLosingPerDay) && basketWins < MathMax(1, BasketMaxWinningPerDay));
 }
 
-void OrderManager::doBasketCheckExit() {
+void OrderManager::checkDoBasketExit() {
     if(!BasketEnableStopLoss && !BasketEnableTakeProfit) { return; }
     
     if(BasketEnableStopLoss && (basketProfit+basketBookedProfit) <= BasketStopLossValue) {
-        doBasketExit();
+        sendBasketClose();
         basketLosses++;
     }
     
     if(BasketEnableTakeProfit && (basketProfit+basketBookedProfit) >= BasketTakeProfitValue) {
-        doBasketExit();
+        sendBasketClose();
         basketWins++;
     }
 }
 
-void OrderManager::doBasketExit() {
+void OrderManager::sendBasketClose() {
     for(int i = 0; i < OrdersTotal(); i++) {
         OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
         if(OrderMagicNumber() != MagicNumber) { 
@@ -56,9 +52,19 @@ void OrderManager::doBasketExit() {
     }
 }
 
-bool OrderManager::checkBasketSafe() {
-    return (basketLosses < MathMax(1, BasketMaxLosingPerDay) && basketWins < MathMax(1, BasketMaxWinningPerDay));
+//+------------------------------------------------------------------+
+
+void OrderManager::fillBasketFlags() {
+    basketProfit = 0;
+    if(!BasketTotalPerDay || basketDay != DayOfWeek()) { basketBookedProfit = 0; } // basketDay != DayOfWeek() is done in checkDoBasketExit()
+    if(basketDay != DayOfWeek()) { // todo: basket - period length: hours? days? weeks?
+        basketLosses = 0;
+        basketWins = 0;
+        basketDay = DayOfWeek();
+    }
 }
+
+//+------------------------------------------------------------------+
 
 double OrderManager::getProfitAmount(BalanceUnits type, int ticket) {
     double profit;
@@ -85,7 +91,7 @@ double OrderManager::getProfitAmountPips(double openPrice, int opType, string sy
 }
 
 bool OrderManager::getProfitAmountPips(int ticket, double &profitOut) {
-    if(!checkSelectOrder(ticket)) { return false; }
+    if(!checkDoSelectOrder(ticket)) { return false; }
     if(Common::OrderIsPending(ticket)) { return false; }
     
     profitOut = getProfitAmountPips(OrderOpenPrice(), OrderType(), OrderSymbol());
@@ -94,7 +100,7 @@ bool OrderManager::getProfitAmountPips(int ticket, double &profitOut) {
 }
 
 bool OrderManager::getProfitAmountCurrency(int ticket, double &profitOut) {
-    if(!checkSelectOrder(ticket)) { return false; }
+    if(!checkDoSelectOrder(ticket)) { return false; }
     if(Common::OrderIsPending(ticket)) { return false; }
     
     profitOut = OrderProfit(); // does not include swap or commission

@@ -11,7 +11,20 @@
 
 #include "MMT_Order_Defines.mqh"
 
-int OrderManager::doEnterPosition(int symIdx) {
+bool OrderManager::isEntrySafe(int symIdx) {
+    if(!IsTradeAllowed()) { return false; }
+    if(SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_TRADE_MODE) != SYMBOL_TRADE_MODE_FULL) { return false; }
+        // MT5: LONGONLY and SHORTONLY
+        // MT4: CLOSEONLY, FULL, or DISABLED
+    if(!TradeEntryEnabled) { return false; }
+    if(!checkBasketSafe()) { return false; }
+    
+    if(getCurrentSessionIdx(symIdx) >= 0) {
+        return getOpenByMarketSchedule(symIdx);
+    } else { return false; }
+}
+
+int OrderManager::checkDoEntrySignals(int symIdx) {
     if(!isEntrySafe(symIdx)) { return 0; }
     if(!getLastTimeElapsed(symIdx, true, TimeSettingUnit, TradeBetweenDelay)) { return 0; }
     if(AccountInfoDouble(ACCOUNT_MARGIN) > 0 && AccountInfoDouble(ACCOUNT_MARGIN_LEVEL) < TradeMinMarginLevel) { return 0; }
@@ -55,13 +68,13 @@ int OrderManager::doEnterPosition(int symIdx) {
     int posCmd, result;
     switch(TradeModeType) {
         case TradeGrid: 
-            result = sendGrid(symIdx, checkUnit.type);
+            result = sendOpenGrid(symIdx, checkUnit.type);
             break;
             
         case TradeMarket: 
         case TradeLimitOrders:
         default: 
-            result = sendOrder(symIdx, checkUnit.type, TradeModeType == TradeLimitOrders);
+            result = sendOpenOrder(symIdx, checkUnit.type, TradeModeType == TradeLimitOrders);
             break;
     }
     
@@ -73,7 +86,9 @@ int OrderManager::doEnterPosition(int symIdx) {
     return result;
 }
 
-int OrderManager::sendOrder(int symIdx, SignalType signal, bool isPending) {
+int OrderManager::sendOpenOrder(int symIdx, SignalType signal, bool isPending) {
+    if(!IsTradeAllowed() || IsTradeContextBusy()) { return -1; }
+    
     string posSymName = MainSymbolMan.symbols[symIdx].name;
     
     int posCmd;
@@ -138,9 +153,10 @@ int OrderManager::sendOrder(int symIdx, SignalType signal, bool isPending) {
 #endif
 }
 
-int OrderManager::sendGrid(int symIdx, SignalType signal) {
+int OrderManager::sendOpenGrid(int symIdx, SignalType signal) {
     // todo: grid - smarter entry rules on pendings. Only enter when no pendings exist on the symbol? Or no trades at all on the symbol?
-
+    if(!IsTradeAllowed() || IsTradeContextBusy()) { return -1; }
+    
     if(signal == gridDirection[symIdx]) { return -1; } // only one grid set at a time
         // gridDirection is set after successful setup, and reset after closing
 
@@ -238,17 +254,4 @@ int OrderManager::sendGrid(int symIdx, SignalType signal) {
     gridDirection[symIdx] = signal;
     
     return finalResult;
-}
-
-bool OrderManager::isEntrySafe(int symIdx) {
-    // IsTradeAllowed? IsTradeContextBusy?
-    if(SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_TRADE_MODE) != SYMBOL_TRADE_MODE_FULL) { return false; }
-        // MT5: LONGONLY and SHORTONLY
-        // MT4: CLOSEONLY, FULL, or DISABLED
-    if(!TradeEntryEnabled) { return false; }
-    if(!checkBasketSafe()) { return false; }
-    
-    if(getCurrentSessionIdx(symIdx) >= 0) {
-        return getOpenByMarketSchedule(symIdx);
-    } else { return false; }
 }

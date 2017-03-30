@@ -11,11 +11,25 @@
 
 #include "MMT_Order_Defines.mqh"
 
-bool OrderManager::doExitPosition(int ticket, int symIdx) {
+bool OrderManager::isExitSafe(int symIdx) {
+    if(!IsTradeAllowed()) { return false; }
+    if(SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_TRADE_MODE) != SYMBOL_TRADE_MODE_FULL
+        && SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_TRADE_MODE) != SYMBOL_TRADE_MODE_CLOSEONLY
+    ) { return false; }
+        // MT5: LONGONLY and SHORTONLY
+        // MT4: CLOSEONLY, FULL, or DISABLED
+    if(TradeModeType != TradeGrid && !TradeExitEnabled) { return false; }
+    
+    // exit by market schedule works as a force flag, not as a safe flag, so don't check here
+    
+    return (getCurrentSessionIdx(symIdx) >= 0);
+}
+
+bool OrderManager::checkDoExitSignals(int ticket, int symIdx) {
     if(!isExitSafe(symIdx)) { return false; }
     if(TradeModeType == TradeGrid && gridDirection[symIdx] != SignalLong && gridDirection[symIdx] != SignalShort) { return false; }
     
-    if(!checkSelectOrder(ticket)) { return false; }
+    if(!checkDoSelectOrder(ticket)) { return false; }
     
     int posType = OrderType();
     if(TradeModeType == TradeGrid && !Common::OrderIsPending(posType) && !GridCloseOrdersOnSignal) { return false; }
@@ -98,8 +112,10 @@ bool OrderManager::doExitPosition(int ticket, int symIdx) {
 }
 
 bool OrderManager::sendClose(int ticket, int symIdx) {
+    if(IsTradeContextBusy()) { return false; }
+
     bool result;
-    if(!checkSelectOrder(ticket)) { return false; }
+    if(!checkDoSelectOrder(ticket)) { return false; }
 
     string posSymName = OrderSymbol();
     double posLots = OrderLots();
@@ -136,18 +152,4 @@ bool OrderManager::sendClose(int ticket, int symIdx) {
     }
     
     return result;
-}
-
-bool OrderManager::isExitSafe(int symIdx) {
-    // IsTradeAllowed? IsTradeContextBusy?
-    if(SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_TRADE_MODE) != SYMBOL_TRADE_MODE_FULL
-        && SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_TRADE_MODE) != SYMBOL_TRADE_MODE_CLOSEONLY
-    ) { return false; }
-        // MT5: LONGONLY and SHORTONLY
-        // MT4: CLOSEONLY, FULL, or DISABLED
-    if(TradeModeType != TradeGrid && !TradeExitEnabled) { return false; }
-    
-    // exit by market schedule works as a force flag, not as a safe flag, so don't check here
-    
-    return (getCurrentSessionIdx(symIdx) >= 0);
 }

@@ -12,17 +12,13 @@
 #include "MMT_Order_Defines.mqh"
 
 bool OrderManager::doExitPosition(int ticket, int symIdx) {
-    if(TradeModeType != TradeGrid && !TradeExitEnabled) { return false; }
+    if(!isExitSafe(symIdx)) { return false; }
     if(TradeModeType == TradeGrid && gridDirection[symIdx] != SignalLong && gridDirection[symIdx] != SignalShort) { return false; }
     
-    if(OrderTicket() != ticket) { 
-        if(!OrderSelect(ticket, SELECT_BY_TICKET)) { 
-            return false; 
-        } 
-    }
+    if(!checkSelectOrder(ticket)) { return false; }
     
     int posType = OrderType();
-    if(TradeModeType == TradeGrid && (posType == OP_BUY || posType == OP_SELL) && !GridCloseOrdersOnSignal) { return false; }
+    if(TradeModeType == TradeGrid && !Common::OrderIsPending(posType) && !GridCloseOrdersOnSignal) { return false; }
     // todo: grid - smarter exit rules on pendings. Don't delete them at all?
     
     string posSymName = OrderSymbol();
@@ -41,7 +37,7 @@ bool OrderManager::doExitPosition(int ticket, int symIdx) {
         if(!checkSig && !checkOpp) { return false; }
     }
     
-    bool posIsBuy = (TradeModeType == TradeGrid) ? (gridDirection[symIdx] == SignalLong) : (posType % 2 == 0);
+    bool posIsBuy = (TradeModeType == TradeGrid) ? (gridDirection[symIdx] == SignalLong) : Common::OrderIsLong(posType);
     
     bool oppIsTrigger,exitIsTrigger;
     if(!checkOpp) { 
@@ -87,37 +83,71 @@ bool OrderManager::doExitPosition(int ticket, int symIdx) {
     
     // todo: retracement protection?
     
+    bool result = sendClose(ticket, symIdx);
+    if(result) {
+        if(TradeModeType != TradeGrid) { 
+            if(exitIsTrigger) { checkUnit.fulfilled = true; } // do not set opposite entry fulfilled; that's set by entry action
+        } else {
+            gridExitBySignal[symIdx] = exitIsTrigger;
+            gridExitByOpposite[symIdx] = oppIsTrigger;
+        }
+    } else {
+        Error::PrintNormal((exitIsTrigger ? "Exit: " + checkUnit.type : oppIsTrigger ? "Entry: " + oppCheckUnit.type : "No trigger"), NULL, NULL, true);
+    }
+    return result;
+}
+
+bool OrderManager::sendClose(int ticket, int symIdx) {
+    bool result;
+    if(!checkSelectOrder(ticket)) { return false; }
+
+    string posSymName = OrderSymbol();
     double posLots = OrderLots();
+    int posType = OrderType();
     double posPrice;
-    if(posType % 2 == 0) { posPrice = SymbolInfoDouble(posSymName, SYMBOL_BID); } // Buy order, even idx
+    if(Common::OrderIsLong(posType)) { posPrice = SymbolInfoDouble(posSymName, SYMBOL_BID); } // Buy order, even idx
     else { posPrice = SymbolInfoDouble(posSymName, SYMBOL_ASK); } // Sell order, odd idx
     int posSlippage = 40; // todo: slippage
-
+    
 #ifdef _OrderReliable
-    bool result = 
-        posType == OP_BUY || posType == OP_SELL ? 
+    result = 
+        !Common::OrderIsPending(posType) ? 
         OrderCloseReliable(ticket, posLots, posPrice, posSlippage)
         : OrderDeleteReliable(ticket) // pending order
         ;
 #else
-    bool result = 
-        posType == OP_BUY || posType == OP_SELL ? 
+    result = 
+        !Common::OrderIsPending(posType) ? 
         OrderClose(ticket, posLots, posPrice, posSlippage)
         : OrderDelete(ticket) // pending order
         ;
 #endif
+    
     if(result) {
         if(TradeModeType != TradeGrid) { 
-            if(exitIsTrigger) { checkUnit.fulfilled = true; } // do not set opposite entry fulfilled; that's set by entry action
             positionOpenCount[symIdx]--;
         } else {
             // set flag to trigger fulfilled in aggregate at end of loop
             // todo: grid - how to handle failures?
             gridExit[symIdx] = true;
-            gridExitByOpposite[symIdx] = oppIsTrigger;
         }
     } else {
-        Error::PrintNormal("Failed Closing Ticket " + ticket + " - " + "Type: " + posType + " - " + (exitIsTrigger ? "Exit: " + checkUnit.type : oppIsTrigger ? "Entry: " + oppCheckUnit.type : "No trigger"), NULL, NULL, true);
+        Error::PrintNormal("Failed Closing Ticket " + ticket + " - " + "Type: " + posType, NULL, NULL, true);
     }
+    
     return result;
+}
+
+bool OrderManager::isExitSafe(int symIdx) {
+    // IsTradeAllowed? IsTradeContextBusy?
+    if(SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_TRADE_MODE) != SYMBOL_TRADE_MODE_FULL
+        && SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_TRADE_MODE) != SYMBOL_TRADE_MODE_CLOSEONLY
+    ) { return false; }
+        // MT5: LONGONLY and SHORTONLY
+        // MT4: CLOSEONLY, FULL, or DISABLED
+    if(TradeModeType != TradeGrid && !TradeExitEnabled) { return false; }
+    
+    // exit by market schedule works as a force flag, not as a safe flag, so don't check here
+    
+    return (getCurrentSessionIdx(symIdx) >= 0);
 }

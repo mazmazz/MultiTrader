@@ -116,14 +116,31 @@ extern int SignalRetraceTime=3600; // SignalRetraceTime: Repeating signal change
 extern int TradeBetweenDelay=0; // TradeBetweenDelay: Wait between trades
 extern int ValueBetweenDelay=0; // ValueBetweenDelay: Wait between value changes
 
-extern string Lbl_TradeSchedule="---- Schedule Settings ----";
-extern bool ScheduleCloseDaily = false; // ScheduleCloseDaily: Exit trades before day close to prevent swap
-extern bool ScheduleClose3DaySwap = true; // ScheduleClose3DaySwap: Exit trades before 3-day swap per symbol
-extern bool ScheduleCloseOffSessions = true; // ScheduleCloseOffSessions: Exit trades before next session is closed
-extern OrderProfitType ScheduleCloseOrderProfit = OrderBothProfitLoss; // ScheduleCloseOrderProfit: Close only profitable trades
-extern OrderOpType ScheduleCloseOrderOp = OrderBothLongShort; // ScheduleCloseOrderOp: Close only longs or shorts
-extern int ScheduleSecondsOpen = 10800; // ScheduleSecondsOpen: Open X seconds after session open
-extern int ScheduleSecondsClose = 300; // ScheduleSecondsClose: Exit X seconds before session close
+extern string Lbl_TradeSched="---- Schedule Settings ----";
+extern bool SchedCloseDaily = false; // SchedCloseDaily: Exit trades before day close to prevent swap
+extern bool SchedClose3DaySwap = true; // SchedClose3DaySwap: Exit trades before 3-day swap per symbol
+extern bool SchedCloseOffSessions = true; // SchedCloseOffSessions: Exit trades before next session is closed
+extern bool SchedCloseWeekend = true; // SchedCloseWeekend: Exit trades before weekend
+extern int SchedCloseMinutes = 5; // SchedCloseMinutes: Exit X mins before session close
+//extern int SchedOpenLastMinutes = 60; // SchedOpenLastMinutes: Open up to X mins before session close
+extern int SchedOpenMinutesDaily = 0; 
+extern int SchedOpenMinutesOffSessions = 0; 
+extern int SchedOpenMinutesWeekend = 180;
+extern int SchedGapIgnoreMinutes = 15; // SchedGapIgnoreMinutes: Ignore session gaps of X mins
+extern OrderProfitType SchedCloseOrderProfit = OrderBothProfitLoss; // SchedCloseOrderProfit: Close only profitable or losing trades
+extern OrderOpType SchedCloseOrderOp = OrderBothLongShort; // SchedCloseOrderOp: Close only longs or shorts
+extern bool SchedClosePendings = true;
+
+//extern string Lbl_TradeSchedSwap="-- Minimum Swap Closing Settings --";
+//extern CalcMethod SchedMinSwapLongMethod=CalcValue; // SchedMinSwapLong: Minimum swap to close long
+//extern double SchedMinSwapLongValue=-5.0; 
+//extern string SchedMinSwapLongName="";
+//extern double SchedMinSwapLongFactor=1.0;
+//extern CalcMethod SchedMinSwapShortMethod=CalcValue;  // SchedMinSwapShort: Minimum swap to close short
+//extern double SchedMinSwapShortValue=-5.0; 
+//extern string SchedMinSwapShortName="";
+//extern double SchedMinSwapShortFactor=1.0;
+// todo: can we convert points to swap currency?
 // todo: close depending on swap value: does order profit exceed current swap value? compare to some filter value like ATR?
     // track separately for longs and shorts -- swap can vary widely
 
@@ -142,13 +159,17 @@ extern string GridDistanceFilterName = "";
 extern double GridDistanceFilterFactor = 1.0;
 
 extern string LbL_Exit_Basket="--- Basket Exit Settings ---";
-extern BalanceUnits BasketSettingUnit=UnitAccountCurrency; // BasketSettingUnit: Set SLTP according to currency or pips
-extern bool BasketIncludeFees=false; // BasketIncludeFees: Deduct fees from profit calculation
+extern BalanceUnits BasketSettingUnit=UnitPips; // BasketSettingUnit: Set SLTP according to currency or pips
+extern bool BasketTotalPerDay = false; // BasketTotalPerDay: Add total of all profits during day, not just open orders
+// extern int BasketPeriodLengthMinutes = 1440; // BasketPeriodLengthMinutes: Time to limit baskets
+//extern bool BasketIncludeFees=false; // BasketIncludeFees: Deduct fees from profit calculation
 extern bool BasketEnableStopLoss=false;
-extern double BasketStopLossValue=-100.0;
+extern double BasketStopLossValue=-200.0;
+extern int BasketMaxLosingPerDay=2;
 // todo: basket filter values. Complicated because we may need to aggregate filters across symbols for a proper basket sltp
 extern bool BasketEnableTakeProfit=false;
-extern double BasketTakeProfitValue=50.0;
+extern double BasketTakeProfitValue=400.0;
+extern int BasketMaxWinningPerDay=1;
 
 extern string Lbl_MaxSpread="---- Max Spread Settings ----";
 extern CalcMethod MaxSpreadCalcMethod=CalcValue;

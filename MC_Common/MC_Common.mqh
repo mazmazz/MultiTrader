@@ -92,6 +92,13 @@ class Common {
     
     static double PriceToPips(double price, string symbol);
     
+    static bool OrderIsLong(int opType);
+    static bool OrderIsShort(int opType);
+    static bool OrderIsPending(int opType);
+    static bool OrderIsMarket(int opType);
+    
+    static datetime StripDateFromDatetime(datetime target);
+    
 #ifdef __MQL5__
     static double GetSingleValueFromBuffer(int indiHandle, int shift=0, int bufferNum=0);
 #endif
@@ -480,3 +487,53 @@ double Common::GetSingleValueFromBuffer(int indiHandle, int shift=0, int bufferN
     else { return buffer[0]; }
 }
 #endif
+
+bool Common::OrderIsLong(int opType) {
+    switch(opType) {
+        case OP_BUY:
+        case OP_BUYLIMIT:
+        case OP_BUYSTOP:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool Common::OrderIsShort(int opType) {
+    switch(opType) {
+        case OP_SELL:
+        case OP_SELLLIMIT:
+        case OP_SELLSTOP:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool Common::OrderIsPending(int opType) {
+    switch(opType) {
+        case OP_BUYLIMIT:
+        case OP_BUYSTOP:
+        case OP_SELLLIMIT:
+        case OP_SELLSTOP:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool Common::OrderIsMarket(int opType) {
+    switch(opType) {
+        case OP_BUY:
+        case OP_SELL:
+            return true;
+        default:
+            return false;
+    }
+}
+
+datetime Common::StripDateFromDatetime(datetime target) {
+    if(target >= 86400) {
+        return target - (86400*MathFloor(target/86400));
+    } else { return target; }
+}

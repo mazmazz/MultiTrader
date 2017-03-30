@@ -16,5 +16,7 @@ void OrderManager::doChangePosition(int ticket, int symIdx) {
     if(!TradeValueEnabled) { return; }
     if(!getLastTimeElapsed(symIdx, false, TimeSettingUnit, ValueBetweenDelay)) { return; }
     
+    if(!checkSelectOrder(ticket)) { return; }
+    
     // setLastTimePoint(symIdx, false);
 }

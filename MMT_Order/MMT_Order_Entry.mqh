@@ -12,7 +12,7 @@
 #include "MMT_Order_Defines.mqh"
 
 int OrderManager::doEnterPosition(int symIdx) {
-    if(!TradeEntryEnabled) { return 0; }
+    if(!isEntrySafe(symIdx)) { return 0; }
     if(!getLastTimeElapsed(symIdx, true, TimeSettingUnit, TradeBetweenDelay)) { return 0; }
     if(AccountInfoDouble(ACCOUNT_MARGIN) > 0 && AccountInfoDouble(ACCOUNT_MARGIN_LEVEL) < TradeMinMarginLevel) { return 0; }
     if(TradeModeType != TradeGrid && MaxTradesPerSymbol > 0 && MaxTradesPerSymbol <= positionOpenCount[symIdx]) { return 0; }
@@ -238,4 +238,17 @@ int OrderManager::sendGrid(int symIdx, SignalType signal) {
     gridDirection[symIdx] = signal;
     
     return finalResult;
+}
+
+bool OrderManager::isEntrySafe(int symIdx) {
+    // IsTradeAllowed? IsTradeContextBusy?
+    if(SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_TRADE_MODE) != SYMBOL_TRADE_MODE_FULL) { return false; }
+        // MT5: LONGONLY and SHORTONLY
+        // MT4: CLOSEONLY, FULL, or DISABLED
+    if(!TradeEntryEnabled) { return false; }
+    if(!checkBasketSafe()) { return false; }
+    
+    if(getCurrentSessionIdx(symIdx) >= 0) {
+        return getOpenByMarketSchedule(symIdx);
+    } else { return false; }
 }

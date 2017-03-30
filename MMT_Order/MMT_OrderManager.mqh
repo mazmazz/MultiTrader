@@ -15,9 +15,12 @@
 
 #include "MMT_Order_Defines.mqh"
 
+#include "MMT_Order_Cycle.mqh"
 #include "MMT_Order_Modify.mqh"
 #include "MMT_Order_Entry.mqh"
 #include "MMT_Order_Exit.mqh"
+#include "MMT_Schedule.mqh"
+#include "MMT_Basket.mqh"
 
 void OrderManager::OrderManager() {
     int symCount = ArraySize(MainSymbolMan.symbols);
@@ -27,6 +30,7 @@ void OrderManager::OrderManager() {
         ArrayResize(gridDirection, symCount);
         ArrayInitialize(gridDirection, SignalNone);
         ArrayResize(gridExit, symCount);
+        ArrayResize(gridExitBySignal, symCount);
         ArrayResize(gridExitByOpposite, symCount);
     }
     if(TradeBetweenDelay > 0 ) { ArrayResize(lastTradeBetween, symCount); }
@@ -71,67 +75,6 @@ ValueLocation *OrderManager::fillValueLocation(CalcMethod calcTypeIn, double set
     }
     
     return targetLoc;
-}
-
-//+------------------------------------------------------------------+
-
-void OrderManager::doPositions(bool firstRun) {
-    // todo: separate cycles for updating vs. enter/exit?
-    doCurrentPositions(firstRun);
-    
-    int symbolCount = MainSymbolMan.getSymbolCount();
-    for(int i = 0; i < symbolCount; i++) {
-        if(TradeModeType == TradeGrid && gridExit[i]) {
-            if(!gridExitByOpposite[i]) {
-                SignalUnit *checkUnit = MainDataMan.symbol[i].getSignalUnit(false);
-                if(!Common::IsInvalidPointer(checkUnit)) { 
-                    checkUnit.fulfilled = true;
-                }
-            } else { gridExitByOpposite[i] = false; }
-            
-            positionOpenCount[i]--;
-            gridDirection[i] = SignalNone;
-            gridExit[i] = false;
-        }
-    
-        doEnterPosition(i);
-    }
-}
-
-void OrderManager::doCurrentPositions(bool firstRun) {
-    for(int i = 0; i < OrdersTotal(); i++) {
-        OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
-        if(OrderMagicNumber() != MagicNumber) { 
-            continue; 
-        }
-        int symbolIdx = MainSymbolMan.getSymbolId(OrderSymbol());
-        
-        if(firstRun) { // if signal already exists for open order, raise fulfilled flag so no repeat is opened
-            if(TradeModeType != TradeGrid) { positionOpenCount[symbolIdx]++; }
-            else { positionOpenCount[symbolIdx] = 1; }
-            int orderAct = OrderType();
-            SignalUnit *checkEntrySignal = MainDataMan.symbol[symbolIdx].getSignalUnit(true);
-            if(!Common::IsInvalidPointer(checkEntrySignal)) {
-                if(TradeModeType != TradeGrid) {
-                    if(
-                        ((orderAct % 2 == 0)/*buy*/ && checkEntrySignal.type == SignalLong)
-                        || ((orderAct % 2 > 0)/*sell*/ && checkEntrySignal.type == SignalShort)
-                    ) { checkEntrySignal.fulfilled = true; }
-                } else if(checkEntrySignal.type == SignalLong || checkEntrySignal.type == SignalShort) { checkEntrySignal.fulfilled = true; }
-                    // todo: grid - better firstRun rules. set gridDirection by checking if all buy stops are above current price point, etc. ???
-            }
-        }
-        
-        // todo: cache pending value and exit updates?
-        bool exitResult = doExitPosition(OrderTicket(), symbolIdx);
-        if(!exitResult) {
-            doChangePosition(OrderTicket(), symbolIdx);
-        } else {
-            i--; // deleting a position mid-loop changes the index, attempt same index as orders shift
-        }
-    }
-    
-    // grid - set symbol exit signal fulfilled and positionOpenCount[symIdx] in doPositions loop so we don't loop an extra time
 }
 
 //+------------------------------------------------------------------+

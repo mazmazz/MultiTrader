@@ -13,6 +13,7 @@
 
 void OrderManager::doPositions(bool firstRun) {
     fillBasketFlags();
+    resetOpenCount();
 
     // todo: separate cycles for updating vs. enter/exit?
     doCurrentPositions(firstRun);
@@ -21,7 +22,7 @@ void OrderManager::doPositions(bool firstRun) {
     int symbolCount = MainSymbolMan.getSymbolCount();
     for(int i = 0; i < symbolCount; i++) {
         fillGridExitFlags(i);
-        checkDoEntrySignals(i);
+        checkDoEntrySignals(i); // todo: add to openPending/MarketCount? what's the point, since we end the cycle anyway
     }
 }
 
@@ -51,6 +52,7 @@ void OrderManager::doCurrentPositions(bool firstRun) {
         
         if(!exitResult) {
             basketProfit += profit;
+            addOrderToOpenCount(OrderTicket());
             doModifyPosition(OrderTicket(), symbolIdx);
         } else {
             basketBookedProfit += profit;
@@ -58,41 +60,24 @@ void OrderManager::doCurrentPositions(bool firstRun) {
         }
     }
     
-    // grid - set symbol exit signal fulfilled and positionOpenCount[symIdx] in doPositions loop so we don't loop an extra time
+    // grid - set symbol exit signal fulfilled and in doPositions loop so we don't loop an extra time
 }
 
 void OrderManager::evaluateFulfilledFromOrder(int ticket, int symbolIdx) {
     if(!checkDoSelectOrder(ticket)) { return; }
 
     // if signal already exists for open order, raise fulfilled flag so no repeat is opened
-    
-    if(TradeModeType != TradeGrid) { positionOpenCount[symbolIdx]++; }
-    else { positionOpenCount[symbolIdx] = 1; }
+
     int orderAct = OrderType();
     SignalUnit *checkEntrySignal = MainDataMan.symbol[symbolIdx].getSignalUnit(true);
     if(!Common::IsInvalidPointer(checkEntrySignal)) {
-        if(TradeModeType != TradeGrid) {
+        if(!isTradeModeGrid()) {
             if(
                 (Common::OrderIsLong(orderAct) && checkEntrySignal.type == SignalLong)
                 || (Common::OrderIsShort(orderAct) && checkEntrySignal.type == SignalShort)
             ) { checkEntrySignal.fulfilled = true; }
         } else if(checkEntrySignal.type == SignalLong || checkEntrySignal.type == SignalShort) { checkEntrySignal.fulfilled = true; }
             // todo: grid - better firstRun rules. set gridDirection by checking if all buy stops are above current price point, etc. ???
-    }
-}
-
-void OrderManager::fillGridExitFlags(int symbolIdx) { 
-    if(TradeModeType == TradeGrid && gridExit[symbolIdx]) {
-        if(gridExitBySignal[symbolIdx]) {
-            SignalUnit *checkUnit = MainDataMan.symbol[symbolIdx].getSignalUnit(false);
-            if(!Common::IsInvalidPointer(checkUnit)) { 
-                checkUnit.fulfilled = true;
-            }
-        } else if (gridExitByOpposite[symbolIdx]) { gridExitByOpposite[symbolIdx] = false; }
-        
-        positionOpenCount[symbolIdx]--;
-        gridDirection[symbolIdx] = SignalNone;
-        gridExit[symbolIdx] = false;
     }
 }
 
@@ -104,4 +89,17 @@ bool OrderManager::checkDoSelectOrder(int ticket) {
     }
     
     return true;
+}
+
+void OrderManager::resetOpenCount() {
+    ArrayInitialize(openPendingCount, 0);
+    ArrayInitialize(openMarketCount, 0);
+}
+
+void OrderManager::addOrderToOpenCount(int ticket, int symIdx = -1) {
+    if(!checkDoSelectOrder(ticket)) { return; }
+    if(symIdx < 0) { symIdx = MainSymbolMan.getSymbolId(OrderSymbol()); }
+    
+    if(Common::OrderIsPending(OrderType())) { openPendingCount[symIdx]++; }
+    else { openMarketCount[symIdx]++; }
 }

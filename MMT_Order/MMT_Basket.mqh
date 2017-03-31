@@ -44,7 +44,11 @@ void OrderManager::sendBasketClose() {
             continue; 
         }
         
-        bool exitResult = sendClose(OrderTicket(), MainSymbolMan.getSymbolId(OrderSymbol()));
+        bool exitResult;
+        
+        if(BasketClosePendings || !Common::OrderIsPending(OrderType())) {
+            exitResult = sendClose(OrderTicket(), MainSymbolMan.getSymbolId(OrderSymbol()));
+        }
         
         if(exitResult) {
             i--; // deleting a position mid-loop changes the index, attempt same index as orders shift

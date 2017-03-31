@@ -21,12 +21,13 @@
 #include "MMT_Order_Exit.mqh"
 #include "MMT_Schedule.mqh"
 #include "MMT_Basket.mqh"
+#include "MMT_Grid.mqh"
 
 void OrderManager::OrderManager() {
     int symCount = ArraySize(MainSymbolMan.symbols);
-    ArrayResize(positionOpenCount, symCount);
-    ArrayInitialize(positionOpenCount, 0);
-    if(TradeModeType == TradeGrid) { 
+    ArrayResize(openPendingCount, symCount);
+    ArrayResize(openMarketCount, symCount);
+    if(isTradeModeGrid()) { 
         ArrayResize(gridDirection, symCount);
         ArrayInitialize(gridDirection, SignalNone);
         ArrayResize(gridExit, symCount);

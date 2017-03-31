@@ -28,7 +28,7 @@ int OrderManager::checkDoEntrySignals(int symIdx) {
     if(!isEntrySafe(symIdx)) { return 0; }
     if(!getLastTimeElapsed(symIdx, true, TimeSettingUnit, TradeBetweenDelay)) { return 0; }
     if(AccountInfoDouble(ACCOUNT_MARGIN) > 0 && AccountInfoDouble(ACCOUNT_MARGIN_LEVEL) < TradeMinMarginLevel) { return 0; }
-    if(TradeModeType != TradeGrid && MaxTradesPerSymbol > 0 && MaxTradesPerSymbol <= positionOpenCount[symIdx]) { return 0; }
+    if(!isTradeModeGrid() && MaxTradesPerSymbol > 0 && MaxTradesPerSymbol <= (openPendingCount[symIdx] + openMarketCount[symIdx])) { return 0; }
 
     SignalUnit *checkUnit = MainDataMan.symbol[symIdx].getSignalUnit(true);
     if(Common::IsInvalidPointer(checkUnit)) { return 0; }
@@ -68,25 +68,24 @@ int OrderManager::checkDoEntrySignals(int symIdx) {
     int posCmd, result;
     switch(TradeModeType) {
         case TradeGrid: 
-            result = sendOpenGrid(symIdx, checkUnit.type);
+            result = prepareGrid(symIdx, checkUnit.type);
             break;
             
         case TradeMarket: 
         case TradeLimitOrders:
         default: 
-            result = sendOpenOrder(symIdx, checkUnit.type, TradeModeType == TradeLimitOrders);
+            result = prepareSingleOrder(symIdx, checkUnit.type, TradeModeType == TradeLimitOrders);
             break;
     }
     
     if(result > -1) {
         checkUnit.fulfilled = true;
         setLastTimePoint(symIdx, true);
-        positionOpenCount[symIdx]++;
     }
     return result;
 }
 
-int OrderManager::sendOpenOrder(int symIdx, SignalType signal, bool isPending) {
+int OrderManager::prepareSingleOrder(int symIdx, SignalType signal, bool isPending) {
     if(!IsTradeAllowed() || IsTradeContextBusy()) { return -1; }
     
     string posSymName = MainSymbolMan.symbols[symIdx].name;
@@ -135,123 +134,30 @@ int OrderManager::sendOpenOrder(int symIdx, SignalType signal, bool isPending) {
     string posComment = OrderComment_;
     int posMagic = MagicNumber;
     datetime posExpiration = 0;
+    int result = sendOpenOrder(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
+    
+    return result;
+}
+
+int OrderManager::sendOpenOrder(string posSymName, int posCmd, double posVolume, double posPrice, double posSlippage, double posStoploss, double posTakeprofit, string posComment = "", int posMagic = 0, datetime posExpiration = 0) {
+    int result;
     
 #ifdef _OrderReliable
-    return OrderSendReliable(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
+    result = OrderSendReliable(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
 #else
     if(BrokerTwoStep && (posStoploss > 0 || posTakeprofit > 0)) {
-        int result = OrderSend(posSymName, posCmd, posVolume, posPrice, posSlippage, 0, 0, posComment, posMagic, posExpiration);
-        if(result > -1) {
+        result = OrderSend(posSymName, posCmd, posVolume, posPrice, posSlippage, 0, 0, posComment, posMagic, posExpiration);
+        if(result > -1 && OrderSelect(result, SELECT_BY_TICKET)) {
             if(!OrderModify(result, posPrice, posStoploss, posTakeprofit, posExpiration)) {
                 Error::PrintError(ErrorFatal, "Could not set stop loss/take profit for order " + result, FunctionTrace, NULL, true);
             }
         }
-        return result;
     } else {
-        return OrderSend(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
+        result = OrderSend(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
     }
 #endif
-}
 
-int OrderManager::sendOpenGrid(int symIdx, SignalType signal) {
-    // todo: grid - smarter entry rules on pendings. Only enter when no pendings exist on the symbol? Or no trades at all on the symbol?
-    if(!IsTradeAllowed() || IsTradeContextBusy()) { return -1; }
+    if(result > -1) { addOrderToOpenCount(result); }
     
-    if(signal == gridDirection[symIdx]) { return -1; } // only one grid set at a time
-        // gridDirection is set after successful setup, and reset after closing
-
-    string posSymName = MainSymbolMan.symbols[symIdx].name;
-    double posVolume;
-    if(!getValue(posVolume, lotSizeLoc, symIdx)) { return -1; }
-    
-    int posSlippage = 40; // todo: slippage
-    
-    double stoplossOffset, takeprofitOffset;
-    if(StopLossEnabled) {
-        double stoplossOffsetPips;
-        if(!getValue(stoplossOffsetPips, stopLossLoc, symIdx)) { return -1; }
-        stoplossOffset = PipsToPrice(posSymName, stoplossOffsetPips);
-    }
-    if(TakeProfitEnabled) {
-        double takeprofitOffsetPips;
-        if(!getValue(takeprofitOffsetPips, takeProfitLoc, symIdx)) { return -1; }
-        takeprofitOffset = PipsToPrice(posSymName, takeprofitOffsetPips);
-    }
-    
-    string posComment = OrderComment_;
-    int posMagic = MagicNumber;
-    datetime posExpiration = 0;
-    // datetime posExpiration
-    
-    double priceBaseSignal = (signal == SignalLong) ? SymbolInfoDouble(posSymName, SYMBOL_ASK) : SymbolInfoDouble(posSymName, SYMBOL_BID);
-    double priceBaseHedge = (signal == SignalLong) ? SymbolInfoDouble(posSymName, SYMBOL_BID) : SymbolInfoDouble(posSymName, SYMBOL_ASK);
-    
-    double priceDistPips; 
-    if(!getValue(priceDistPips, gridDistanceLoc, symIdx)) { return -1; }
-    double priceDistPoints = PipsToPrice(posSymName, priceDistPips);
-    double priceDistSignal = (signal == SignalLong) ? priceDistPoints : priceDistPoints*-1;
-    double priceDistHedge = priceDistSignal*-1;
-    
-    int cmdSignal = (signal == SignalLong) ? OP_BUYSTOP : OP_SELLSTOP;
-    int cmdHedge = (signal == SignalLong) ? OP_SELLSTOP : OP_BUYSTOP;
-    int resultSignal, resultHedge;
-    int finalResult;
-    for(int i = 1; i <= GridCount; i++) {
-        double posPriceSignal = priceBaseSignal+(priceDistSignal*i);
-        double posPriceHedge = priceBaseHedge+(priceDistHedge*i);
-        double posStoploss = stoplossOffset == 0 ? 0
-            : cmdSignal == OP_BUYSTOP ? posPriceHedge + (stoplossOffset*i) : posPriceHedge - (stoplossOffset*i)
-            ; // opposite price of signal
-        double posTakeprofit = takeprofitOffset == 0 ? 0
-            : cmdSignal == OP_BUYSTOP ? posPriceHedge + (takeprofitOffset*i) : posPriceHedge - (takeprofitOffset*i)
-            ;
-            
-#ifdef _OrderReliable
-        resultSignal = OrderSendReliable(posSymName, cmdSignal, posVolume, posPriceSignal, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
-#else
-        if(BrokerTwoStep && (posStoploss > 0 || posTakeprofit > 0)) {
-            resultSignal = OrderSend(posSymName, cmdSignal, posVolume, posPriceSignal, posSlippage, 0, 0, posComment, posMagic, posExpiration);
-            if(resultSignal > -1) {
-                if(!OrderModify(resultSignal, posPriceSignal, posStoploss, posTakeprofit, posExpiration)) {
-                    Error::PrintError(ErrorFatal, "Could not set stop loss/take profit for order " + resultSignal, FunctionTrace, NULL, true);
-                }
-            }
-        } else {
-            resultSignal = OrderSend(posSymName, cmdSignal, posVolume, posPriceSignal, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
-        }
-#endif
-        if(resultSignal > -1) { finalResult++; }
-        
-        if(GridHedging) {
-            posStoploss = 
-                stoplossOffset == 0 ? 0 
-                : cmdHedge == OP_BUYSTOP ? posPriceSignal + (stoplossOffset*i) : posPriceSignal - (stoplossOffset*i)
-                ; // opposite price of hedge
-            posTakeprofit = 
-                takeprofitOffset == 0 ? 0 
-                : cmdHedge == OP_BUYSTOP ? posPriceSignal + (takeprofitOffset*i) : posPriceSignal - (takeprofitOffset*i)
-                ;
-
-#ifdef _OrderReliable            
-            resultHedge = OrderSendReliable(posSymName, cmdHedge, posVolume, posPriceHedge, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
-#else
-            if(BrokerTwoStep && (posStoploss > 0 || posTakeprofit > 0)) {
-                resultHedge = OrderSend(posSymName, cmdHedge, posVolume, posPriceHedge, posSlippage, 0, 0, posComment, posMagic, posExpiration);
-                if(resultHedge > -1) {
-                    if(!OrderModify(resultHedge, posPriceHedge, posStoploss, posTakeprofit, posExpiration)) {
-                        Error::PrintError(ErrorFatal, "Could not set stop loss/take profit for order " + resultHedge, FunctionTrace, NULL, true);
-                    }
-                }
-            } else {
-                resultHedge = OrderSend(posSymName, cmdHedge, posVolume, posPriceHedge, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
-            }
-#endif
-            if(resultHedge > -1) { finalResult++; }
-        }
-    }
-    
-    // todo: grid - check if all pendings succeeded
-    gridDirection[symIdx] = signal;
-    
-    return finalResult;
+    return result;
 }

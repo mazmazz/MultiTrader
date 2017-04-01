@@ -36,8 +36,10 @@ class OrderManager {
     ValueLocation *maxSpreadLoc;
     ValueLocation *maxSlippageLoc;
     ValueLocation *lotSizeLoc;
-    ValueLocation *breakEvenLoc;
     ValueLocation *gridDistanceLoc;
+    ValueLocation *breakEvenJumpDistanceLoc;
+    ValueLocation *trailingStopLoc;
+    ValueLocation *jumpingStopLoc;
     
     TimePoint *lastTradeBetween[]; // keyed by symbolId
     TimePoint *lastValueBetween[];
@@ -48,14 +50,13 @@ class OrderManager {
     double getValue(ValueLocation *loc, int symbolIdx);
     template <typename T>
     bool getValue(T &outVal, ValueLocation *loc, int symbolIdx);
+    template <typename T>
+    bool getValuePrice(T &outVal, ValueLocation *loc, int symIdx);
     void setLastTimePoint(int symbolIdx, bool isLastTrade, uint millisecondsIn = 0, datetime dateTimeIn = 0, uint cyclesIn = 0);
     bool getLastTimeElapsed(int symbolIdx, bool isLastTrade, TimeUnits compareUnit, int delayCompare);
     
-    //double calculateStopLoss();
-    //double calculateTakeProfit();
-    //double calculateLotSize();
-    //double calculateMaxSpread();
-    //double calculateMaxSlippage();
+    double offsetValue(double value, double offset, string symName = NULL, bool offsetIsPips = true);
+    double unOffsetValue(double value, double offset, string symName = NULL, bool offsetIsPips = true);
     
     //+------------------------------------------------------------------+
     // Cycle
@@ -85,6 +86,7 @@ class OrderManager {
     // Modify
     
     void doModifyPosition(int ticket, int symIdx);
+    bool sendModifyOrder(int ticket, double price, double stoploss, double takeprofit, datetime expiration = 0);
     
     //+------------------------------------------------------------------+
     // Entry
@@ -106,6 +108,7 @@ class OrderManager {
     //+------------------------------------------------------------------+
     // Schedule
     
+    bool checkDoExitSchedule(int ticket, int symIdx);
     bool getCloseByMarketSchedule(int ticket, int symIdx);
     bool getCloseDaily(int symIdx);
     bool getClose3DaySwap(int symIdx);
@@ -137,4 +140,21 @@ class OrderManager {
     double getProfitAmountPips(double openPrice, int opType, string symName);
     bool getProfitAmountPips(int ticket, double &profitOut);
     bool getProfitAmountCurrency(int ticket, double &profitOut);
+    
+    //+------------------------------------------------------------------+
+    // Stop Levels
+    
+    bool checkDoExitStopLevels(int ticket, int symIdx);
+    
+    bool getModifiedStopLevel(int ticket, int symIdx, double &stopLevelOut);
+    bool getTrailingStopLevel(int ticket, int symIdx, double &stopLevelOut);
+    bool getJumpingStopLevel(int ticket, int symIdx, double &stopLevelOut);
+    bool getBreakEvenStopLevel(int ticket, int symIdx, double &stopLevelOut);
+    bool isBreakEvenPassed(int ticket, int symIdx);
+    bool isStopLossProgressed(int ticket, double newStopLoss);
+    
+    bool unOffsetStopLevelsFromOrder(int ticket, string symName, double &stoplossOut, double &takeprofitOut);
+    bool unOffsetStopLossFromOrder(int ticket, string symName, double &stoplossOut);
+    void offsetStopLevels(bool isShort, string symName, double &stoploss, double &takeprofit);
+    void offsetStopLoss(bool isShort, string symName, double &stoploss);
 };

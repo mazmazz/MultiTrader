@@ -33,14 +33,10 @@ int OrderManager::prepareGrid(int symIdx, SignalType signal) {
     
     double stoplossOffset, takeprofitOffset;
     if(StopLossEnabled) {
-        double stoplossOffsetPips;
-        if(!getValue(stoplossOffsetPips, stopLossLoc, symIdx)) { return -1; }
-        stoplossOffset = PipsToPrice(posSymName, stoplossOffsetPips);
+        if(!getValuePrice(stoplossOffset, stopLossLoc, symIdx)) { return -1; }
     }
     if(TakeProfitEnabled) {
-        double takeprofitOffsetPips;
-        if(!getValue(takeprofitOffsetPips, takeProfitLoc, symIdx)) { return -1; }
-        takeprofitOffset = PipsToPrice(posSymName, takeprofitOffsetPips);
+        if(!getValuePrice(takeprofitOffset, takeProfitLoc, symIdx)) { return -1; }
     }
     
     string posComment = OrderComment_;
@@ -48,9 +44,8 @@ int OrderManager::prepareGrid(int symIdx, SignalType signal) {
     datetime posExpiration = 0;
     // datetime posExpiration
     
-    double priceDistPips; 
-    if(!getValue(priceDistPips, gridDistanceLoc, symIdx)) { return -1; }
-    double priceDistPoints = PipsToPrice(posSymName, priceDistPips);
+    double priceDistPoints; 
+    if(!getValuePrice(priceDistPoints, gridDistanceLoc, symIdx)) { return -1; }
 
     int finalResult;
     
@@ -118,6 +113,8 @@ int OrderManager::prepareGridOrder(SignalType signal, bool isHedge, bool isDual,
         posTakeprofit = Common::OrderIsLong(cmd) ? posPriceOpposite + (takeprofitOffset*gridIndex) : posPriceOpposite - (takeprofitOffset*gridIndex);
     }
     
+    offsetStopLevels(Common::OrderIsShort(cmd), posSymName, posStoploss, posTakeprofit);
+    
     int resultInitial = sendOpenOrder(posSymName, cmd, posVolume, posPriceNormal, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
     return resultInitial;
 }
@@ -133,7 +130,7 @@ void OrderManager::fillGridExitFlags(int symbolIdx) {
         gridExit[symbolIdx] = false;
     }
     
-    if(!isGridOpen(symbolIdx)) { // todo: grid - should grid direction be reset even if market orders are still open?
+    if(!isGridOpen(symbolIdx, GridOpenIfMarketExists)) { // todo: grid - should grid direction be reset even if market orders are still open?
         gridDirection[symbolIdx] = SignalNone;
     }
 }

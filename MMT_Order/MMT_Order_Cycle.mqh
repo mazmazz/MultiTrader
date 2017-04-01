@@ -33,27 +33,20 @@ void OrderManager::doCurrentPositions(bool firstRun) {
             continue; 
         }
         int symbolIdx = MainSymbolMan.getSymbolId(OrderSymbol());
+        int ticket = OrderTicket();
+        double profit = getProfitAmount(BasketSettingUnit, ticket);
         
-        if(firstRun) { 
-            evaluateFulfilledFromOrder(OrderTicket(), symbolIdx); 
-        }
+        if(firstRun) { evaluateFulfilledFromOrder(ticket, symbolIdx); }
         
-        double profit = getProfitAmount(BasketSettingUnit, OrderTicket());
-        
-        bool schedExit = getCloseByMarketSchedule(OrderTicket(), symbolIdx);
-        
-        // todo: cache pending value and exit updates?
         bool exitResult;
-        if(schedExit) {
-            exitResult = sendClose(OrderTicket(), symbolIdx);
-        } else {
-            exitResult = checkDoExitSignals(OrderTicket(), symbolIdx);
-        }
+        exitResult = checkDoExitSchedule(ticket, symbolIdx);
+        if(!exitResult) { exitResult = checkDoExitSignals(ticket, symbolIdx); }
+        if(!exitResult) { exitResult = checkDoExitStopLevels(ticket, symbolIdx); }
         
         if(!exitResult) {
             basketProfit += profit;
-            addOrderToOpenCount(OrderTicket());
-            doModifyPosition(OrderTicket(), symbolIdx);
+            addOrderToOpenCount(ticket);
+            doModifyPosition(ticket, symbolIdx);
         } else {
             basketBookedProfit += profit;
             i--; // deleting a position mid-loop changes the index, attempt same index as orders shift

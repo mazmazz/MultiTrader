@@ -113,15 +113,10 @@ int OrderManager::prepareSingleOrder(int symIdx, SignalType signal, bool isPendi
     
     double stoplossOffset, takeprofitOffset;
     if(StopLossEnabled) {
-        double stoplossOffsetPips;
-        if(!getValue(stoplossOffsetPips, stopLossLoc, symIdx)) { return -1; }
-        Error::PrintInfo("stoplossOffsetPips: " + stoplossOffsetPips);
-        stoplossOffset = PipsToPrice(posSymName, stoplossOffsetPips);
+        if(!getValuePrice(stoplossOffset, stopLossLoc, symIdx)) { return -1; }
     }
     if(TakeProfitEnabled) {
-        double takeprofitOffsetPips;
-        if(!getValue(takeprofitOffsetPips, takeProfitLoc, symIdx)) { return -1; }
-        takeprofitOffset = PipsToPrice(posSymName, takeprofitOffsetPips);
+        if(!getValuePrice(takeprofitOffset, takeProfitLoc, symIdx)) { return -1; }
     }
     
     double posStoploss = stoplossOffset == 0 ? 0
@@ -130,6 +125,8 @@ int OrderManager::prepareSingleOrder(int symIdx, SignalType signal, bool isPendi
     double posTakeprofit = takeprofitOffset == 0 ? 0
         : (signal == SignalLong) ? oppPrice + takeprofitOffset : oppPrice - takeprofitOffset
         ;
+        
+    offsetStopLevels((signal == SignalShort), posSymName, posStoploss, posTakeprofit);
     
     string posComment = OrderComment_;
     int posMagic = MagicNumber;

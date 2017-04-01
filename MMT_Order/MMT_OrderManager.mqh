@@ -22,6 +22,7 @@
 #include "MMT_Schedule.mqh"
 #include "MMT_Basket.mqh"
 #include "MMT_Grid.mqh"
+#include "MMT_StopLevel.mqh"
 
 void OrderManager::OrderManager() {
     int symCount = ArraySize(MainSymbolMan.symbols);
@@ -45,7 +46,9 @@ void OrderManager::~OrderManager() {
     Common::SafeDeletePointerArray(lastValueBetween);
 
     Common::SafeDelete(lotSizeLoc);
-    Common::SafeDelete(breakEvenLoc);
+    Common::SafeDelete(breakEvenJumpDistanceLoc);
+    Common::SafeDelete(trailingStopLoc);
+    Common::SafeDelete(jumpingStopLoc);
     Common::SafeDelete(stopLossLoc);
     Common::SafeDelete(takeProfitLoc);
     Common::SafeDelete(maxSpreadLoc);
@@ -59,8 +62,10 @@ void OrderManager::initValueLocations() {
     lotSizeLoc = fillValueLocation(LotSizeCalcMethod, LotSizeValue, LotSizeFilterName, LotSizeFilterFactor);
     stopLossLoc = fillValueLocation(StopLossCalcMethod, StopLossValue, StopLossFilterName, StopLossFilterFactor);
     takeProfitLoc = fillValueLocation(TakeProfitCalcMethod, TakeProfitValue, TakeProfitFilterName, TakeProfitFilterFactor);
-    breakEvenLoc = fillValueLocation(BreakEvenCalcMethod, BreakEvenValue, BreakEvenFilterName, BreakEvenFilterFactor);
     gridDistanceLoc = fillValueLocation(GridDistanceCalcMethod, GridDistanceValue, GridDistanceFilterName, GridDistanceFilterFactor);
+    breakEvenJumpDistanceLoc = fillValueLocation(BreakEvenJumpDistanceCalcMethod, BreakEvenJumpDistanceValue, BreakEvenJumpDistanceFilterName, BreakEvenJumpDistanceFilterFactor);
+    trailingStopLoc = fillValueLocation(TrailingStopCalcMethod, TrailingStopValue, TrailingStopFilterName, TrailingStopFilterFactor);
+    jumpingStopLoc = fillValueLocation(JumpingStopCalcMethod, JumpingStopValue, JumpingStopFilterName, JumpingStopFilterFactor);
 }
 
 ValueLocation *OrderManager::fillValueLocation(CalcMethod calcTypeIn, double setValIn, string filterNameIn, double factorIn) {
@@ -115,6 +120,16 @@ bool OrderManager::getValue(T &outVal, ValueLocation *loc, int symbolIdx) {
     }
 }
 
+template<typename T>
+bool OrderManager::getValuePrice(T &outVal, ValueLocation *loc, int symIdx) {
+    double valuePips; 
+    if(!getValue(valuePips, loc, symIdx)) { return false; }
+    double valuePrice = PipsToPrice(MainSymbolMan.symbols[symIdx].name, valuePips);
+    
+    outVal = valuePrice;
+    return true;
+}
+
 //+------------------------------------------------------------------+
 
 void OrderManager::setLastTimePoint(int symbolIdx, bool isLastTrade, uint millisecondsIn = 0, datetime dateTimeIn = 0, uint cyclesIn = 0) {
@@ -155,26 +170,14 @@ bool OrderManager::getLastTimeElapsed(int symbolIdx, bool isLastTrade, TimeUnits
     }
 }
 
-//+------------------------------------------------------------------+
+double OrderManager::offsetValue(double value, double offset, string symName = NULL, bool offsetIsPips = true) {
+    if(offsetIsPips) { offset = PipsToPrice(symName, offset); }
+    return value+offset;
+}
 
-//double OrderManager::calculateStopLoss() {
-//    return 0;
-//}
-//
-//double OrderManager::calculateTakeProfit() {
-//    return 0;
-//}
-//
-//double OrderManager::calculateLotSize() {
-//    return 0;
-//}
-//
-//double OrderManager::calculateMaxSpread() {
-//    return 0;
-//}
-//
-//double OrderManager::calculateMaxSlippage() {
-//    return 0;
-//}
+double OrderManager::unOffsetValue(double value, double offset, string symName = NULL, bool offsetIsPips = true) {
+    if(offsetIsPips) { offset = PipsToPrice(symName, offset); }
+    return value-offset;
+}
 
 OrderManager *MainOrderMan;

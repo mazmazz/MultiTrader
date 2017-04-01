@@ -199,9 +199,8 @@ extern double LotSizeFilterFactor=1.0;
 
 extern string Lbl_StopLoss="---- Stop Loss Settings ----"; // :
 extern bool StopLossEnabled=false;
-extern bool StopLossBroker=true; // StopLossBroker: Send SL to broker
 extern bool StopLossInternal=true; // StopLossInternal: Track and fire SL using EA
-extern double StopLossBrokerFactor=1.0; // StopLossBrokerFactor: Factor broker SL if Internal enabled
+extern double StopLossBrokerOffset=0.0; // StopLossBrokerOffset: Offset broker SL if Internal enabled
 extern CalcMethod StopLossCalcMethod=CalcValue;
 extern double StopLossValue=-30.0;
 extern string StopLossFilterName="";
@@ -209,9 +208,8 @@ extern double StopLossFilterFactor=-1.0;
 
 extern string Lbl_TakeProfit="---- Take Profit Settings ----"; // :
 extern bool TakeProfitEnabled=false;
-extern bool TakeProfitBroker=true; // TakeProfitBroker: Send TP to broker
 extern bool TakeProfitInternal=true; // TakeProfitInternal: Track and fire TP using EA
-extern double TakeProfitBrokerFactor=1.0; // TakeProfitBrokerFactor: Factor broker TP if Internal enabled
+extern double TakeProfitBrokerOffset=0.0; // TakeProfitBrokerOffset: Offset broker TP if Internal enabled
 extern CalcMethod TakeProfitCalcMethod=CalcValue;
 extern double TakeProfitValue=30.0;
 extern string TakeProfitFilterName="";
@@ -219,26 +217,19 @@ extern double TakeProfitFilterFactor=1.0;
 
 extern string Lbl_BreakEven="---- Break Even Settings ----"; // :
 extern bool BreakEvenEnabled=false;
-extern double BreakEvenProfit=5.0; // BreakEvenProfit: Offset from breakeven to allow a certain profit.
-extern CalcMethod BreakEvenCalcMethod=CalcValue;
-extern double BreakEvenValue=10.0;
-extern string BreakEvenFilterName="";
-extern double BreakEvenFilterFactor=1.0;
+extern double BreakEvenProfit=1.5; // BreakEvenProfit: Offset from breakeven to allow a certain profit.
+extern CalcMethod BreakEvenJumpDistanceCalcMethod=CalcValue;
+extern double BreakEvenJumpDistanceValue=10.0;
+extern string BreakEvenJumpDistanceFilterName="";
+extern double BreakEvenJumpDistanceFilterFactor=1.0;
 
-//
-//extern string Lbl_ITSL="---- Instant Trailing Stop Loss Settings ----"; // :
-//extern bool UseInstantTrailingStop=false;
-//extern int TrailStopCalcMethod=0; //TrailStopCalcMethod //enum
-//extern double InstantTrailingStop=30.0;
-//extern double PipIncrement=5;
-//
-//extern string Lbl_TSF="---- Tightening stop feature Settings ----"; // :
-//extern bool UseTigheningStop=false;
-//extern int TighteningCalcMethod=0; //TighteningCalcMethod //enum
-//extern double TrailAt20Percent=25.0;
-//extern double TrailAt40Percent=25.0;
-//extern double TrailAt60Percent=25.0;
-//extern double TrailAt80Percent=15.0;
+extern string Lbl_ITSL="---- Trailing Stop Loss Settings ----"; // :
+extern bool TrailingStopEnabled=false;
+extern bool TrailAfterBreakEvenOnly=false;
+extern CalcMethod TrailingStopCalcMethod=CalcValue;
+extern double TrailingStopValue=10.0;
+extern string TrailingStopFilterName="";
+extern double TrailingStopFilterFactor=1.0;
 
 extern string Lbl_JSL="---- Jumping stop loss settings ----"; // :
 extern bool JumpingStopEnabled=false;
@@ -246,4 +237,4 @@ extern bool JumpAfterBreakEvenOnly=true;
 extern CalcMethod JumpingStopCalcMethod=CalcValue;
 extern double JumpingStopValue=10.0;
 extern string JumpingStopFilterName="";
-extern double JumpingStopFilterFilterFactor=1.0;
+extern double JumpingStopFilterFactor=1.0;

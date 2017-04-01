@@ -15,8 +15,24 @@ void OrderManager::doModifyPosition(int ticket, int symIdx) {
     // For each setting (sltp, etc) retrieve filter value and update if necessary
     if(!TradeValueEnabled) { return; }
     if(!getLastTimeElapsed(symIdx, false, TimeSettingUnit, ValueBetweenDelay)) { return; }
-    
     if(!checkDoSelectOrder(ticket)) { return; }
     
-    // setLastTimePoint(symIdx, false);
+    double stopLevel;
+    if(getModifiedStopLevel(ticket, symIdx, stopLevel) && stopLevel != 0) {
+        sendModifyOrder(ticket, OrderOpenPrice(), stopLevel, OrderTakeProfit(), OrderExpiration());
+    }
+    
+    setLastTimePoint(symIdx, false);
+}
+
+bool OrderManager::sendModifyOrder(int ticket, double price, double stoploss, double takeprofit, datetime expiration = 0) {
+    bool result;
+    
+#ifdef _OrderReliable
+    result = OrderModifyReliable(ticket, price, stoploss, takeprofit, expiration);
+#else
+    result = OrderModify(ticket, price, stoploss, takeprofit, expiration);
+#endif
+
+    return result;
 }

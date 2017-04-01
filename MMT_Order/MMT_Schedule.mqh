@@ -17,6 +17,13 @@
 
 #include "MMT_Order_Defines.mqh"
 
+bool OrderManager::checkDoExitSchedule(int ticket, int symIdx) {
+    if(getCloseByMarketSchedule(ticket, symIdx)) {
+        Error::PrintInfo("Closing order " + ticket + ": Broker schedule", NULL, NULL, true);
+        return sendClose(ticket, symIdx);
+    } else { return false; }
+}
+
 bool OrderManager::getCloseByMarketSchedule(int ticket, int symIdx) {
     if(!SchedCloseDaily && !SchedCloseOffSessions && !SchedClose3DaySwap && !SchedCloseWeekend) { return false;}
     if(!checkDoSelectOrder(ticket)) { return false; }

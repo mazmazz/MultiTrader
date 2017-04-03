@@ -33,7 +33,8 @@ int OrderManager::prepareGrid(int symIdx, SignalType signal) {
     double posVolume;
     if(!getValue(posVolume, lotSizeLoc, symIdx)) { return -1; }
     
-    int posSlippage = 40; // todo: slippage
+    int posSlippage;
+    if(!getValuePoints(posSlippage, maxSlippageLoc, symIdx)) { return -1; }
     
     double stoplossOffset, takeprofitOffset;
     if(StopLossEnabled) {

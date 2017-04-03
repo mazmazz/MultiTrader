@@ -130,6 +130,16 @@ bool OrderManager::getValuePrice(T &outVal, ValueLocation *loc, int symIdx) {
     return true;
 }
 
+template<typename T>
+bool OrderManager::getValuePoints(T &outVal, ValueLocation *loc, int symIdx) {
+    double valuePips; 
+    if(!getValue(valuePips, loc, symIdx)) { return false; }
+    double valuePoints = PipsToPoints(valuePips);
+    
+    outVal = valuePoints;
+    return true;
+}
+
 //+------------------------------------------------------------------+
 
 void OrderManager::setLastTimePoint(int symbolIdx, bool isLastTrade, uint millisecondsIn = 0, datetime dateTimeIn = 0, uint cyclesIn = 0) {

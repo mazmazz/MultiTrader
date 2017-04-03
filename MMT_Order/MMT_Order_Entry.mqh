@@ -20,8 +20,15 @@ bool OrderManager::isEntrySafe(int symIdx) {
     if(!checkBasketSafe()) { return false; }
     
     if(getCurrentSessionIdx(symIdx) >= 0) {
-        return getOpenByMarketSchedule(symIdx);
+        if(!getOpenByMarketSchedule(symIdx)) { return false; }
     } else { return false; }
+
+    int maxSpread;
+    if(!getValuePoints(maxSpread, maxSpreadLoc, symIdx)) { return false; }
+    int currentSpread = SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_SPREAD);
+    if(currentSpread > maxSpread) { return false; }
+
+    return true;
 }
 
 int OrderManager::checkDoEntrySignals(int symIdx) {
@@ -62,8 +69,6 @@ int OrderManager::checkDoEntrySignals(int symIdx) {
         if(checkUnit.type == SignalLong && checkExitUnit.type == SignalShort) { return 0; }
         if(checkUnit.type == SignalShort && checkExitUnit.type == SignalLong) { return 0; }
     }
-    
-    // todo: check spread for entry
     
     int posCmd, result;
     switch(TradeModeType) {
@@ -113,7 +118,8 @@ int OrderManager::prepareSingleOrder(int symIdx, SignalType signal, bool isPendi
         oppPrice = SymbolInfoDouble(posSymName, SYMBOL_ASK); 
     } 
     
-    int posSlippage = 40; // todo: slippage
+    int posSlippage;
+    if(!getValuePoints(posSlippage, maxSlippageLoc, symIdx)) { return -1; }
     
     double stoplossOffset, takeprofitOffset;
     if(StopLossEnabled) {

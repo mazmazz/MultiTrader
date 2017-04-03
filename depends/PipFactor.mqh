@@ -27,6 +27,14 @@ int GetPipFactor(string symbol) export
   return MathPow(10, digits-BrokerPoints);
 }
 
+int PipsToPoints(double pips) {
+    return MathRound(pips*MathMax(1, 10*BrokerPoints));
+}
+
+double PointsToPips(double points) {
+    return points/MathMax(1, 10*BrokerPoints);
+}
+
 //+-------------------------------------------------------------------------------------+
 //| Description : Calculate the price value for a given number of pips                  |  
 //|                                                                                     |   
@@ -65,3 +73,12 @@ double PriceToPips(string symbol, double price) export
 
   return returnVal;
 }
+
+int PriceToPoints(string symbol, double price) {
+    return PipsToPoints(PriceToPips(symbol, price));
+}
+
+double PointsToPrice(string symbol, double points) {
+    return PipsToPrice(symbol, PointsToPips(points));
+}
+

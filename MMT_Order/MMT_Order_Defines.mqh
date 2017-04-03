@@ -52,6 +52,9 @@ class OrderManager {
     bool getValue(T &outVal, ValueLocation *loc, int symbolIdx);
     template <typename T>
     bool getValuePrice(T &outVal, ValueLocation *loc, int symIdx);
+    template <typename T>
+    bool getValuePoints(T &outVal, ValueLocation *loc, int symIdx);
+    
     void setLastTimePoint(int symbolIdx, bool isLastTrade, uint millisecondsIn = 0, datetime dateTimeIn = 0, uint cyclesIn = 0);
     bool getLastTimeElapsed(int symbolIdx, bool isLastTrade, TimeUnits compareUnit, int delayCompare);
     
@@ -136,10 +139,9 @@ class OrderManager {
 
     void fillBasketFlags();
     
-    double getProfitAmount(BalanceUnits type, int ticket);
-    double getProfitAmountPips(double openPrice, int opType, string symName);
-    bool getProfitAmountPips(int ticket, double &profitOut);
-    bool getProfitAmountCurrency(int ticket, double &profitOut);
+    double getProfitPips(int ticket);
+    double getProfitPips(double openPrice, int opType, string symName);
+    bool getProfitPips(int ticket, double &profitOut);
     
     //+------------------------------------------------------------------+
     // Stop Levels

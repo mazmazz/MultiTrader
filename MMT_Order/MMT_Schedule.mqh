@@ -33,8 +33,8 @@ bool OrderManager::getCloseByMarketSchedule(int ticket, int symIdx) {
     if(!SchedClosePendings && Common::OrderIsPending(orderOp)) { return false; }
     if(SchedCloseOrderOp == OrderOnlyLong && !Common::OrderIsLong(orderOp)) { return false; }
     if(SchedCloseOrderOp == OrderOnlyShort && !Common::OrderIsShort(orderOp)) { return false; }
-    if(SchedCloseOrderProfit == OrderOnlyProfitable && OrderProfit() < 0) { return false; } // todo: do this properly: refer to pips? include swaps?
-    if(SchedCloseOrderProfit == OrderOnlyLoss && OrderProfit() >= 0) { return false; }
+    if(SchedCloseOrderProfit == OrderOnlyProfitable && getProfitPips(ticket) < 0) { return false; } // todo: do this properly: refer to pips? include swaps?
+    if(SchedCloseOrderProfit == OrderOnlyLoss && getProfitPips(ticket) >= 0) { return false; }
     
     // todo: swap - if minimum swap trigger set, check swap: if it's greater than the negative swap value, return false
     

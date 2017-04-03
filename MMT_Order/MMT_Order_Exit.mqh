@@ -126,7 +126,9 @@ bool OrderManager::sendClose(int ticket, int symIdx) {
     double posPrice;
     if(Common::OrderIsLong(posType)) { posPrice = SymbolInfoDouble(posSymName, SYMBOL_BID); } // Buy order, even idx
     else { posPrice = SymbolInfoDouble(posSymName, SYMBOL_ASK); } // Sell order, odd idx
-    int posSlippage = 40; // todo: slippage
+    
+    int posSlippage;
+    if(!getValuePoints(posSlippage, maxSlippageLoc, symIdx)) { return -1; }
     
 #ifdef _OrderReliable
     result = 

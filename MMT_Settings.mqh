@@ -16,11 +16,6 @@ enum TimeUnits {
     , UnitTicks // Ticks: Applies only in tick mode
 };
 
-enum BalanceUnits {
-    UnitAccountCurrency // Account currency
-    , UnitPips // Pips
-};
-
 enum CalcMethod {
     CalcValue // Use exact value below
     , CalcFilterExact // Use exact value from filter
@@ -151,7 +146,6 @@ extern bool SchedClosePendings = true;
 //
 
 extern string LbL_Exit_Basket="---- Basket Exit Settings ----"; // :
-extern BalanceUnits BasketSettingUnit=UnitPips; // BasketSettingUnit: Set SLTP according to currency or pips
 extern bool BasketTotalPerDay = false; // BasketTotalPerDay: Add total of all profits during day, not just open orders
 // extern int BasketPeriodLengthMinutes = 1440; // BasketPeriodLengthMinutes: Time to limit baskets
 //extern bool BasketIncludeFees=false; // BasketIncludeFees: Deduct fees from profit calculation

@@ -34,7 +34,7 @@ void OrderManager::doCurrentPositions(bool firstRun) {
         }
         int symbolIdx = MainSymbolMan.getSymbolId(OrderSymbol());
         int ticket = OrderTicket();
-        double profit = getProfitAmount(BasketSettingUnit, ticket);
+        double profit = getProfitPips(ticket);
         
         if(firstRun) { evaluateFulfilledFromOrder(ticket, symbolIdx); }
         

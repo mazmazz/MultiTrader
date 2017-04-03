@@ -70,22 +70,13 @@ void OrderManager::fillBasketFlags() {
 
 //+------------------------------------------------------------------+
 
-double OrderManager::getProfitAmount(BalanceUnits type, int ticket) {
+double OrderManager::getProfitPips(int ticket) {
     double profit;
-    switch(type) {
-        case UnitPips:
-            getProfitAmountPips(ticket, profit);
-            break;
-            
-        case UnitAccountCurrency:
-            getProfitAmountCurrency(ticket, profit);
-            break;
-    }
-    
+    getProfitPips(ticket, profit);
     return profit;
 }
 
-double OrderManager::getProfitAmountPips(double openPrice, int opType, string symName) {
+double OrderManager::getProfitPips(double openPrice, int opType, string symName) {
     bool isBuy = Common::OrderIsLong(opType);
     double curPrice = isBuy ? SymbolInfoDouble(symName, SYMBOL_BID) : SymbolInfoDouble(symName, SYMBOL_ASK);
     double diff = isBuy ? curPrice - openPrice : openPrice - curPrice;
@@ -94,20 +85,11 @@ double OrderManager::getProfitAmountPips(double openPrice, int opType, string sy
     // todo: approximate commission and swap in pips?
 }
 
-bool OrderManager::getProfitAmountPips(int ticket, double &profitOut) {
+bool OrderManager::getProfitPips(int ticket, double &profitOut) {
     if(!checkDoSelectOrder(ticket)) { return false; }
     if(Common::OrderIsPending(ticket)) { return false; }
     
-    profitOut = getProfitAmountPips(OrderOpenPrice(), OrderType(), OrderSymbol());
+    profitOut = getProfitPips(OrderOpenPrice(), OrderType(), OrderSymbol());
     return true;
     // todo: approximate commission and swap in pips?
-}
-
-bool OrderManager::getProfitAmountCurrency(int ticket, double &profitOut) {
-    if(!checkDoSelectOrder(ticket)) { return false; }
-    if(Common::OrderIsPending(ticket)) { return false; }
-    
-    profitOut = OrderProfit(); // does not include swap or commission
-    return true;
-    // todo: subtract swap and commission if enabled?
 }

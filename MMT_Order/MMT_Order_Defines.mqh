@@ -10,15 +10,6 @@ enum StopLossMode {
     , StopModeBreakeven
 };
 
-class ValueLocation {
-    public:
-    CalcMethod calcType;
-    int filterIdx;
-    int subIdx;
-    double setVal;
-    double factor;
-};
-
 class OrderManager {
     public:
     OrderManager();
@@ -45,7 +36,8 @@ class OrderManager {
     TimePoint *lastValueBetween[];
     
     void initValueLocations();
-    ValueLocation *fillValueLocation(CalcMethod calcTypeIn, double setValIn, string filterNameIn, double factorIn);
+    ValueLocation *fillValueLocation(string location);
+    ValueLocation *fillValueLocation(CalcSource calcSourceIn, double setValIn, string filterNameIn, CalcOperation opIn, double operandIn);
     
     double getValue(ValueLocation *loc, int symbolIdx);
     template <typename T>

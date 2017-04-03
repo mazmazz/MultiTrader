@@ -8,6 +8,7 @@
 #property strict
 
 enum StringType {
+    Type_Empty,
     Type_Alphanumeric,
     Type_Uppercase,
     Type_Lowercase,
@@ -257,7 +258,10 @@ string Common::ConcatStringFromArray(string& strArray[], string delimiter = ";")
 }
 
 StringType Common::GetStringType(string test) {
+    test = StringTrim(test);
     int len = StringLen(test);
+    if(len <= 0) { return Type_Empty; }
+    
     bool uppercase = false; bool lowercase = false; bool numeric = false;
     ushort code;
     

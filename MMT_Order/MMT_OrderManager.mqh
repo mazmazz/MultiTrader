@@ -12,6 +12,7 @@
 #include "../MMT_Symbol.mqh"
 #include "../MMT_Filter/MMT_FilterManager.mqh"
 #include "../MMT_Data/MMT_DataHistory.mqh"
+#include "../MC_Common/MC_MultiSettings.mqh"
 
 #include "MMT_Order_Defines.mqh"
 
@@ -57,27 +58,40 @@ void OrderManager::~OrderManager() {
 }
 
 void OrderManager::initValueLocations() {
-    maxSpreadLoc = fillValueLocation(MaxSpreadCalcMethod, MaxSpreadValue, MaxSpreadFilterName, MaxSpreadFilterFactor);
-    maxSlippageLoc = fillValueLocation(MaxSlippageCalcMethod, MaxSlippageValue, MaxSlippageFilterName, MaxSlippageFilterFactor);
-    lotSizeLoc = fillValueLocation(LotSizeCalcMethod, LotSizeValue, LotSizeFilterName, LotSizeFilterFactor);
-    stopLossLoc = fillValueLocation(StopLossCalcMethod, StopLossValue, StopLossFilterName, StopLossFilterFactor);
-    takeProfitLoc = fillValueLocation(TakeProfitCalcMethod, TakeProfitValue, TakeProfitFilterName, TakeProfitFilterFactor);
-    gridDistanceLoc = fillValueLocation(GridDistanceCalcMethod, GridDistanceValue, GridDistanceFilterName, GridDistanceFilterFactor);
-    breakEvenJumpDistanceLoc = fillValueLocation(BreakEvenJumpDistanceCalcMethod, BreakEvenJumpDistanceValue, BreakEvenJumpDistanceFilterName, BreakEvenJumpDistanceFilterFactor);
-    trailingStopLoc = fillValueLocation(TrailingStopCalcMethod, TrailingStopValue, TrailingStopFilterName, TrailingStopFilterFactor);
-    jumpingStopLoc = fillValueLocation(JumpingStopCalcMethod, JumpingStopValue, JumpingStopFilterName, JumpingStopFilterFactor);
+    maxSpreadLoc = fillValueLocation(MaxSpreadCalc);
+    maxSlippageLoc = fillValueLocation(MaxSlippageCalc);
+    lotSizeLoc = fillValueLocation(LotSizeCalc);
+    stopLossLoc = fillValueLocation(StopLossCalc);
+    takeProfitLoc = fillValueLocation(TakeProfitCalc);
+    gridDistanceLoc = fillValueLocation(GridDistanceCalc);
+    breakEvenJumpDistanceLoc = fillValueLocation(BreakEvenJumpDistanceCalc);
+    trailingStopLoc = fillValueLocation(TrailingStopCalc);
+    jumpingStopLoc = fillValueLocation(JumpingStopCalc);
 }
 
-ValueLocation *OrderManager::fillValueLocation(CalcMethod calcTypeIn, double setValIn, string filterNameIn, double factorIn) {
+ValueLocation *OrderManager::fillValueLocation(string location) {
     ValueLocation *targetLoc = new ValueLocation();
     
-    targetLoc.calcType = calcTypeIn;
-    if(calcTypeIn == CalcValue) {
+    if(MultiSettings::ParseLocation(location, targetLoc) && StringLen(targetLoc.filterName) > 0) {
+        targetLoc.filterIdx = MainFilterMan.getFilterId(targetLoc.filterName);
+        targetLoc.subIdx = MainFilterMan.getSubfilterId(targetLoc.filterName);
+    }
+    
+    return targetLoc;
+}
+
+ValueLocation *OrderManager::fillValueLocation(CalcSource calcSourceIn, double setValIn, string filterNameIn, CalcOperation opIn, double operandIn) {
+    ValueLocation *targetLoc = new ValueLocation();
+    
+    targetLoc.source = calcSourceIn;
+    if(calcSourceIn == CalcValue) {
         targetLoc.setVal = setValIn;
     } else {
+        targetLoc.filterName = filterNameIn;
         targetLoc.filterIdx = MainFilterMan.getFilterId(filterNameIn);
         targetLoc.subIdx = MainFilterMan.getSubfilterId(filterNameIn);
-        targetLoc.factor = factorIn;
+        targetLoc.operation = opIn;
+        targetLoc.operand = operandIn;
     }
     
     return targetLoc;
@@ -95,13 +109,12 @@ template <typename T>
 bool OrderManager::getValue(T &outVal, ValueLocation *loc, int symbolIdx) {
     if(Common::IsInvalidPointer(loc)) { return false; }
     
-    switch(loc.calcType) {
+    switch(loc.source) {
         case CalcValue:
             outVal = loc.setVal;
             return true;
         
-        case CalcFilterFactor:
-        case CalcFilterExact: {
+        case CalcFilter: {
             DataHistory *filterHist = MainDataMan.getDataHistory(symbolIdx, loc.filterIdx, loc.subIdx);
             if(Common::IsInvalidPointer(filterHist)) { return false; }
             
@@ -110,8 +123,13 @@ bool OrderManager::getValue(T &outVal, ValueLocation *loc, int symbolIdx) {
             
             double val;
             if(filterData.getRawValue(val)) {
-                if(loc.calcType == CalcFilterFactor) { outVal = val*loc.factor; }
-                else { outVal = val; }
+                switch(loc.operation) {
+                    case CalcOffset: outVal = val + loc.operand;
+                    case CalcSubtract: outVal = val - loc.operand;
+                    case CalcFactor: outVal = val * loc.operand;
+                    case CalcDivide: outVal = val / loc.operand;
+                    default: outVal = val;
+                }
                 return true;
             } else { return false; }
         }

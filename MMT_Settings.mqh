@@ -8,18 +8,13 @@
 #property strict
 
 #include "MC_Common/MC_Error.mqh"
+#include "MC_Common/MC_MultiSettings.mqh"
 
 enum TimeUnits {
     UnitSeconds // Seconds
     , UnitMilliseconds // Milliseconds
     //, UnitMicroseconds // Microseconds
     , UnitTicks // Ticks: Applies only in tick mode
-};
-
-enum CalcMethod {
-    CalcValue // Use exact value below
-    , CalcFilterExact // Use exact value from filter
-    , CalcFilterFactor // Factor value from filter
 };
 
 enum CycleType {
@@ -127,11 +122,11 @@ extern OrderOpType SchedCloseOrderOp = OrderBothLongShort; // SchedCloseOrderOp:
 extern bool SchedClosePendings = true;
 
 //extern string Lbl_TradeSchedSwap="-- Minimum Swap Closing Settings --"; // :
-//extern CalcMethod SchedMinSwapLongMethod=CalcValue; // SchedMinSwapLong: Minimum swap to close long
+//extern CalcSource SchedMinSwapLongMethod=CalcValue; // SchedMinSwapLong: Minimum swap to close long
 //extern double SchedMinSwapLongValue=-5.0; 
 //extern string SchedMinSwapLongName="";
 //extern double SchedMinSwapLongFactor=1.0;
-//extern CalcMethod SchedMinSwapShortMethod=CalcValue;  // SchedMinSwapShort: Minimum swap to close short
+//extern CalcSource SchedMinSwapShortMethod=CalcValue;  // SchedMinSwapShort: Minimum swap to close short
 //extern double SchedMinSwapShortValue=-5.0; 
 //extern string SchedMinSwapShortName="";
 //extern double SchedMinSwapShortFactor=1.0;
@@ -166,69 +161,40 @@ extern bool GridClosePendingOnSignal = false; // GridClosePendingOnSignal: Close
 extern bool GridCloseMarketOnSignal = true; // GridCloseMarketOnSignal: Close market orders upon signal
 extern bool GridOpenIfMarketExists = false; // GridOpenIfMarketExists: Open if market order exists, no pendings
 extern int GridCount=5; // GridCount: # of pendings per direction
-
-extern string LbL_GridDistance="-- Grid Distance Settings --"; // :
-extern CalcMethod GridDistanceCalcMethod = CalcValue;
-extern double GridDistanceValue = 10; // GridDistance: Pips between pending orders
-extern string GridDistanceFilterName = "";
-extern double GridDistanceFilterFactor = 1.0;
+extern string GridDistanceCalc = "10.0";
 
 extern string Lbl_MaxSpread="---- Max Spread Settings ----"; // :
-extern CalcMethod MaxSpreadCalcMethod=CalcValue;
-extern double MaxSpreadValue=4.0; 
-extern string MaxSpreadFilterName="";
-extern double MaxSpreadFilterFactor=1.0;
+extern string MaxSpreadCalc = "4.0";
 
 extern string Lbl_MaxSlippage="---- Max Slippage Settings ----"; // :
-extern CalcMethod MaxSlippageCalcMethod=CalcValue;
-extern double MaxSlippageValue=4.0; 
-extern string MaxSlippageFilterName="";
-extern double MaxSlippageFilterFactor=1.0;
+extern string MaxSlippageCalc = "4.0";
 
 extern string Lbl_LotSize="---- Lot Size Settings ----"; // :
-extern CalcMethod LotSizeCalcMethod=CalcValue;
-extern double LotSizeValue=0.1;
-extern string LotSizeFilterName="";
-extern double LotSizeFilterFactor=1.0;
+extern string LotSizeCalc = "0.1";
 
 extern string Lbl_StopLoss="---- Stop Loss Settings ----"; // :
 extern bool StopLossEnabled=false;
 extern bool StopLossInternal=true; // StopLossInternal: Track and fire SL using EA
 extern double StopLossBrokerOffset=0.0; // StopLossBrokerOffset: Offset broker SL if Internal enabled
-extern CalcMethod StopLossCalcMethod=CalcValue;
-extern double StopLossValue=-30.0;
-extern string StopLossFilterName="";
-extern double StopLossFilterFactor=-1.0;
+extern string StopLossCalc = "-30.0";
 
 extern string Lbl_TakeProfit="---- Take Profit Settings ----"; // :
 extern bool TakeProfitEnabled=false;
 extern bool TakeProfitInternal=true; // TakeProfitInternal: Track and fire TP using EA
 extern double TakeProfitBrokerOffset=0.0; // TakeProfitBrokerOffset: Offset broker TP if Internal enabled
-extern CalcMethod TakeProfitCalcMethod=CalcValue;
-extern double TakeProfitValue=30.0;
-extern string TakeProfitFilterName="";
-extern double TakeProfitFilterFactor=1.0;
+extern string TakeProfitCalc = "30.0";
 
 extern string Lbl_BreakEven="---- Break Even Settings ----"; // :
 extern bool BreakEvenEnabled=false;
 extern double BreakEvenProfit=1.5; // BreakEvenProfit: Offset from breakeven to allow a certain profit.
-extern CalcMethod BreakEvenJumpDistanceCalcMethod=CalcValue;
-extern double BreakEvenJumpDistanceValue=10.0;
-extern string BreakEvenJumpDistanceFilterName="";
-extern double BreakEvenJumpDistanceFilterFactor=1.0;
+extern string BreakEvenJumpDistanceCalc = "10.0";
 
 extern string Lbl_ITSL="---- Trailing Stop Loss Settings ----"; // :
 extern bool TrailingStopEnabled=false;
 extern bool TrailAfterBreakEvenOnly=false;
-extern CalcMethod TrailingStopCalcMethod=CalcValue;
-extern double TrailingStopValue=10.0;
-extern string TrailingStopFilterName="";
-extern double TrailingStopFilterFactor=1.0;
+extern string TrailingStopCalc = "10.0";
 
 extern string Lbl_JSL="---- Jumping stop loss settings ----"; // :
 extern bool JumpingStopEnabled=false;
 extern bool JumpAfterBreakEvenOnly=true;
-extern CalcMethod JumpingStopCalcMethod=CalcValue;
-extern double JumpingStopValue=10.0;
-extern string JumpingStopFilterName="";
-extern double JumpingStopFilterFactor=1.0;
+extern string JumpingStopCalc = "10.0";

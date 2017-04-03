@@ -35,6 +35,7 @@ class FilterStdDev : public Filter {
 extern string Lbl_StdDev="________ StdDev Settings [StdDev] ________";
 extern string StdDev_Value_Modes="a=1|b=1|c=1";
 extern string StdDev_Value_Names="a=H1|b=H4|c=D1";
+extern string StdDev_Value_Hidden="a=0|b=0|c=0";
 
 extern string Lbl_StdDev_Value_Settings="---- StdDev Value Settings ----";
 extern string StdDev_Value_TimeFrame="a=60|b=240|c=1440";
@@ -55,7 +56,7 @@ void FilterStdDev::init() {
     shortName = "StdDev";
     
     // 2. Call setupSubfilters for every type offered -- entry, exit, and/or value.
-    setupSubfilters(StdDev_Value_Modes, StdDev_Value_Names, SubfilterValue);
+    setupSubfilters(StdDev_Value_Modes, StdDev_Value_Names, StdDev_Value_Hidden, SubfilterValue);
     
     // 3. Set up options per subfilter type.
     int valueSubfilterCount = getSubfilterCount(SubfilterValue);

@@ -32,6 +32,7 @@ class FilterAtr : public Filter {
 extern string Lbl_ATR="________ ATR Settings [ATR] ________";
 extern string ATR_Value_Modes="a=1|b=1|c=1";
 extern string ATR_Value_Names="a=H1|b=H4|c=D1";
+extern string ATR_Value_Hidden="a=0|b=0|c=0";
 
 extern string Lbl_ATR_Value_Settings="---- ATR Value Settings ----";
 extern string ATR_Value_TimeFrame="a=60|b=240|c=1440";
@@ -49,7 +50,7 @@ void FilterAtr::init() {
     shortName = "ATR";
     
     // 2. Call setupSubfilters for every type offered -- entry, exit, and/or value.
-    setupSubfilters(ATR_Value_Modes, ATR_Value_Names, SubfilterValue);
+    setupSubfilters(ATR_Value_Modes, ATR_Value_Names, ATR_Value_Hidden, SubfilterValue);
     
     // 3. Set up options per subfilter type.
     int valueSubfilterCount = getSubfilterCount(SubfilterValue);

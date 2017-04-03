@@ -239,6 +239,7 @@ void DashboardManager::drawSubfilterCol(string &legendText, int symbolIdx, Subfi
             }
             
             if(MainFilterMan.filters[i].subfilterMode[subIdx] == SubfilterDisabled) { continue; }
+            if(MainFilterMan.filters[i].subfilterHidden[subIdx]) { continue; }
             
             if(isLegend) { 
                 legendText += padText(truncText(MainFilterMan.filters[i].shortName, maxLabelPos-2) + "-" + MainFilterMan.filters[i].subfilterName[subIdx], colSize);

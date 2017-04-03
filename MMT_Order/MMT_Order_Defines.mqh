@@ -103,8 +103,8 @@ class OrderManager {
     //+------------------------------------------------------------------+
     // Schedule
     
-    bool checkDoExitSchedule(int ticket, int symIdx);
-    bool getCloseByMarketSchedule(int ticket, int symIdx);
+    bool checkDoExitSchedule(int symIdx, int ticket);
+    bool getCloseByMarketSchedule(int symIdx, int ticket = -1);
     bool getCloseDaily(int symIdx);
     bool getClose3DaySwap(int symIdx);
     bool getCloseWeekend(int symIdx);
@@ -149,6 +149,8 @@ class OrderManager {
     
     bool unOffsetStopLevelsFromOrder(int ticket, string symName, double &stoplossOut, double &takeprofitOut);
     bool unOffsetStopLossFromOrder(int ticket, string symName, double &stoplossOut);
+    bool unOffsetTakeProfitFromOrder(int ticket, string symName, double &takeprofitOut);
     void offsetStopLevels(bool isShort, string symName, double &stoploss, double &takeprofit);
     void offsetStopLoss(bool isShort, string symName, double &stoploss);
+    void offsetTakeProfit(bool isShort,string symName,double &takeprofit);
 };

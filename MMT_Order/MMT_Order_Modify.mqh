@@ -18,7 +18,13 @@ void OrderManager::doModifyPosition(int ticket, int symIdx) {
     if(!checkDoSelectOrder(ticket)) { return; }
     
     double stopLevel;
-    if(getModifiedStopLevel(ticket, symIdx, stopLevel) && stopLevel != 0) {
+    double profitLevel;
+    unOffsetTakeProfitFromOrder(ticket, OrderSymbol(), profitLevel);
+    if(getModifiedStopLevel(ticket, symIdx, stopLevel) 
+        && stopLevel != 0 
+        && (profitLevel == 0 || (Common::OrderIsLong(OrderType()) ? stopLevel < profitLevel : stopLevel > profitLevel))
+    ) { // todo: compare to SL
+        offsetStopLoss(Common::OrderIsShort(OrderType()), OrderSymbol(), stopLevel);
         sendModifyOrder(ticket, OrderOpenPrice(), stopLevel, OrderTakeProfit(), OrderExpiration());
     }
     

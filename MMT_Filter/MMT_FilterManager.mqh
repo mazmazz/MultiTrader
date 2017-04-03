@@ -21,7 +21,7 @@ class FilterManager {
     ~FilterManager();
     
     int addFilter(Filter *unit);
-    int getFilterId(string filterName, bool isDualName = false);
+    int getFilterId(string filterName, bool isDualName = true);
     int getSubfilterId(string filterDualName);
     int getSubfilterId(string filterName, string subfilterName);
     int getSubfilterId(int filterId, string subfilterName, bool isDualId = false);
@@ -67,7 +67,7 @@ int FilterManager::addFilter(Filter *unit) {
     return size+1;
 }
 
-int FilterManager::getFilterId(string filterName, bool isDualName = false) {
+int FilterManager::getFilterId(string filterName, bool isDualName = true) {
     if(isDualName) {
         filterName = Common::StringTrim(filterName);
         
@@ -87,7 +87,7 @@ int FilterManager::getFilterId(string filterName, bool isDualName = false) {
     int size = ArraySize(filters);
     
     for(int i = 0; i < size; i++) {
-        if(StringToLower(filters[i].shortName) == StringToLower(filterName)) { return i; }
+        if(StringCompare(filters[i].shortName, filterName, false) == 0) { return i; }
     }
 
     return -1;
@@ -126,7 +126,7 @@ int FilterManager::getSubfilterId(int filterId, string subfilterName, bool isDua
     int size = ArraySize(filters[filterId].subfilterName);
     
     for(int i = 0; i < size; i++) {
-        if(StringToLower(filters[filterId].subfilterName[i]) == StringToLower(subfilterName)) { return i; }
+        if(StringCompare(filters[filterId].subfilterName[i], subfilterName, false) == 0) { return i; }
     }
 
     return -1;

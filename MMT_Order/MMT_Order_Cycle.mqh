@@ -21,7 +21,7 @@ void OrderManager::doPositions(bool firstRun) {
     
     int symbolCount = MainSymbolMan.getSymbolCount();
     for(int i = 0; i < symbolCount; i++) {
-        fillGridExitFlags(i);
+        if(isTradeModeGrid()) { fillGridExitFlags(i); }
         checkDoEntrySignals(i); // todo: add to openPending/MarketCount? what's the point, since we end the cycle anyway
     }
 }
@@ -39,7 +39,7 @@ void OrderManager::doCurrentPositions(bool firstRun) {
         if(firstRun) { evaluateFulfilledFromOrder(ticket, symbolIdx); }
         
         bool exitResult;
-        exitResult = checkDoExitSchedule(ticket, symbolIdx);
+        exitResult = checkDoExitSchedule(symbolIdx, ticket);
         if(!exitResult) { exitResult = checkDoExitSignals(ticket, symbolIdx); }
         if(!exitResult) { exitResult = checkDoExitStopLevels(ticket, symbolIdx); }
         

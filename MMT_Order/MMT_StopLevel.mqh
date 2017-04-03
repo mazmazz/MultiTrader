@@ -74,7 +74,7 @@ bool OrderManager::getTrailingStopLevel(int ticket, int symIdx, double &stopLeve
     if(TrailAfterBreakEvenOnly && BreakEvenEnabled && !isBreakEvenPassed(ticket, symIdx)) { return false; }
         
     double stopOffsetPrice; 
-    if(!getValuePrice(stopOffsetPrice, trailingStopLoc, symIdx)) { return false; }
+    if(!getValuePrice(stopOffsetPrice, trailingStopLoc, symIdx) || stopOffsetPrice == 0) { return false; }
     
     double level = Common::OrderIsLong(OrderType()) ? oppositePrice + stopOffsetPrice : oppositePrice - stopOffsetPrice;
     
@@ -100,7 +100,7 @@ bool OrderManager::getJumpingStopLevel(int ticket, int symIdx, double &stopLevel
     if(JumpAfterBreakEvenOnly && BreakEvenEnabled && !isBreakEvenPassed(ticket, symIdx)) { return false; }
     
     double jumpingDistancePrice;
-    if(!getValuePrice(jumpingDistancePrice, jumpingStopLoc, symIdx)) { return false; }
+    if(!getValuePrice(jumpingDistancePrice, jumpingStopLoc, symIdx) || jumpingDistancePrice == 0) { return false; }
     
     double jumpStopOffset = jumpingDistancePrice*(MathFloor(priceDiff/jumpingDistancePrice)-1);
     
@@ -122,7 +122,7 @@ bool OrderManager::getBreakEvenStopLevel(int ticket, int symIdx, double &stopLev
         ;
     double breakEvenProfitPrice = PipsToPrice(MainSymbolMan.symbols[symIdx].name, BreakEvenProfit);
     
-    if(isBreakEvenPassed(ticket, symIdx)) {
+    if(isBreakEvenPassed(ticket, symIdx)) { // if we make breakEvenProfitPrice into a Loc, check if it == 0, then return false
         double newStopLevel = Common::OrderIsLong(OrderType()) ? openingPrice + breakEvenProfitPrice : openingPrice - breakEvenProfitPrice; // todo: what about spread???
         if(isStopLossProgressed(ticket, newStopLevel)) {
             stopLevelOut = newStopLevel;
@@ -142,7 +142,7 @@ bool OrderManager::isBreakEvenPassed(int ticket, int symIdx) {
         : SymbolInfoDouble(MainSymbolMan.symbols[symIdx].name, SYMBOL_ASK)
         ;
     double breakEvenJumpDistancePrice;
-    if(!getValuePrice(breakEvenJumpDistancePrice, breakEvenJumpDistanceLoc, symIdx)) { return false; }
+    if(!getValuePrice(breakEvenJumpDistancePrice, breakEvenJumpDistanceLoc, symIdx) || breakEvenJumpDistancePrice == 0) { return false; }
     
     double breakEvenJumpDiff = Common::OrderIsLong(OrderType()) ? oppositePrice - openingPrice : openingPrice - oppositePrice;
     return breakEvenJumpDiff >= breakEvenJumpDistancePrice;
@@ -194,6 +194,11 @@ bool OrderManager::unOffsetStopLossFromOrder(int ticket, string symName, double 
     return unOffsetStopLevelsFromOrder(ticket, symName, stoplossOut, takeProfit);
 }
 
+bool OrderManager::unOffsetTakeProfitFromOrder(int ticket, string symName, double &takeprofitOut) {
+    double stopLoss;
+    return unOffsetStopLevelsFromOrder(ticket, symName, stopLoss, takeprofitOut);
+}
+
 void OrderManager::offsetStopLevels(bool isShort, string symName, double &stoploss, double &takeprofit) {
     double slOffset = StopLossBrokerOffset, tpOffset = TakeProfitBrokerOffset;
     if(isShort) {
@@ -212,5 +217,10 @@ void OrderManager::offsetStopLevels(bool isShort, string symName, double &stoplo
 
 void OrderManager::offsetStopLoss(bool isShort,string symName,double &stoploss) {
     double takeprofit;
+    offsetStopLevels(isShort, symName, stoploss, takeprofit);
+}
+
+void OrderManager::offsetTakeProfit(bool isShort,string symName,double &takeprofit) {
+    double stoploss;
     offsetStopLevels(isShort, symName, stoploss, takeprofit);
 }

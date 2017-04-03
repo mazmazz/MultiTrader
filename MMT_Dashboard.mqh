@@ -328,7 +328,7 @@ void DashboardManager::updateData(int symbolId, int filterId, int subfilterId, b
             dataResult = 
                 data.getStringValue(MainSymbolMan.symbols[symbolId].digits) 
                 + " " 
-                + signalToString(data.signal, history.getSignalDuration(TimeSettingUnit), MainFilterMan.filters[filterId].subfilterType[subfilterId], MainFilterMan.filters[filterId].alwaysStable);
+                + signalToString(data.signal, history.getSignalDuration(TimeSettingUnit), MainFilterMan.filters[filterId].subfilterType[subfilterId], true, MainFilterMan.filters[filterId].alwaysStable);
                 ;
             
             switch(data.signal) {

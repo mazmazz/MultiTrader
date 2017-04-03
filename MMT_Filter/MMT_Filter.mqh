@@ -89,11 +89,11 @@ void Filter::setupSubfilters(string pairList, string nameList, string hiddenList
     }
     
     Common::ArrayReserve(subfilterName, pairCount);
-    if(StringLen(nameList > 0)) { MultiSettings::Parse(nameList, subfilterName, pairCount, addToArray); }
+    if(StringLen(nameList) > 0) { MultiSettings::Parse(nameList, subfilterName, pairCount, addToArray); }
     else { ArrayResize(subfilterName, addToArray ? ArraySize(subfilterName)+pairCount : pairCount); }
     
     Common::ArrayReserve(subfilterHidden, pairCount);
-    if(StringLen(hiddenList > 0)) { MultiSettings::Parse(hiddenList, subfilterHidden, pairCount, addToArray); }
+    if(StringLen(hiddenList) > 0) { MultiSettings::Parse(hiddenList, subfilterHidden, pairCount, addToArray); }
     else { ArrayResize(subfilterHidden, addToArray ? ArraySize(subfilterHidden)+pairCount : pairCount); }
     
     for(int i = oldSize; i < oldSize + ArraySize(subfilterMode); i++) {

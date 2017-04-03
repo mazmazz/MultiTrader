@@ -124,11 +124,11 @@ bool OrderManager::getValue(T &outVal, ValueLocation *loc, int symbolIdx) {
             double val;
             if(filterData.getRawValue(val)) {
                 switch(loc.operation) {
-                    case CalcOffset: outVal = val + loc.operand;
-                    case CalcSubtract: outVal = val - loc.operand;
-                    case CalcFactor: outVal = val * loc.operand;
-                    case CalcDivide: outVal = val / loc.operand;
-                    default: outVal = val;
+                    case CalcOffset: outVal = val + loc.operand; break;
+                    case CalcSubtract: outVal = val - loc.operand; break;
+                    case CalcFactor: outVal = val * loc.operand; break;
+                    case CalcDivide: outVal = val / loc.operand; break;
+                    default: outVal = val; break;
                 }
                 return true;
             } else { return false; }

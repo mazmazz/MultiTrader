@@ -125,8 +125,8 @@ bool ValidateSettings() {
     }
     
     if(AccountInfoDouble(ACCOUNT_MARGIN_LEVEL) > TradeMinMarginLevel) {
-        TradeMinMarginLevel = AccountInfoDouble(ACCOUNT_MARGIN_LEVEL);
-        Error::PrintInfo_v02(ErrorInfo, "Setting TradeMinMarginLevel to account margin call level: " + AccountInfoDouble(ACCOUNT_MARGIN_LEVEL));
+        TradeMinMarginLevel = AccountInfoDouble(ACCOUNT_MARGIN_SO_CALL);
+        Error::PrintInfo_v02(ErrorInfo, "Setting TradeMinMarginLevel to account margin call level: " + AccountInfoDouble(ACCOUNT_MARGIN_SO_CALL));
     }
     
     return finalResult;

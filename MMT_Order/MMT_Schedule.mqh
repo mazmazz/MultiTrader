@@ -17,40 +17,43 @@
 
 #include "MMT_Order_Defines.mqh"
 
-bool OrderManager::checkDoExitSchedule(int ticket, int symIdx) {
-    if(getCloseByMarketSchedule(ticket, symIdx)) {
+bool OrderManager::checkDoExitSchedule(int symIdx, int ticket) {
+    if(getCloseByMarketSchedule(symIdx, ticket)) {
         Error::PrintInfo("Closing order " + ticket + ": Broker schedule", NULL, NULL, true);
         return sendClose(ticket, symIdx);
     } else { return false; }
 }
 
-bool OrderManager::getCloseByMarketSchedule(int ticket, int symIdx) {
-    if(!SchedCloseDaily && !SchedCloseOffSessions && !SchedClose3DaySwap && !SchedCloseWeekend) { return false;}
-    if(!checkDoSelectOrder(ticket)) { return false; }
+bool OrderManager::getCloseByMarketSchedule(int symIdx, int ticket = -1) {
+    if(!SchedCloseDaily && !SchedCloseSession && !SchedClose3DaySwap && !SchedCloseWeekend) { return false;}
     
-    int orderOp = OrderType();
-    
-    if(!SchedClosePendings && Common::OrderIsPending(orderOp)) { return false; }
-    if(SchedCloseOrderOp == OrderOnlyLong && !Common::OrderIsLong(orderOp)) { return false; }
-    if(SchedCloseOrderOp == OrderOnlyShort && !Common::OrderIsShort(orderOp)) { return false; }
-    if(SchedCloseOrderProfit == OrderOnlyProfitable && getProfitPips(ticket) < 0) { return false; } // todo: do this properly: refer to pips? include swaps?
-    if(SchedCloseOrderProfit == OrderOnlyLoss && getProfitPips(ticket) >= 0) { return false; }
+    if(ticket > 0) {
+        if(!checkDoSelectOrder(ticket)) { return false; }
+        
+        int orderOp = OrderType();
+        
+        if(!SchedClosePendings && Common::OrderIsPending(orderOp)) { return false; }
+        if(SchedCloseOrderOp == OrderOnlyLong && !Common::OrderIsLong(orderOp)) { return false; }
+        if(SchedCloseOrderOp == OrderOnlyShort && !Common::OrderIsShort(orderOp)) { return false; }
+        if(SchedCloseOrderProfit == OrderOnlyProfitable && getProfitPips(ticket) < 0) { return false; } // todo: do this properly: refer to pips? include swaps?
+        if(SchedCloseOrderProfit == OrderOnlyLoss && getProfitPips(ticket) >= 0) { return false; }
+    }
     
     // todo: swap - if minimum swap trigger set, check swap: if it's greater than the negative swap value, return false
     
     if(SchedCloseDaily && getCloseDaily(symIdx)) { return true; }
     else if(SchedClose3DaySwap && getClose3DaySwap(symIdx)) { return true; }
     else if(SchedCloseWeekend && getCloseWeekend(symIdx)) { return true; }
-    else if(SchedCloseOffSessions && getCloseOffSessions(symIdx)) { return true; }
+    else if(SchedCloseSession && getCloseOffSessions(symIdx)) { return true; }
     else { return false; }
 }
 
 bool OrderManager::getCloseDaily(int symIdx) {
-    int sessCount = getSessionCountByWeekday(DayOfWeek(), symIdx);
+    int sessCount = getSessionCountByWeekday(symIdx, DayOfWeek());
     if(sessCount <= 0) { return false; }
 
     // if current session is last of the day, check if we're within SchedCloseMinutes of closing
-    datetime from, to, dt = TimeCurrent();
+    datetime from, to, dt = Common::StripDateFromDatetime(TimeCurrent());
     int sessCurrent = getCurrentSessionIdx(symIdx, from, to, dt);
     if(sessCurrent == (sessCount-1)) {
         return (dt >= to-(MathMax(1, SchedCloseMinutes)*60)); // todo: what if cycle length does not hit this check?
@@ -70,13 +73,13 @@ bool OrderManager::getCloseWeekend(int symIdx) {
     int curDay = DayOfWeek();
     int nextDay = (curDay == SATURDAY) ? SUNDAY : curDay + 1;
 
-    if(getSessionCountByWeekday(curDay, symIdx) > 0 && getSessionCountByWeekday(nextDay, symIdx) <= 0) {
+    if(getSessionCountByWeekday(symIdx, curDay) > 0 && getSessionCountByWeekday(symIdx, nextDay) <= 0) {
         return getCloseDaily(symIdx);
     } else { return false; }
 }
 
 bool OrderManager::getCloseOffSessions(int symIdx) {
-    int sessCount = getSessionCountByWeekday(DayOfWeek(), symIdx);
+    int sessCount = getSessionCountByWeekday(symIdx, DayOfWeek());
     if(sessCount <= 0) { return false; }
 
     // off session: current day (or midnight) has a session gap exceeding SchedGapIgnoreMinutes
@@ -113,7 +116,9 @@ bool OrderManager::getOpenByMarketSchedule(int symIdx) {
     //extern int SchedOpenMinutesOffSessions = 0; // whichever session we are in, are we at least X minutes from open? ignore gaps
     //extern int SchedGapIgnoreMinutes = 15; // SchedGapIgnoreMinutes: Ignore session gaps of X mins
     
-    if(SchedOpenMinutesWeekend <= 0 && SchedOpenMinutesDaily <= 0 && SchedOpenMinutesOffSessions <= 0) { return true; }
+    if(getCloseByMarketSchedule(symIdx)) { return false; }
+    
+    if(SchedOpenMinutesWeekend <= 0 && SchedOpenMinutesDaily <= 0 && SchedOpenMinutesSession <= 0) { return true; }
     
     datetime fromCur, toCur, dt = Common::StripDateFromDatetime(TimeCurrent()); int dayCur = DayOfWeek();
     int sessCount = getSessionCountByWeekday(symIdx, dayCur);
@@ -131,7 +136,7 @@ bool OrderManager::getOpenByMarketSchedule(int symIdx) {
         int minutesOffset = sessCountPrev <= 0 ? SchedOpenMinutesWeekend : SchedOpenMinutesDaily; 
         return (dt >= fromCur + (minutesOffset*60));
     } else { 
-        if(SchedOpenMinutesOffSessions <= 0) { return true; }
+        if(SchedOpenMinutesSession <= 0) { return true; }
         sessPrev = sessCur - 1;
         dayPrev = dayCur;
         
@@ -144,7 +149,7 @@ bool OrderManager::getOpenByMarketSchedule(int symIdx) {
                 // for now, just return true
         }
         
-        return (dt >= fromCompare + (SchedOpenMinutesOffSessions*60));
+        return (dt >= fromCompare + (SchedOpenMinutesSession*60));
     }
 }
 

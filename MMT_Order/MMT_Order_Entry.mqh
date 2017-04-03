@@ -86,7 +86,11 @@ int OrderManager::checkDoEntrySignals(int symIdx) {
 }
 
 int OrderManager::prepareSingleOrder(int symIdx, SignalType signal, bool isPending) {
-    if(!IsTradeAllowed() || IsTradeContextBusy()) { return -1; }
+    if(!IsTradeAllowed()) { return -1; }
+    
+#ifdef __MQL4__
+    if(IsTradeContextBusy()) { return -1; }
+#endif
     
     string posSymName = MainSymbolMan.symbols[symIdx].name;
     

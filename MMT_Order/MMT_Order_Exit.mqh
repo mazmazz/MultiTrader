@@ -113,7 +113,9 @@ bool OrderManager::checkDoExitSignals(int ticket, int symIdx) {
 }
 
 bool OrderManager::sendClose(int ticket, int symIdx) {
+#ifdef __MQL4__
     if(IsTradeContextBusy()) { return false; }
+#endif
 
     bool result;
     if(!checkDoSelectOrder(ticket)) { return false; }

@@ -19,7 +19,11 @@
 
 int OrderManager::prepareGrid(int symIdx, SignalType signal) {
     // todo: grid - smarter entry rules on pendings. Only enter when no pendings exist on the symbol? Or no trades at all on the symbol?
-    if(!IsTradeAllowed() || IsTradeContextBusy()) { return -1; }
+    if(!IsTradeAllowed()) { return -1; }
+    
+#ifdef __MQL4__
+    if(IsTradeContextBusy()) { return -1; }
+#endif
     
     if(signal == gridDirection[symIdx] || gridDirection[symIdx] == SignalOpen) { return -1; } // only one grid set at a time
         // gridDirection is set after successful setup, and reset after closing

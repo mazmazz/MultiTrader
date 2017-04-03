@@ -97,7 +97,7 @@ bool OrderManager::getCloseOffSessions(int symIdx) {
         weekdayNext = weekdayCurrent; 
     }
     
-    if(SchedGapIgnoreMinutes > 0 && SymbolInfoSessionTrade(MainSymbolMan.symbols[symIdx].name, weekdayNext, sessNext, fromNext, toNext)) {
+    if(SchedGapIgnoreMinutes > 0 && SymbolInfoSessionTrade(MainSymbolMan.symbols[symIdx].name, (ENUM_DAY_OF_WEEK)weekdayNext, sessNext, fromNext, toNext)) {
         int gap = fromNext - toCurrent;
         if(gap <= SchedGapIgnoreMinutes*60) { return false; }
     }
@@ -137,7 +137,7 @@ bool OrderManager::getOpenByMarketSchedule(int symIdx) {
         
         int fromCompare = fromCur;
         datetime fromPrev, toPrev;
-        if(SchedGapIgnoreMinutes > 0 && sessCountPrev > 0 && SymbolInfoSessionTrade(MainSymbolMan.symbols[symIdx].name, dayPrev, sessPrev, fromPrev, toPrev)) {
+        if(SchedGapIgnoreMinutes > 0 && sessCountPrev > 0 && SymbolInfoSessionTrade(MainSymbolMan.symbols[symIdx].name, (ENUM_DAY_OF_WEEK)dayPrev, sessPrev, fromPrev, toPrev)) {
             int gap = fromCur - toPrev;
             if(gap <= SchedGapIgnoreMinutes*60) { return true; } 
                 // todo: ideally we set fromCompare = fromPrev so we can compare from last session open, but this doesn't work because of wraparound. we need to compare dates as part of datetime
@@ -161,7 +161,7 @@ int OrderManager::getCurrentSessionIdx(int symIdx, datetime &fromOut, datetime &
     if(weekday < 0 || weekday >= 7) { weekday = DayOfWeek(); }
     
     datetime from, to; int sessCount = -1; string symName = MainSymbolMan.symbols[symIdx].name;
-    while(SymbolInfoSessionTrade(symName, weekday, ++sessCount, from, to)) { 
+    while(SymbolInfoSessionTrade(symName, (ENUM_DAY_OF_WEEK)weekday, ++sessCount, from, to)) { 
         if(dt >= from && dt < to) { 
             fromOut = from;
             toOut = to;
@@ -174,7 +174,7 @@ int OrderManager::getCurrentSessionIdx(int symIdx, datetime &fromOut, datetime &
 
 int OrderManager::getSessionCountByWeekday(int symIdx, int weekday) {
     datetime from, to; int sessCount = -1; string symName = MainSymbolMan.symbols[symIdx].name;
-    while(SymbolInfoSessionTrade(symName, weekday, ++sessCount, from, to)) { }
+    while(SymbolInfoSessionTrade(symName, (ENUM_DAY_OF_WEEK)weekday, ++sessCount, from, to)) { }
     
     return sessCount;
 }

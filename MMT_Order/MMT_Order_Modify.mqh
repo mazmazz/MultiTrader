@@ -26,8 +26,13 @@ void OrderManager::doModifyPosition(int ticket, int symIdx) {
     ) { // todo: compare to SL
         offsetStopLoss(Common::OrderIsShort(OrderType()), OrderSymbol(), stopLevel);
         sendModifyOrder(ticket, OrderOpenPrice(), stopLevel, OrderTakeProfit(), OrderExpiration());
-    } // todo: if SLTP is 0 and SL/TP are enabled, set the initial SL/TP
-        // todo: moving SLTP depending on spread offset
+    } else if(OrderStopLoss() == 0 && OrderTakeProfit() == 0 && !Common::OrderIsPending(OrderType())
+        && getInitialStopLevels(Common::OrderIsLong(OrderType()), symIdx, stopLevel, profitLevel)
+        && (stopLevel != 0 || profitLevel != 0)
+    ) {
+        offsetStopLevels(Common::OrderIsShort(OrderType()), OrderSymbol(), stopLevel, profitLevel);
+        sendModifyOrder(ticket, OrderOpenPrice(), stopLevel, profitLevel, OrderExpiration());
+    }
     
     setLastTimePoint(symIdx, false);
 }

@@ -98,45 +98,33 @@ int OrderManager::prepareSingleOrder(int symIdx, SignalType signal, bool isPendi
 #endif
     
     string posSymName = MainSymbolMan.symbols[symIdx].name;
+    bool isLong = (signal == SignalLong);
     
     int posCmd;
-    if(isPending) { posCmd = (signal == SignalLong ? OP_BUYLIMIT : OP_SELLLIMIT); }
-    else { posCmd = (signal == SignalLong ? OP_BUY : OP_SELL); }
+    if(isPending) { posCmd = (isLong ? OP_BUYLIMIT : OP_SELLLIMIT); }
+    else { posCmd = (isLong ? OP_BUY : OP_SELL); }
     
     double posVolume;
     if(!getValue(posVolume, lotSizeLoc, symIdx)) { return -1; }
     
-    double posPrice;
-    double oppPrice;
-    if(signal == SignalLong) { // posCmd % 2 > 0
-        // Buy, Buy Limit, or Buy Stop (even idxes)
+    double posPrice; //, oppPrice;
+    if(isLong) {
         posPrice = SymbolInfoDouble(posSymName, SYMBOL_ASK); 
-        oppPrice = SymbolInfoDouble(posSymName, SYMBOL_BID); 
+        //oppPrice = SymbolInfoDouble(posSymName, SYMBOL_BID); 
     } else { 
-        // Sell, Sell Limit, or Sell Stop (odd idxes)
         posPrice = SymbolInfoDouble(posSymName, SYMBOL_BID); 
-        oppPrice = SymbolInfoDouble(posSymName, SYMBOL_ASK); 
+        //oppPrice = SymbolInfoDouble(posSymName, SYMBOL_ASK); 
     } 
     
     int posSlippage;
     if(!getValuePoints(posSlippage, maxSlippageLoc, symIdx)) { return -1; }
     
-    double stoplossOffset, takeprofitOffset;
-    if(StopLossEnabled) {
-        if(!getValuePrice(stoplossOffset, stopLossLoc, symIdx)) { return -1; }
+    double posStoploss, posTakeprofit;
+    if((StopLossEnabled || TakeProfitEnabled) && (!isPending || SetStopsOnPendings)) {
+        if(!getInitialStopLevels(isLong, symIdx, posStoploss, posTakeprofit)) { return -1; }
     }
-    if(TakeProfitEnabled) {
-        if(!getValuePrice(takeprofitOffset, takeProfitLoc, symIdx)) { return -1; }
-    }
-    
-    double posStoploss = stoplossOffset == 0 ? 0
-        : (signal == SignalLong) ? oppPrice + stoplossOffset : oppPrice - stoplossOffset
-        ;
-    double posTakeprofit = takeprofitOffset == 0 ? 0
-        : (signal == SignalLong) ? oppPrice + takeprofitOffset : oppPrice - takeprofitOffset
-        ;
         
-    offsetStopLevels((signal == SignalShort), posSymName, posStoploss, posTakeprofit);
+    offsetStopLevels(isLong, posSymName, posStoploss, posTakeprofit);
     
     string posComment = OrderComment_;
     int posMagic = MagicNumber;

@@ -125,10 +125,10 @@ int OrderManager::prepareGridOrder(SignalType signal, bool isHedge, bool isDual,
     double posPriceOpposite = priceBaseOpposite+(posPriceDist*gridIndexPrice);
     
     double posStoploss, posTakeprofit;
-    if(GridSetStopsOnPendings && stoplossOffset != 0) {
+    if((isMarket || SetStopsOnPendings) && stoplossOffset != 0) {
         posStoploss = Common::OrderIsLong(cmd) ? posPriceOpposite + stoplossOffset : posPriceOpposite - stoplossOffset; // offset is negative
     }
-    if(GridSetStopsOnPendings && takeprofitOffset != 0) {
+    if((isMarket || SetStopsOnPendings) && takeprofitOffset != 0) {
         posTakeprofit = Common::OrderIsLong(cmd) ? posPriceOpposite + takeprofitOffset : posPriceOpposite - takeprofitOffset;
     }
     

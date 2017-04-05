@@ -90,6 +90,7 @@ extern bool TradeValueEnabled=true;
 
 extern string Lbl_TradeGeneral="---- General Trade Settings ----"; // :
 extern TradeMode TradeModeType=TradeMarket; // TradeModeType: Type of trades to enter
+extern bool SetStopsOnPendings=true; // SetStopsOnPendings: Set SLTP on pending orders
 extern bool BrokerTwoStep=true; // IsTwoStep: Broker is ECN and needs two-step order sending for SL/TP
 extern int BrokerPipDecimal = 1; // BrokerPoints: # of pip decimals, e.g. 0 if 4-point broker, 1 if 5-point.
 extern string OrderComment_=""; // OrderComment: Comment to attach to orders
@@ -120,7 +121,6 @@ extern string LbL_Grid="---- Grid Settings ----"; // Grid settings: Set TradeMod
 extern bool GridHedging=false; // GridHedging: Set pendings in both directions 
 extern bool GridOpenMarketInitial=false; // GridOpenMarketInitial: Place market order immediately on signal
 extern bool GridSetDualPendings = false; // GridSetDualPendings: Set 1 buy and 1 sell pending on every level
-extern bool GridSetStopsOnPendings=true; // GridSetStopsOnPendings: Set SLTP on pending orders
 extern bool GridClosePendingOnSignal = false; // GridClosePendingOnSignal: Close pending orders upon signal
 extern bool GridCloseMarketOnSignal = true; // GridCloseMarketOnSignal: Close market orders upon signal
 extern bool GridOpenIfMarketExists = false; // GridOpenIfMarketExists: Open if market order exists, no pendings

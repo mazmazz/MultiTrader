@@ -17,6 +17,40 @@
 
 #include "MMT_Order_Defines.mqh"
 
+bool OrderManager::getInitialStopLevels(bool isLong, int symIdx, double &stoplossOut, double &takeprofitOut) {
+    bool finalResult;
+    
+    double oppPrice; // , posPrice;
+    if(isLong) {
+        //posPrice = SymbolInfoDouble(posSymName, SYMBOL_ASK); 
+        oppPrice = SymbolInfoDouble(MainSymbolMan.symbols[symIdx].name, SYMBOL_BID); 
+    } else { 
+        //posPrice = SymbolInfoDouble(posSymName, SYMBOL_BID); 
+        oppPrice = SymbolInfoDouble(MainSymbolMan.symbols[symIdx].name, SYMBOL_ASK); 
+    } 
+    
+    double stoploss, takeprofit;
+    if(StopLossEnabled) {
+        double stoplossOffset;
+        if(!getValuePrice(stoplossOffset, stopLossLoc, symIdx)) { return false; }
+        stoplossOut = stoplossOffset == 0 ? 0
+            : isLong ? oppPrice + stoplossOffset : oppPrice - stoplossOffset
+            ;
+        finalResult = true; //stoplossOut != 0; // in the old code, we still considered level 0 as true, do the same here
+    }
+    
+    if(TakeProfitEnabled) {
+        double takeprofitOffset;
+        if(!getValuePrice(takeprofitOffset, takeProfitLoc, symIdx)) { return false; }
+        takeprofitOut = takeprofitOffset == 0 ? 0
+            : isLong ? oppPrice + takeprofitOffset : oppPrice - takeprofitOffset
+            ;
+        finalResult = true; //finalResult ? finalResult : takeprofitOut != 0;
+    }
+    
+    return finalResult;
+}
+
 bool OrderManager::checkDoExitStopLevels(int ticket, int symIdx) {
     if(!checkDoSelectOrder(ticket)) { return false; }
     if(Common::OrderIsPending(OrderType())) { return false; }

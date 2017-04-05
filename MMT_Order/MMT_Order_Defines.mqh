@@ -139,6 +139,7 @@ class OrderManager {
     //+------------------------------------------------------------------+
     // Stop Levels
     
+    bool getInitialStopLevels(bool isLong, int symIdx, double &stoplossOut, double &takeprofitOut);
     bool checkDoExitStopLevels(int ticket, int symIdx);
     
     bool getModifiedStopLevel(int ticket, int symIdx, double &stopLevelOut);

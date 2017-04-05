@@ -13,7 +13,6 @@
 class MainMultiTrader {
     public:
     bool firstRunComplete;
-    bool cycleRunning;
     
     void MainMultiTrader();
     int onInit();
@@ -33,6 +32,7 @@ class MainMultiTrader {
 };
 
 void MainMultiTrader::MainMultiTrader() {
+    MainSymbolMan = new SymbolManager(IncludeSymbols, ExcludeSymbols, ExcludeCurrencies);
     MainFilterMan = new FilterManager();
     
     // We need to add filters in root file
@@ -44,7 +44,6 @@ void MainMultiTrader::addFilter(Filter *inputFilter) {
 }
 
 int MainMultiTrader::onInit() {
-    MainSymbolMan = new SymbolManager(IncludeSymbols, ExcludeSymbols, ExcludeCurrencies);
     MainDataMan = new DataManager(MainSymbolMan.getSymbolCount(), MainFilterMan.getFilterCount());
     MainOrderMan = new OrderManager();
     MainDashboardMan = new DashboardManager();
@@ -62,24 +61,15 @@ void MainMultiTrader::onTimer() {
 }
 
 void MainMultiTrader::doCycle() {
-    if(cycleRunning) { 
-        return; 
-    }
-    else { cycleRunning = true; }
-        // undecided on this: timer events don't wait until the previous OnTimer call finishes. 
-        // Are there issues to simultaneous OnTimer calls?
-
     MainDataMan.retrieveDataFromFilters();
         // iterates through symbols, calls filters and subs on all of them
         // filters feed data
-        
+    
     MainOrderMan.doPositions(!firstRunComplete);
     
     MainDashboardMan.updateDashboard();
     
     // MainDataWriterMan.writeStuff();
-    
-    cycleRunning = false;
 }
 
 void MainMultiTrader::onDeinit(const int reason) {

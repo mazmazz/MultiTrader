@@ -23,8 +23,14 @@ class FilterStdDev : public Filter {
     int appliedPrice[];
     int periodShift[];
     
+    ArrayDimInt iStdDevHandle[];
+    
     public:
     void init();
+    void deInit();
+#ifdef __MQL5__
+    int getNewIndicatorHandle(int symIdx, int subIdx);
+#endif
     bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
 
@@ -69,28 +75,42 @@ void FilterStdDev::init() {
         MultiSettings::Parse(StdDev_Value_PeriodShift, periodShift, valueSubfilterCount);
     }
     
+#ifdef __MQL5__
+    loadIndicatorHandles(iStdDevHandle);
+#endif
+
     isInit = true;
 }
+
+#ifdef __MQL5__
+void FilterStdDev::deInit() {
+    unloadIndicatorHandles(iStdDevHandle);
+
+    isInit = false;
+}
+
+int FilterStdDev::getNewIndicatorHandle(int symIdx, int subIdx) {
+    return iStdDev(
+        MainSymbolMan.symbols[symIdx].name
+        , GetMql5TimeFrame(timeFrame[subIdx])
+        , period[subIdx]
+        , shift[subIdx]
+        , (ENUM_MA_METHOD)method[subIdx]
+        , appliedPrice[subIdx]
+        );
+}
+#endif
 
 bool FilterStdDev::calculate(int subfilterId, int symbolIndex, DataUnit *dataOut) {
     if(!checkSafe(subfilterId)) { return false; }
     string symbol = MainSymbolMan.symbols[symbolIndex].name;
     
 #ifdef __MQL5__
-    int iStdDevHandle = iStdDev(
-        symbol
-        , GetMql5TimeFrame(timeFrame[subfilterId])
-        , period[subfilterId]
-        , shift[subfilterId]
-        , (ENUM_MA_METHOD)method[subfilterId]
-        , appliedPrice[subfilterId]
-        );
-    if(iStdDevHandle == INVALID_HANDLE) { return false; }
+    if(iStdDevHandle[symbolIndex]._[subfilterId] == INVALID_HANDLE) { return false; }
     double value = NormalizeDouble(
-        Common::GetSingleValueFromBuffer(iStdDevHandle, periodShift[subfilterId])
+        Common::GetSingleValueFromBuffer(iStdDevHandle[symbolIndex]._[subfilterId], periodShift[subfilterId])
         , MarketInfo(symbol, MODE_DIGITS)
         );
-    IndicatorRelease(iStdDevHandle);
 #else
 #ifdef __MQL4__
     double value = NormalizeDouble(

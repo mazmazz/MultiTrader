@@ -392,7 +392,7 @@ string DashboardManager::signalToString(SignalType signal, bool shortCode = true
 }
 
 string DashboardManager::signalToString(SignalType signal, int duration, SubfilterType type, bool shortCode = true, bool alwaysStable = false) {
-    if(signal == SignalNone) { return ""; }
+    if(signal == SignalNone) { return " "; }
 
     switch(type) {
         case SubfilterEntry:
@@ -404,7 +404,7 @@ string DashboardManager::signalToString(SignalType signal, int duration, Subfilt
             break;
             
         case SubfilterValue:
-            return ""; // value filters don't have signals
+            return " "; // value filters don't have signals
     }
     
     switch(signal) {
@@ -415,7 +415,7 @@ string DashboardManager::signalToString(SignalType signal, int duration, Subfilt
         case SignalClose: return shortCode ? "C" : "Close"; break;
         case SignalLong: return shortCode ? "L" : "Long"; break;
         case SignalShort: return shortCode ? "S" : "Short"; break;
-        default: return ""; break;
+        default: return " "; break;
     }
 }
 

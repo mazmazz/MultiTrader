@@ -24,8 +24,14 @@ class FilterStoch : public Filter {
     int shift[];
     double buySellZone[];
     
+    ArrayDimInt iStochHandle[];
+    
     public:
     void init();
+    void deInit();
+#ifdef __MQL5__
+    int getNewIndicatorHandle(int symIdx, int subIdx);
+#endif
     bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
 
@@ -98,29 +104,43 @@ void FilterStoch::init() {
         MultiSettings::Parse(Stoch_Exit_BuySellZone, buySellZone, exitSubfilterCount);
     }
     
+#ifdef __MQL5__
+    loadIndicatorHandles(iStochHandle);
+#endif
+    
     isInit = true;
 }
+
+#ifdef __MQL5__
+void FilterStoch::deInit() {
+    unloadIndicatorHandles(iStochHandle);
+
+    isInit = false;
+}
+
+int FilterStoch::getNewIndicatorHandle(int symIdx, int subIdx) {
+    return iStochastic(
+        MainSymbolMan.symbols[symIdx].name
+        , GetMql5TimeFrame(timeFrame[subIdx])
+        , kPeriod[subIdx]
+        , dPeriod[subIdx]
+        , slowing[subIdx]
+        , (ENUM_MA_METHOD)method[subIdx]
+        , (ENUM_STO_PRICE)priceField[subIdx]
+        );
+}
+#endif
 
 bool FilterStoch::calculate(int subfilterId, int symbolIndex, DataUnit *dataOut) {
     if(!checkSafe(subfilterId)) { return false; }
     string symbol = MainSymbolMan.symbols[symbolIndex].name;
     
 #ifdef __MQL5__
-    int iStochHandle = iStochastic(
-        symbol
-        , GetMql5TimeFrame(timeFrame[subfilterId])
-        , kPeriod[subfilterId]
-        , dPeriod[subfilterId]
-        , slowing[subfilterId]
-        , (ENUM_MA_METHOD)method[subfilterId]
-        , (ENUM_STO_PRICE)priceField[subfilterId]
-        );
-    if(iStochHandle == INVALID_HANDLE) { return false; }
+    if(iStochHandle[symbolIndex]._[subfilterId] == INVALID_HANDLE) { return false; }
     double value = NormalizeDouble(
-        Common::GetSingleValueFromBuffer(iStochHandle, shift[subfilterId], 0)
+        Common::GetSingleValueFromBuffer(iStochHandle[symbolIndex]._[subfilterId], shift[subfilterId], 0)
         , MarketInfo(symbol, MODE_DIGITS)
         );
-    IndicatorRelease(iStochHandle);
 #else
 #ifdef __MQL4__
     double value = iStochastic(

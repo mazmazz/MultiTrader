@@ -33,6 +33,11 @@ class TimePoint {
     }
 };
 
+class ArrayDimInt {
+    public:
+    int _[];
+};
+
 string StringZeroArray[1];
 bool BoolZeroArray[1];
 int IntZeroArray[1];

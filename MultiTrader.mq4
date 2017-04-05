@@ -47,7 +47,7 @@ TimePoint LastTickTime;
 #include "F_Filter/F_Filter_StdDev.mqh"
 #include "F_Filter/F_Filter_Stoch.mqh"
 #ifdef __MQL4__
-#include "F_Filter/F_Filter_HGI.mqh"
+//#include "F_Filter/F_Filter_HGI.mqh"
 //#include "F_Filter/F_Filter_CSS.mqh"
 #endif
 
@@ -79,7 +79,7 @@ int OnInit() {
     Main.addFilter(new FilterStdDev());
     Main.addFilter(new FilterStoch());
 #ifdef __MQL4__
-    Main.addFilter(new FilterHgi());
+    //Main.addFilter(new FilterHgi());
     //Main.addFilter(new FilterCss());
 #endif
 
@@ -123,8 +123,10 @@ bool ValidateSettings() {
     }
     
     if(AccountInfoDouble(ACCOUNT_MARGIN_LEVEL) > TradeMinMarginLevel) {
-        TradeMinMarginLevel = AccountInfoDouble(ACCOUNT_MARGIN_SO_CALL);
-        Error::PrintInfo_v02(ErrorInfo, "Setting TradeMinMarginLevel to account margin call level: " + AccountInfoDouble(ACCOUNT_MARGIN_SO_CALL));
+        //TradeMinMarginLevel = AccountInfoDouble(ACCOUNT_MARGIN_SO_CALL);
+        //Error::PrintInfo_v02(ErrorInfo, "Setting TradeMinMarginLevel to account margin call level: " + AccountInfoDouble(ACCOUNT_MARGIN_SO_CALL));
+        Error::ThrowFatal("TradeMinMarginLevel must be set greater than broker's stopout level");
+        finalResult = false;
     }
     
     return finalResult;

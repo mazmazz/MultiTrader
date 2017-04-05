@@ -44,16 +44,29 @@ class Filter {
         // changes in D_Data.mqh where updateSymbolSignal checks for filter signal stability
         // and H_Dashboard.mqh where signalToString checks for stable seconds
     
+    ~Filter();
+    
     int getSubfilterCount(SubfilterType type = SubfilterAllTypes);
     
     virtual void init() { Error::ThrowError(ErrorNormal, "Filter: init not implemented", FunctionTrace, shortName); }
+    virtual void deInit() { }
     virtual bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut) { Error::ThrowError(ErrorNormal, "Filter: Calculate not implemented", FunctionTrace, shortName); return false; }
     
-    protected:    
+    protected:
     void setupSubfilters(string pairList, string nameList, SubfilterType subfilterTypeIn, bool addToArray = true);
     void setupSubfilters(string pairList, string nameList, string hiddenList, SubfilterType subfilterTypeIn, bool addToArray = true);
     bool checkSafe(int subfilterId);
+    
+#ifdef __MQL5__
+    virtual int getNewIndicatorHandle(int symIdx, int subIdx) { return INVALID_HANDLE; }
+    void loadIndicatorHandles(ArrayDimInt &buffer[]);
+    void unloadIndicatorHandles(ArrayDimInt &buffer[]);
+#endif
 };
+
+void Filter::~Filter() {
+    deInit();
+}
 
 int Filter::getSubfilterCount(SubfilterType type = SubfilterAllTypes) {
     switch(type) {
@@ -94,7 +107,7 @@ void Filter::setupSubfilters(string pairList, string nameList, string hiddenList
     
     Common::ArrayReserve(subfilterHidden, pairCount);
     if(StringLen(hiddenList) > 0) { MultiSettings::Parse(hiddenList, subfilterHidden, pairCount, addToArray); }
-    else { ArrayResize(subfilterHidden, addToArray ? ArraySize(subfilterHidden)+pairCount : pairCount); }
+    else { ArrayResize(subfilterHidden, addToArray ? ArraySize(subfilterHidden)+pairCount : pairCount); ArrayInitialize(subfilterHidden, 0); }
     
     for(int i = oldSize; i < oldSize + ArraySize(subfilterMode); i++) {
         Common::ArrayPush(subfilterType, subfilterTypeIn);
@@ -114,3 +127,36 @@ bool Filter::checkSafe(int subfilterId) {
 
     return true;
 }
+
+#ifdef __MQL5__
+void Filter::loadIndicatorHandles(ArrayDimInt &buffer[]) {
+    int subfilterCount = getSubfilterCount();
+    int symbolCount = MainSymbolMan.getSymbolCount();
+    
+    ArrayFree(buffer);
+    ArrayResize(buffer, symbolCount);
+    
+    for(int i = 0; i < symbolCount; i++) {
+        int result = ArrayResize(buffer[i]._, subfilterCount);
+        ArrayInitialize(buffer[i]._, INVALID_HANDLE);
+        
+        for(int j = 0; j < subfilterCount; j++) {
+            if(buffer[i]._[j] != INVALID_HANDLE) { IndicatorRelease(buffer[i]._[j]); }
+            if(subfilterMode[j] == SubfilterDisabled) { continue; }
+            
+            buffer[i]._[j] = getNewIndicatorHandle(i, j);
+        }
+    }
+}
+
+void Filter::unloadIndicatorHandles(ArrayDimInt &buffer[]) {
+    int subfilterCount = getSubfilterCount();
+    int symbolCount = MainSymbolMan.getSymbolCount();
+    for(int i = 0; i < symbolCount; i++) {
+        for(int j = 0; j < subfilterCount; j++) {
+            if(buffer[i]._[j] != INVALID_HANDLE) { IndicatorRelease(buffer[i]._[j]); }
+        }
+        ArrayFree(buffer[i]._);
+    }
+}
+#endif

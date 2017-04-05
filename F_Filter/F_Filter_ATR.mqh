@@ -19,9 +19,14 @@ class FilterAtr : public Filter {
     int timeFrame[];
     int period[];
     int shift[];
+    ArrayDimInt iAtrHandle[];
     
     public:
     void init();
+    void deInit();
+#ifdef __MQL5__
+    int getNewIndicatorHandle(int symIdx, int subIdx);
+#endif
     bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
 
@@ -59,22 +64,36 @@ void FilterAtr::init() {
         MultiSettings::Parse(ATR_Value_Period, period, valueSubfilterCount);
         MultiSettings::Parse(ATR_Value_Shift, shift, valueSubfilterCount);
     }
-    
+
+#ifdef __MQL5__
+    loadIndicatorHandles(iAtrHandle);
+#endif
+
     isInit = true;
 }
+
+#ifdef __MQL5__
+void FilterAtr::deInit() {
+    unloadIndicatorHandles(iAtrHandle);
+
+    isInit = false;
+}
+
+int FilterAtr::getNewIndicatorHandle(int symIdx, int subIdx) {
+    return iATR(MainSymbolMan.symbols[symIdx].name, GetMql5TimeFrame(timeFrame[subIdx]), period[subIdx]);
+}
+#endif
 
 bool FilterAtr::calculate(int subfilterId, int symbolIndex, DataUnit *dataOut) {
     if(!checkSafe(subfilterId)) { return false; }
     string symbol = MainSymbolMan.symbols[symbolIndex].name;
     
 #ifdef __MQL5__
-    int iAtrHandle = iATR(symbol, GetMql5TimeFrame(timeFrame[subfilterId]), period[subfilterId]);
-    if(iAtrHandle == INVALID_HANDLE) { return false; }
+    if(iAtrHandle[symbolIndex]._[subfilterId] == INVALID_HANDLE) { return false; }
     double value = NormalizeDouble(
-        Common::GetSingleValueFromBuffer(iAtrHandle, shift[subfilterId])
+        Common::GetSingleValueFromBuffer(iAtrHandle[symbolIndex]._[subfilterId], shift[subfilterId])
         , MarketInfo(symbol, MODE_DIGITS)
         );
-    IndicatorRelease(iAtrHandle);
 #else
 #ifdef __MQL4__
     double value = NormalizeDouble(

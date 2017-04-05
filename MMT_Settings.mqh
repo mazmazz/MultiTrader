@@ -91,12 +91,16 @@ extern bool TradeValueEnabled=true;
 extern string Lbl_TradeGeneral="---- General Trade Settings ----"; // :
 extern TradeMode TradeModeType=TradeMarket; // TradeModeType: Type of trades to enter
 extern bool BrokerTwoStep=true; // IsTwoStep: Broker is ECN and needs two-step order sending for SL/TP
+extern int BrokerPipDecimal = 1; // BrokerPoints: # of pip decimals, e.g. 0 if 4-point broker, 1 if 5-point.
 extern string OrderComment_=""; // OrderComment: Comment to attach to orders
 extern bool CloseOrderOnOppositeSignal=true; // CloseOrderOnOppositeSignal: Close when entry signal is opposite
 extern bool SignalRetraceOpen=true; // SignalRetraceOpen: Enter additional positions on a retrace
 extern int MaxTradesPerSymbol=0;
 // extern int MaxTradesTimeframe=60;
 extern double TradeMinMarginLevel=200; // MinTradeMarginLevel (percent)
+extern string MaxSpreadCalc = "4.0";
+extern string MaxSlippageCalc = "4.0";
+extern string LotSizeCalc = "0.1";
 
 extern string Lbl_TradeDelays="---- Trade Delay Settings ----"; // :
 extern TimeUnits TimeSettingUnit=UnitSeconds; // TimeSettingUnit: Unit for values below
@@ -105,6 +109,63 @@ extern int ExitStableTime=5;
 extern int SignalRetraceTime=3600; // SignalRetraceTime: Repeating signal change is seen as retrace
 extern int TradeBetweenDelay=0; // TradeBetweenDelay: Wait between trades
 extern int ValueBetweenDelay=0; // ValueBetweenDelay: Wait between value changes
+
+//
+//extern string LbL_Exit_ExpiryTrade="---- Expiry Trade Exit Settings ----"; // :
+//extern bool ExpireTrades=false;
+//extern int Exit_expirySeconds=900;
+//
+
+extern string LbL_Grid="---- Grid Settings ----"; // Grid settings: Set TradeModeType above to enable grids
+extern bool GridHedging=false; // GridHedging: Set pendings in both directions 
+extern bool GridOpenMarketInitial=false; // GridOpenMarketInitial: Place market order immediately on signal
+extern bool GridSetDualPendings = false; // GridSetDualPendings: Set 1 buy and 1 sell pending on every level
+extern bool GridSetStopsOnPendings=true; // GridSetStopsOnPendings: Set SLTP on pending orders
+extern bool GridClosePendingOnSignal = false; // GridClosePendingOnSignal: Close pending orders upon signal
+extern bool GridCloseMarketOnSignal = true; // GridCloseMarketOnSignal: Close market orders upon signal
+extern bool GridOpenIfMarketExists = false; // GridOpenIfMarketExists: Open if market order exists, no pendings
+extern int GridCount=5; // GridCount: # of pendings per direction
+extern string GridDistanceCalc = "10.0";
+
+extern string LbL_Exit_Basket="---- Basket Exit Settings ----"; // :
+extern bool BasketTotalPerDay = false; // BasketTotalPerDay: Add total of all profits during day, not just open orders
+// extern int BasketPeriodLengthMinutes = 1440; // BasketPeriodLengthMinutes: Time to limit baskets
+//extern bool BasketIncludeFees=false; // BasketIncludeFees: Deduct fees from profit calculation
+extern bool BasketEnableStopLoss=false;
+extern double BasketStopLossValue=-200.0;
+extern int BasketMaxLosingPerDay=2;
+// todo: basket filter values. Complicated because we may need to aggregate filters across symbols for a proper basket sltp
+extern bool BasketEnableTakeProfit=false;
+extern double BasketTakeProfitValue=400.0;
+extern int BasketMaxWinningPerDay=1;
+extern bool BasketClosePendings=true;
+
+extern string Lbl_StopLoss="---- Stop Loss Settings ----"; // :
+extern bool StopLossEnabled=false;
+extern bool StopLossInternal=true; // StopLossInternal: Track and fire SL using EA
+extern double StopLossBrokerOffset=0.0; // StopLossBrokerOffset: Offset broker SL if Internal enabled
+extern string StopLossCalc = "-30.0";
+
+extern string Lbl_TakeProfit="---- Take Profit Settings ----"; // :
+extern bool TakeProfitEnabled=false;
+extern bool TakeProfitInternal=true; // TakeProfitInternal: Track and fire TP using EA
+extern double TakeProfitBrokerOffset=0.0; // TakeProfitBrokerOffset: Offset broker TP if Internal enabled
+extern string TakeProfitCalc = "30.0";
+
+extern string Lbl_BreakEven="---- Break Even Settings ----"; // :
+extern bool BreakEvenEnabled=false;
+extern double BreakEvenProfit=1.5; // BreakEvenProfit: Offset from breakeven to allow a certain profit.
+extern string BreakEvenJumpDistanceCalc = "10.0";
+
+extern string Lbl_ITSL="---- Trailing Stop Loss Settings ----"; // :
+extern bool TrailingStopEnabled=false;
+extern bool TrailAfterBreakEvenOnly=false;
+extern string TrailingStopCalc = "10.0";
+
+extern string Lbl_JSL="---- Jumping stop loss settings ----"; // :
+extern bool JumpingStopEnabled=false;
+extern bool JumpAfterBreakEvenOnly=true;
+extern string JumpingStopCalc = "10.0";
 
 extern string Lbl_TradeSched="---- Schedule Settings ----"; // :
 extern bool SchedCloseDaily = false; // SchedCloseDaily: Exit trades before day close to prevent swap
@@ -133,68 +194,3 @@ extern int SchedOpenMinutesWeekend = 180;
 // todo: can we convert points to swap currency?
 // todo: close depending on swap value: does order profit exceed current swap value? compare to some filter value like ATR?
     // track separately for longs and shorts -- swap can vary widely
-
-//
-//extern string LbL_Exit_ExpiryTrade="---- Expiry Trade Exit Settings ----"; // :
-//extern bool ExpireTrades=false;
-//extern int Exit_expirySeconds=900;
-//
-
-extern string LbL_Exit_Basket="---- Basket Exit Settings ----"; // :
-extern bool BasketTotalPerDay = false; // BasketTotalPerDay: Add total of all profits during day, not just open orders
-// extern int BasketPeriodLengthMinutes = 1440; // BasketPeriodLengthMinutes: Time to limit baskets
-//extern bool BasketIncludeFees=false; // BasketIncludeFees: Deduct fees from profit calculation
-extern bool BasketEnableStopLoss=false;
-extern double BasketStopLossValue=-200.0;
-extern int BasketMaxLosingPerDay=2;
-// todo: basket filter values. Complicated because we may need to aggregate filters across symbols for a proper basket sltp
-extern bool BasketEnableTakeProfit=false;
-extern double BasketTakeProfitValue=400.0;
-extern int BasketMaxWinningPerDay=1;
-extern bool BasketClosePendings=true;
-
-extern string LbL_Grid="---- Grid Settings ----"; // Grid settings: Set TradeModeType above to enable grids
-extern bool GridHedging=false; // GridHedging: Set pendings in both directions 
-extern bool GridOpenMarketInitial=false; // GridOpenMarketInitial: Place market order immediately on signal
-extern bool GridSetDualPendings = false; // GridSetDualPendings: Set 1 buy and 1 sell pending on every level
-extern bool GridClosePendingOnSignal = false; // GridClosePendingOnSignal: Close pending orders upon signal
-extern bool GridCloseMarketOnSignal = true; // GridCloseMarketOnSignal: Close market orders upon signal
-extern bool GridOpenIfMarketExists = false; // GridOpenIfMarketExists: Open if market order exists, no pendings
-extern int GridCount=5; // GridCount: # of pendings per direction
-extern string GridDistanceCalc = "10.0";
-
-extern string Lbl_MaxSpread="---- Max Spread Settings ----"; // :
-extern string MaxSpreadCalc = "4.0";
-
-extern string Lbl_MaxSlippage="---- Max Slippage Settings ----"; // :
-extern string MaxSlippageCalc = "4.0";
-
-extern string Lbl_LotSize="---- Lot Size Settings ----"; // :
-extern string LotSizeCalc = "0.1";
-
-extern string Lbl_StopLoss="---- Stop Loss Settings ----"; // :
-extern bool StopLossEnabled=false;
-extern bool StopLossInternal=true; // StopLossInternal: Track and fire SL using EA
-extern double StopLossBrokerOffset=0.0; // StopLossBrokerOffset: Offset broker SL if Internal enabled
-extern string StopLossCalc = "-30.0";
-
-extern string Lbl_TakeProfit="---- Take Profit Settings ----"; // :
-extern bool TakeProfitEnabled=false;
-extern bool TakeProfitInternal=true; // TakeProfitInternal: Track and fire TP using EA
-extern double TakeProfitBrokerOffset=0.0; // TakeProfitBrokerOffset: Offset broker TP if Internal enabled
-extern string TakeProfitCalc = "30.0";
-
-extern string Lbl_BreakEven="---- Break Even Settings ----"; // :
-extern bool BreakEvenEnabled=false;
-extern double BreakEvenProfit=1.5; // BreakEvenProfit: Offset from breakeven to allow a certain profit.
-extern string BreakEvenJumpDistanceCalc = "10.0";
-
-extern string Lbl_ITSL="---- Trailing Stop Loss Settings ----"; // :
-extern bool TrailingStopEnabled=false;
-extern bool TrailAfterBreakEvenOnly=false;
-extern string TrailingStopCalc = "10.0";
-
-extern string Lbl_JSL="---- Jumping stop loss settings ----"; // :
-extern bool JumpingStopEnabled=false;
-extern bool JumpAfterBreakEvenOnly=true;
-extern string JumpingStopCalc = "10.0";

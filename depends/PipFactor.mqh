@@ -10,8 +10,6 @@
 #property strict
 //+------------------------------------------------------------------+
 
-int BrokerPoints = 1;
-
 //+-------------------------------------------------------------------------------------+
 //| Description : Calculates the point value to of the number of decimal places for the |
 //|             : symbol.                                                               |      
@@ -24,15 +22,15 @@ int BrokerPoints = 1;
 int GetPipFactor(string symbol) export
 {
   int digits = SymbolInfoInteger(symbol, SYMBOL_DIGITS);
-  return MathPow(10, digits-BrokerPoints);
+  return MathPow(10, digits-BrokerPipDecimal);
 }
 
 int PipsToPoints(double pips) {
-    return MathRound(pips*MathMax(1, 10*BrokerPoints));
+    return MathRound(pips*MathMax(1, 10*BrokerPipDecimal));
 }
 
 double PointsToPips(double points) {
-    return points/MathMax(1, 10*BrokerPoints);
+    return points/MathMax(1, 10*BrokerPipDecimal);
 }
 
 //+-------------------------------------------------------------------------------------+

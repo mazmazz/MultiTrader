@@ -30,8 +30,8 @@ void OrderManager::OrderManager() {
     ArrayResize(openPendingCount, symCount);
     ArrayResize(openMarketCount, symCount);
     if(isTradeModeGrid()) { 
-        ArrayResize(gridDirection, symCount);
-        ArrayInitialize(gridDirection, SignalNone);
+        ArrayResize(gridSetLong, symCount);
+        ArrayResize(gridSetShort, symCount);
         ArrayResize(gridExit, symCount);
         ArrayResize(gridExitBySignal, symCount);
         ArrayResize(gridExitByOpposite, symCount);

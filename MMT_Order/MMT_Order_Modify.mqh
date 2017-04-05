@@ -26,7 +26,8 @@ void OrderManager::doModifyPosition(int ticket, int symIdx) {
     ) { // todo: compare to SL
         offsetStopLoss(Common::OrderIsShort(OrderType()), OrderSymbol(), stopLevel);
         sendModifyOrder(ticket, OrderOpenPrice(), stopLevel, OrderTakeProfit(), OrderExpiration());
-    }
+    } // todo: if SLTP is 0 and SL/TP are enabled, set the initial SL/TP
+        // todo: moving SLTP depending on spread offset
     
     setLastTimePoint(symIdx, false);
 }

@@ -104,13 +104,11 @@ bool ValidateSettings() {
     bool finalResult = true;
     
 #ifdef __MQL4__
-    if((IsTesting() || IsOptimization()) && !SingleSymbolMode) {
-        Error::ThrowFatalError(ErrorFatal, "Strategy tester requires Single Symbol Mode.");
-        finalResult = false;
-    }
-    
-    if((IsTesting() || IsOptimization()) && BrokerTwoStep) {
-        BrokerTwoStep = false; // Strat tester does not hit SLTP if modified after open
+    if(IsTesting() || IsOptimization()) {
+        if(!SingleSymbolMode) {
+            Error::ThrowFatalError(ErrorFatal, "Strategy tester requires Single Symbol Mode.");
+            finalResult = false;
+        }
     }
 #endif
     

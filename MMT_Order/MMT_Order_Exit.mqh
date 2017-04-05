@@ -52,7 +52,7 @@ bool OrderManager::checkDoExitSignals(int ticket, int symIdx) {
         if(!checkSig && !checkEntry) { return false; }
     }
     
-    bool posIsBuy = (isTradeModeGrid()) ? (gridDirection[symIdx] == SignalLong) : Common::OrderIsLong(posType);
+    bool posIsBuy = (isTradeModeGrid()) ? gridSetLong[symIdx] : Common::OrderIsLong(posType);
     
     bool entryIsTrigger,exitIsTrigger;
     if(!checkEntry) { 

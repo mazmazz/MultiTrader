@@ -59,7 +59,8 @@ class OrderManager {
     int openPendingCount[];
     int openMarketCount[];
     
-    SignalType gridDirection[];
+    bool gridSetLong[];
+    bool gridSetShort[];
     bool gridExit[];
     bool gridExitBySignal[];
     bool gridExitByOpposite[];

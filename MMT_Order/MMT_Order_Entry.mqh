@@ -83,7 +83,7 @@ int OrderManager::checkDoEntrySignals(int symIdx) {
             break;
     }
     
-    if(result > -1) {
+    if(result > 0) {
         checkUnit.fulfilled = true;
         setLastTimePoint(symIdx, true);
     }
@@ -152,9 +152,9 @@ int OrderManager::sendOpenOrder(string posSymName, int posCmd, double posVolume,
 #ifdef _OrderReliable
     result = OrderSendReliable(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
 #else
-    if(BrokerTwoStep && (posStoploss > 0 || posTakeprofit > 0)) {
+    if(BrokerTwoStep && (posStoploss > 0 || posTakeprofit > 0)) { //  && !Common::OrderIsPending(posCmd)
         result = OrderSend(posSymName, posCmd, posVolume, posPrice, posSlippage, 0, 0, posComment, posMagic, posExpiration);
-        if(result > -1 && OrderSelect(result, SELECT_BY_TICKET)) {
+        if(result > 0 && OrderSelect(result, SELECT_BY_TICKET)) {
             if(!OrderModify(result, posPrice, posStoploss, posTakeprofit, posExpiration)) {
                 Error::PrintError(ErrorFatal, "Could not set stop loss/take profit for order " + result, FunctionTrace, NULL, true);
             }

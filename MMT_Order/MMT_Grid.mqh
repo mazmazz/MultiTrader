@@ -25,8 +25,7 @@ int OrderManager::prepareGrid(int symIdx, SignalType signal) {
     if(IsTradeContextBusy()) { return -1; }
 #endif
     
-    if(signal == gridDirection[symIdx] || gridDirection[symIdx] == SignalOpen) { return -1; } // only one grid set at a time
-        // gridDirection is set after successful setup, and reset after closing
+    if((signal == SignalLong && gridSetLong[symIdx]) || (signal == SignalShort && gridSetShort[symIdx])) { return -1; } // only one grid set at a time // gridSetLong/Short is set after successful setup, and reset after closing
 
     string posSymName = MainSymbolMan.symbols[symIdx].name;
     
@@ -85,37 +84,52 @@ int OrderManager::prepareGrid(int symIdx, SignalType signal) {
     }
     
     // todo: grid - check if all orders succeeded
-    if(gridDirection[symIdx] == SignalNone) { gridDirection[symIdx] = signal; }
-    else { gridDirection[symIdx] == SignalOpen; } 
-        // logic is that if gridDirection is already SignalLong/Short, then only the opposite direction will be set. (Same direction is rejected and returned)
-        // when finished with opposite direction, both directions will be open, hence we use gridDirection = SignalOpen to mean both directions
+    if(signal == SignalLong) { 
+        gridSetLong[symIdx] = true;
+        if(GridHedging) { gridSetShort[symIdx] = true; }
+    } else { 
+        gridSetShort[symIdx] = true; 
+        if(GridHedging) { gridSetLong[symIdx] = true; }
+    }
     
     return finalResult;
 }
 
 int OrderManager::prepareGridOrder(SignalType signal, bool isHedge, bool isDual, bool isMarket, int gridIndex, string posSymName, double posVolume, double posPriceDist, int posSlippage, double stoplossOffset, double takeprofitOffset, string posComment = "", int posMagic = 0, datetime posExpiration = 0) {
-    int cmd;
-    if(isMarket) {
-        if((!isHedge && !isDual) || (isHedge && isDual)) { cmd = (signal == SignalLong) ? OP_BUY : OP_SELL; }
-        else { Common::OrderIsLong(signal) ? OP_SELL : OP_BUY; }
+    int cmd, gridIndexPrice;
+    if(!isDual) {
+        if(isMarket) {
+            if(!isHedge) { cmd = (signal == SignalLong) ? OP_BUY : OP_SELL; }
+            else { cmd = (signal == SignalLong) ? OP_SELL : OP_BUY; }
+        } else {
+            if(!isHedge) { cmd = (signal == SignalLong) ? OP_BUYSTOP : OP_SELLSTOP; }
+            else { cmd = (signal == SignalLong) ? OP_SELLSTOP : OP_BUYSTOP; }
+        }
+        gridIndexPrice = Common::OrderIsShort(cmd) ? (MathAbs(gridIndex)*-1) : gridIndex;
     } else {
-        if((!isHedge && !isDual) || (isHedge && isDual)) { cmd = (signal == SignalLong) ? OP_BUYSTOP : OP_SELLSTOP; }
-        else { cmd = Common::OrderIsLong(signal) ? OP_SELLSTOP : OP_BUYSTOP; }
+        if(isMarket) {
+            if(!isHedge) { cmd = (signal == SignalLong) ? OP_SELL : OP_BUY; }
+            else { cmd = (signal == SignalLong) ? OP_BUY : OP_SELL; }
+        } else {
+            if(!isHedge) { cmd = (signal == SignalLong) ? OP_SELLLIMIT : OP_BUYLIMIT; }
+            else { cmd = (signal == SignalLong) ? OP_BUYLIMIT : OP_SELLLIMIT; }
+        }
+        gridIndexPrice = Common::OrderIsLong(cmd) ? (MathAbs(gridIndex)*-1) : gridIndex;
     }
     
-    int gridIndexPrice = isHedge ? (MathAbs(gridIndex)*-1) : gridIndex;
-    
+    // todo: dual orders: should they use the proper ask/bid price, or the opposite? Using the proper price, the dual stop is offsetted by spread
+        // I would argue do it as normal -- it's considered the same level after spread.
     double priceBaseNormal = Common::OrderIsLong(cmd) ? SymbolInfoDouble(posSymName, SYMBOL_ASK) : SymbolInfoDouble(posSymName, SYMBOL_BID);
     double priceBaseOpposite = Common::OrderIsLong(cmd) ? SymbolInfoDouble(posSymName, SYMBOL_BID) : SymbolInfoDouble(posSymName, SYMBOL_ASK);
     double posPriceNormal = priceBaseNormal+(posPriceDist*gridIndexPrice);
     double posPriceOpposite = priceBaseOpposite+(posPriceDist*gridIndexPrice);
     
     double posStoploss, posTakeprofit;
-    if(stoplossOffset != 0) {
-        posStoploss = Common::OrderIsLong(cmd) ? posPriceOpposite + (stoplossOffset*gridIndex) : posPriceOpposite - (stoplossOffset*gridIndex); // offset is negative
+    if(GridSetStopsOnPendings && stoplossOffset != 0) {
+        posStoploss = Common::OrderIsLong(cmd) ? posPriceOpposite + stoplossOffset : posPriceOpposite - stoplossOffset; // offset is negative
     }
-    if(takeprofitOffset != 0) {
-        posTakeprofit = Common::OrderIsLong(cmd) ? posPriceOpposite + (takeprofitOffset*gridIndex) : posPriceOpposite - (takeprofitOffset*gridIndex);
+    if(GridSetStopsOnPendings && takeprofitOffset != 0) {
+        posTakeprofit = Common::OrderIsLong(cmd) ? posPriceOpposite + takeprofitOffset : posPriceOpposite - takeprofitOffset;
     }
     
     offsetStopLevels(Common::OrderIsShort(cmd), posSymName, posStoploss, posTakeprofit);
@@ -136,7 +150,8 @@ void OrderManager::fillGridExitFlags(int symbolIdx) {
     }
     
     if(!isGridOpen(symbolIdx, GridOpenIfMarketExists)) { // todo: grid - should grid direction be reset even if market orders are still open?
-        gridDirection[symbolIdx] = SignalNone;
+        gridSetLong[symbolIdx] = false;
+        gridSetShort[symbolIdx] = false;
     }
 }
 

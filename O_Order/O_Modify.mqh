@@ -19,32 +19,20 @@ void OrderManager::doModifyPosition(int ticket, int symIdx) {
     
     double stopLevel;
     double profitLevel;
-    unOffsetTakeProfitFromOrder(ticket, OrderSymbol(), profitLevel);
+    unOffsetTakeProfitFromOrder(ticket, OrderSymbol(cycleIsOrder), profitLevel);
     if(getModifiedStopLevel(ticket, symIdx, stopLevel) 
         && stopLevel != 0 
-        && (profitLevel == 0 || (Common::OrderIsLong(OrderType()) ? stopLevel < profitLevel : stopLevel > profitLevel))
+        && (profitLevel == 0 || (Common::OrderIsLong(OrderType(cycleIsOrder)) ? stopLevel < profitLevel : stopLevel > profitLevel))
     ) { // todo: compare to SL
-        offsetStopLoss(Common::OrderIsShort(OrderType()), OrderSymbol(), stopLevel);
-        sendModifyOrder(ticket, OrderOpenPrice(), stopLevel, OrderTakeProfit(), OrderExpiration());
-    } else if(OrderStopLoss() == 0 && OrderTakeProfit() == 0 && !Common::OrderIsPending(OrderType())
-        && getInitialStopLevels(Common::OrderIsLong(OrderType()), symIdx, stopLevel, profitLevel)
+        offsetStopLoss(Common::OrderIsShort(OrderType(cycleIsOrder)), OrderSymbol(cycleIsOrder), stopLevel);
+        sendModify(ticket, OrderOpenPrice(cycleIsOrder), stopLevel, OrderTakeProfit(cycleIsOrder), OrderExpiration(cycleIsOrder));
+    } else if(OrderStopLoss(cycleIsOrder) == 0 && OrderTakeProfit(cycleIsOrder) == 0 && !Common::OrderIsPending(OrderType(cycleIsOrder))
+        && getInitialStopLevels(Common::OrderIsLong(OrderType(cycleIsOrder)), symIdx, stopLevel, profitLevel)
         && (stopLevel != 0 || profitLevel != 0)
     ) {
-        offsetStopLevels(Common::OrderIsShort(OrderType()), OrderSymbol(), stopLevel, profitLevel);
-        sendModifyOrder(ticket, OrderOpenPrice(), stopLevel, profitLevel, OrderExpiration());
+        offsetStopLevels(Common::OrderIsShort(OrderType(cycleIsOrder)), OrderSymbol(cycleIsOrder), stopLevel, profitLevel);
+        sendModify(ticket, OrderOpenPrice(cycleIsOrder), stopLevel, profitLevel, OrderExpiration(cycleIsOrder));
     }
     
     setLastTimePoint(symIdx, false);
-}
-
-bool OrderManager::sendModifyOrder(int ticket, double price, double stoploss, double takeprofit, datetime expiration = 0) {
-    bool result;
-    
-#ifdef _OrderReliable
-    result = OrderModifyReliable(ticket, price, stoploss, takeprofit, expiration);
-#else
-    result = OrderModify(ticket, price, stoploss, takeprofit, expiration);
-#endif
-
-    return result;
 }

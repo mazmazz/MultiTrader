@@ -102,6 +102,8 @@ class Common {
     
 #ifdef __MQL5__
     static double GetSingleValueFromBuffer(int indiHandle, int shift=0, int bufferNum=0);
+    static bool IsAccountHedging();
+    static bool IsOrderRetcodeSuccess(int retcode, bool checkNoChange = true);
 #endif
 };
 
@@ -132,6 +134,7 @@ void Common::ArrayDelete(T &array[],int index, int diff=1, bool resize=true) {
 template<typename T>
 int Common::ArrayPush(T &array[], T unit, int maxSize = -1) {
     int size = ArraySize(array);
+    if(!ArrayIsDynamic(array)) { return size; }
     int target = size; //int target = (isSeries ? 0 : size);
     bool isSeries = ArrayGetAsSeries(array);
     
@@ -142,13 +145,14 @@ int Common::ArrayPush(T &array[], T unit, int maxSize = -1) {
         // Theory: https://www.forexfactory.com/showthread.php?p=2878455#post2878455
         // Workaround: https://www.forexfactory.com/showthread.php?p=4686709#post4686709
 
+    int callResult;
     if(maxSize > 0 && target >= maxSize) {
         int maxDiff = target-maxSize+1;
         ArrayDelete(array, 0, maxDiff, false);
         ArrayResize(array, maxSize);
         target = maxSize-1;
     } else {
-        ArrayResize(array, size+1);
+        callResult = ArrayResize(array, size+1);
     }
     
     array[target] = unit;
@@ -541,3 +545,16 @@ datetime Common::StripDateFromDatetime(datetime target) {
         return target - (86400*MathFloor(target/86400));
     } else { return target; }
 }
+
+#ifdef __MQL5__
+bool Common::IsAccountHedging() {
+    return AccountInfoInteger(ACCOUNT_MARGIN_MODE) == ACCOUNT_MARGIN_MODE_RETAIL_HEDGING;
+}
+
+bool Common::IsOrderRetcodeSuccess(int retcode, bool checkNoChange = true) {
+    return (
+        (retcode >= TRADE_RETCODE_PLACED && retcode <= TRADE_RETCODE_DONE_PARTIAL) 
+        || (!checkNoChange || retcode == TRADE_RETCODE_NO_CHANGES)
+    );
+}
+#endif

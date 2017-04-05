@@ -38,16 +38,16 @@ void OrderManager::checkDoBasketExit() {
 }
 
 void OrderManager::sendBasketClose() {
-    for(int i = 0; i < OrdersTotal(); i++) {
+    for(int i = 0; i < OrdersTotal(cycleIsOrder); i++) {
         OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
-        if(OrderMagicNumber() != MagicNumber) { 
+        if(OrderMagicNumber(cycleIsOrder) != MagicNumber) { 
             continue; 
         }
         
         bool exitResult;
         
-        if(BasketClosePendings || !Common::OrderIsPending(OrderType())) {
-            exitResult = sendClose(OrderTicket(), MainSymbolMan.getSymbolId(OrderSymbol()));
+        if(BasketClosePendings || !Common::OrderIsPending(OrderType(cycleIsOrder))) {
+            exitResult = sendClose(OrderTicket(cycleIsOrder), MainSymbolMan.getSymbolId(OrderSymbol(cycleIsOrder)));
         }
         
         if(exitResult) {
@@ -89,7 +89,7 @@ bool OrderManager::getProfitPips(int ticket, double &profitOut) {
     if(!checkDoSelectOrder(ticket)) { return false; }
     if(Common::OrderIsPending(ticket)) { return false; }
     
-    profitOut = getProfitPips(OrderOpenPrice(), OrderType(), OrderSymbol());
+    profitOut = getProfitPips(OrderOpenPrice(cycleIsOrder), OrderType(cycleIsOrder), OrderSymbol(cycleIsOrder));
     return true;
     // todo: approximate commission and swap in pips?
 }

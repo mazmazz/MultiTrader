@@ -30,7 +30,7 @@ bool OrderManager::getCloseByMarketSchedule(int symIdx, int ticket = -1) {
     if(ticket > 0) {
         if(!checkDoSelectOrder(ticket)) { return false; }
         
-        int orderOp = OrderType();
+        int orderOp = OrderType(cycleIsOrder);
         
         if(!SchedClosePendings && Common::OrderIsPending(orderOp)) { return false; }
         if(SchedCloseOrderOp == OrderOnlyLong && !Common::OrderIsLong(orderOp)) { return false; }

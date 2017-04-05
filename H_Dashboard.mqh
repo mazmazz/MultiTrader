@@ -177,7 +177,7 @@ void DashboardManager::drawSymbols() {
     int j = 0; int k = 0;
     for(int i = 0; i < size; i++) {
         col = 0; colOffset = 0; pos = 1;
-        drawText(prefixName(IntegerToString(i)), truncText(MainSymbolMan.symbols[i].name, maxTextPos) + spacedSepChar);
+        drawText(prefixName(IntegerToString(i)), padText(truncText(MainSymbolMan.symbols[i].name, maxTextPos), maxTextPos) + spacedSepChar);
         
         drawSubfilterColData(i, SubfilterValue);
         drawSubfilterColData(i, SubfilterEntry);

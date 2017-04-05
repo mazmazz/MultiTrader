@@ -85,7 +85,7 @@ bool FilterAtr::calculate(int subfilterId, int symbolIndex, DataUnit *dataOut) {
 #endif
     
     double pips = NormalizeDouble(PriceToPips(symbol, value), 2);
-    dataOut.setRawValue(pips, SignalNone, DoubleToStr(pips, 1));
+    dataOut.setRawValue(pips, SignalNone, DoubleToString(pips, 1));
     
     return true;
 }

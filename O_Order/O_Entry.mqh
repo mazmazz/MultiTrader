@@ -129,30 +129,7 @@ int OrderManager::prepareSingleOrder(int symIdx, SignalType signal, bool isPendi
     string posComment = OrderComment_;
     int posMagic = MagicNumber;
     datetime posExpiration = 0;
-    int result = sendOpenOrder(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
-    
-    return result;
-}
-
-int OrderManager::sendOpenOrder(string posSymName, int posCmd, double posVolume, double posPrice, double posSlippage, double posStoploss, double posTakeprofit, string posComment = "", int posMagic = 0, datetime posExpiration = 0) {
-    int result;
-    
-#ifdef _OrderReliable
-    result = OrderSendReliable(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
-#else
-    if(BrokerTwoStep && (posStoploss > 0 || posTakeprofit > 0)) { //  && !Common::OrderIsPending(posCmd)
-        result = OrderSend(posSymName, posCmd, posVolume, posPrice, posSlippage, 0, 0, posComment, posMagic, posExpiration);
-        if(result > 0 && OrderSelect(result, SELECT_BY_TICKET)) {
-            if(!OrderModify(result, posPrice, posStoploss, posTakeprofit, posExpiration)) {
-                Error::PrintError(ErrorFatal, "Could not set stop loss/take profit for order " + result, FunctionTrace, NULL, true);
-            }
-        }
-    } else {
-        result = OrderSend(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
-    }
-#endif
-
-    if(result > -1) { addOrderToOpenCount(result); }
+    int result = sendOpen(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
     
     return result;
 }

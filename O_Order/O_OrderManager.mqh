@@ -20,6 +20,7 @@
 #include "O_Modify.mqh"
 #include "O_Entry.mqh"
 #include "O_Exit.mqh"
+#include "O_Sending.mqh"
 #include "O_Schedule.mqh"
 #include "O_Basket.mqh"
 #include "O_Grid.mqh"

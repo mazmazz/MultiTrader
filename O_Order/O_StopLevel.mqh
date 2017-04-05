@@ -53,18 +53,18 @@ bool OrderManager::getInitialStopLevels(bool isLong, int symIdx, double &stoplos
 
 bool OrderManager::checkDoExitStopLevels(int ticket, int symIdx) {
     if(!checkDoSelectOrder(ticket)) { return false; }
-    if(Common::OrderIsPending(OrderType())) { return false; }
+    if(Common::OrderIsPending(OrderType(cycleIsOrder))) { return false; }
     
     double stoploss, takeprofit;
     if(!unOffsetStopLevelsFromOrder(ticket, MainSymbolMan.symbols[symIdx].name, stoploss, takeprofit)) { return false; }
     
     double priceCompare; bool trigger;
-    if(Common::OrderIsLong(OrderType())) { 
-        priceCompare = SymbolInfoDouble(OrderSymbol(), SYMBOL_BID); 
+    if(Common::OrderIsLong(OrderType(cycleIsOrder))) { 
+        priceCompare = SymbolInfoDouble(OrderSymbol(cycleIsOrder), SYMBOL_BID); 
         trigger = ((StopLossInternal && stoploss != 0 && (priceCompare <= stoploss)) || (TakeProfitInternal && takeprofit != 0 && (priceCompare >= takeprofit)));
     }
     else { 
-        priceCompare = SymbolInfoDouble(OrderSymbol(), SYMBOL_ASK); 
+        priceCompare = SymbolInfoDouble(OrderSymbol(cycleIsOrder), SYMBOL_ASK); 
         trigger = ((StopLossInternal && stoploss != 0 && (priceCompare >= stoploss)) || (TakeProfitInternal && takeprofit != 0 &&  (priceCompare <= takeprofit)));
     }
     
@@ -100,7 +100,7 @@ bool OrderManager::getTrailingStopLevel(int ticket, int symIdx, double &stopLeve
     if(!TrailingStopEnabled) { return false; }
     if(!checkDoSelectOrder(ticket)) { return false; }
     
-    double oppositePrice = Common::OrderIsLong(OrderType()) ? 
+    double oppositePrice = Common::OrderIsLong(OrderType(cycleIsOrder)) ? 
         SymbolInfoDouble(MainSymbolMan.symbols[symIdx].name, SYMBOL_BID)
         : SymbolInfoDouble(MainSymbolMan.symbols[symIdx].name, SYMBOL_ASK)
         ;
@@ -110,7 +110,7 @@ bool OrderManager::getTrailingStopLevel(int ticket, int symIdx, double &stopLeve
     double stopOffsetPrice; 
     if(!getValuePrice(stopOffsetPrice, trailingStopLoc, symIdx) || stopOffsetPrice == 0) { return false; }
     
-    double level = Common::OrderIsLong(OrderType()) ? oppositePrice + stopOffsetPrice : oppositePrice - stopOffsetPrice;
+    double level = Common::OrderIsLong(OrderType(cycleIsOrder)) ? oppositePrice + stopOffsetPrice : oppositePrice - stopOffsetPrice;
     
     if(isStopLossProgressed(ticket, level)) {
         stopLevelOut = level;
@@ -124,12 +124,12 @@ bool OrderManager::getJumpingStopLevel(int ticket, int symIdx, double &stopLevel
     if(!JumpingStopEnabled) { return false; }
     if(!checkDoSelectOrder(ticket)) { return false; }
     
-    double openingPrice = OrderOpenPrice();
-    double oppositePrice = Common::OrderIsLong(OrderType()) ? 
+    double openingPrice = OrderOpenPrice(cycleIsOrder);
+    double oppositePrice = Common::OrderIsLong(OrderType(cycleIsOrder)) ? 
         SymbolInfoDouble(MainSymbolMan.symbols[symIdx].name, SYMBOL_BID)
         : SymbolInfoDouble(MainSymbolMan.symbols[symIdx].name, SYMBOL_ASK)
         ;
-    double priceDiff = Common::OrderIsLong(OrderType()) ? oppositePrice - openingPrice : openingPrice - oppositePrice;
+    double priceDiff = Common::OrderIsLong(OrderType(cycleIsOrder)) ? oppositePrice - openingPrice : openingPrice - oppositePrice;
     
     if(JumpAfterBreakEvenOnly && BreakEvenEnabled && !isBreakEvenPassed(ticket, symIdx)) { return false; }
     
@@ -138,7 +138,7 @@ bool OrderManager::getJumpingStopLevel(int ticket, int symIdx, double &stopLevel
     
     double jumpStopOffset = jumpingDistancePrice*(MathFloor(priceDiff/jumpingDistancePrice)-1);
     
-    double level = Common::OrderIsLong(OrderType()) ? openingPrice + jumpStopOffset : openingPrice - jumpStopOffset;
+    double level = Common::OrderIsLong(OrderType(cycleIsOrder)) ? openingPrice + jumpStopOffset : openingPrice - jumpStopOffset;
     if(isStopLossProgressed(ticket, level)) {
         stopLevelOut = level;
         return true;
@@ -149,15 +149,15 @@ bool OrderManager::getBreakEvenStopLevel(int ticket, int symIdx, double &stopLev
     if(!BreakEvenEnabled) { return false; }
     if(!checkDoSelectOrder(ticket)) { return false; }
     
-    double openingPrice = OrderOpenPrice();
-    double oppositePrice = Common::OrderIsLong(OrderType()) ? 
+    double openingPrice = OrderOpenPrice(cycleIsOrder);
+    double oppositePrice = Common::OrderIsLong(OrderType(cycleIsOrder)) ? 
         SymbolInfoDouble(MainSymbolMan.symbols[symIdx].name, SYMBOL_BID)
         : SymbolInfoDouble(MainSymbolMan.symbols[symIdx].name, SYMBOL_ASK)
         ;
     double breakEvenProfitPrice = PipsToPrice(MainSymbolMan.symbols[symIdx].name, BreakEvenProfit);
     
     if(isBreakEvenPassed(ticket, symIdx)) { // if we make breakEvenProfitPrice into a Loc, check if it == 0, then return false
-        double newStopLevel = Common::OrderIsLong(OrderType()) ? openingPrice + breakEvenProfitPrice : openingPrice - breakEvenProfitPrice; // todo: what about spread???
+        double newStopLevel = Common::OrderIsLong(OrderType(cycleIsOrder)) ? openingPrice + breakEvenProfitPrice : openingPrice - breakEvenProfitPrice; // todo: what about spread???
         if(isStopLossProgressed(ticket, newStopLevel)) {
             stopLevelOut = newStopLevel;
             return true;
@@ -170,15 +170,15 @@ bool OrderManager::getBreakEvenStopLevel(int ticket, int symIdx, double &stopLev
 bool OrderManager::isBreakEvenPassed(int ticket, int symIdx) {
     if(!checkDoSelectOrder(ticket)) { return false; }
 
-    double openingPrice = OrderOpenPrice();
-    double oppositePrice = Common::OrderIsLong(OrderType()) ? 
+    double openingPrice = OrderOpenPrice(cycleIsOrder);
+    double oppositePrice = Common::OrderIsLong(OrderType(cycleIsOrder)) ? 
         SymbolInfoDouble(MainSymbolMan.symbols[symIdx].name, SYMBOL_BID)
         : SymbolInfoDouble(MainSymbolMan.symbols[symIdx].name, SYMBOL_ASK)
         ;
     double breakEvenJumpDistancePrice;
     if(!getValuePrice(breakEvenJumpDistancePrice, breakEvenJumpDistanceLoc, symIdx) || breakEvenJumpDistancePrice == 0) { return false; }
     
-    double breakEvenJumpDiff = Common::OrderIsLong(OrderType()) ? oppositePrice - openingPrice : openingPrice - oppositePrice;
+    double breakEvenJumpDiff = Common::OrderIsLong(OrderType(cycleIsOrder)) ? oppositePrice - openingPrice : openingPrice - oppositePrice;
     return breakEvenJumpDiff >= breakEvenJumpDistancePrice;
 }
 
@@ -186,12 +186,12 @@ bool OrderManager::isStopLossProgressed(int ticket, double newStopLoss) {
     if(!checkDoSelectOrder(ticket)) { return false; }
     if(newStopLoss == 0) { return false; }
     
-    if(OrderStopLoss() == 0 && newStopLoss != 0) { return true; } // assume we want to set a modified stop loss when no SL was previously set
+    if(OrderStopLoss(cycleIsOrder) == 0 && newStopLoss != 0) { return true; } // assume we want to set a modified stop loss when no SL was previously set
     
     double currentStopLoss;
-    if(!unOffsetStopLossFromOrder(OrderTicket(), OrderSymbol(), currentStopLoss)) { return false; }
+    if(!unOffsetStopLossFromOrder(OrderTicket(cycleIsOrder), OrderSymbol(cycleIsOrder), currentStopLoss)) { return false; }
     
-    if(Common::OrderIsLong(OrderType())) {
+    if(Common::OrderIsLong(OrderType(cycleIsOrder))) {
         return newStopLoss > currentStopLoss;
     } else {
         return newStopLoss < currentStopLoss;
@@ -203,21 +203,21 @@ bool OrderManager::isStopLossProgressed(int ticket, double newStopLoss) {
 bool OrderManager::unOffsetStopLevelsFromOrder(int ticket, string symName, double &stoplossOut, double &takeprofitOut) {
     if(!checkDoSelectOrder(ticket)) { return false; }
     
-    stoplossOut = OrderStopLoss();
-    takeprofitOut = OrderTakeProfit();
+    stoplossOut = OrderStopLoss(cycleIsOrder);
+    takeprofitOut = OrderTakeProfit(cycleIsOrder);
     
     double slOffset = StopLossBrokerOffset, tpOffset = TakeProfitBrokerOffset;
-    if(Common::OrderIsShort(OrderType())) {
+    if(Common::OrderIsShort(OrderType(cycleIsOrder))) {
         slOffset = slOffset*-1;
         tpOffset = tpOffset*-1;
     }
     
     if(stoplossOut != 0 && slOffset != 0 && StopLossInternal) { 
-        stoplossOut = unOffsetValue(OrderStopLoss(), slOffset, symName); 
+        stoplossOut = unOffsetValue(OrderStopLoss(cycleIsOrder), slOffset, symName); 
     }
     
     if(takeprofitOut != 0 && tpOffset != 0 && TakeProfitInternal) {
-        takeprofitOut = unOffsetValue(OrderTakeProfit(), tpOffset, symName); 
+        takeprofitOut = unOffsetValue(OrderTakeProfit(cycleIsOrder), tpOffset, symName); 
     }
     
     return true;

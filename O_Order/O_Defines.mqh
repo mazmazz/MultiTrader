@@ -65,9 +65,10 @@ class OrderManager {
     bool gridExitBySignal[];
     bool gridExitByOpposite[];
     
-    void doCurrentPositions(bool firstRun);
+    bool cycleIsOrder; // for mt5, toggle between selecting order and position. in mt4, is always false.
+    
+    void doCurrentPositions(bool firstRun, bool isOrder = false);
     void evaluateFulfilledFromOrder(int ticket, int symbolIdx);
-    bool checkDoSelectOrder(int ticket);
     void resetOpenCount();
     void addOrderToOpenCount(int ticket, int symIdx = -1);
     
@@ -76,13 +77,11 @@ class OrderManager {
     
     bool isExitSafe(int symIdx);
     bool checkDoExitSignals(int ticket, int symIdx);
-    bool sendClose(int ticket, int symIdx);
     
     //+------------------------------------------------------------------+
     // Modify
     
     void doModifyPosition(int ticket, int symIdx);
-    bool sendModifyOrder(int ticket, double price, double stoploss, double takeprofit, datetime expiration = 0);
     
     //+------------------------------------------------------------------+
     // Entry
@@ -90,7 +89,48 @@ class OrderManager {
     bool isEntrySafe(int symIdx);
     int checkDoEntrySignals(int symIdx);
     int prepareSingleOrder(int symIdx, SignalType signal, bool isPending);
-    int sendOpenOrder(string posSymName, int posCmd, double posVolume, double posPrice, double posSlippage, double posStoploss, double posTakeprofit, string posComment = "", int posMagic = 0, datetime posExpiration = 0);
+    
+    // Sending
+    
+#ifdef __MQL4__
+    int sendOpen(string posSymName, int posCmd, double posVolume, double posPrice, double posSlippage, double posStoploss, double posTakeprofit, string posComment = "", int posMagic = 0, datetime posExpiration = 0);
+    bool sendModify(int ticket, double price, double stoploss, double takeprofit, datetime expiration = 0);
+    bool sendClose(int ticket, int symIdx);
+    bool checkDoSelectOrder(int ticket);
+    
+    int OrderType(bool isOrder);
+    int OrderTicket(bool isOrder);
+    double OrderStopLoss(bool isOrder);
+    double OrderTakeProfit(bool isOrder);
+    int OrderMagicNumber(bool isOrder);
+    string OrderSymbol(bool isOrder);
+    double OrderLots(bool isOrder);
+    double OrderOpenPrice(bool isOrder);
+    datetime OrderExpiration(bool isOrder);
+    bool OrderSelect(int index, int select, int pool, bool isOrder);
+    double OrderProfit(bool isOrder);
+    int OrdersTotal(bool isOrder);
+#else
+#ifdef __MQL5__
+    ulong sendOpen(string posSymName, int posCmd, double posVolume, double posPrice, double posSlippage, double posStoploss, double posTakeprofit, string posComment = "", int posMagic = 0, datetime posExpiration = 0);
+    bool sendModify(ulong ticket, double price, double stoploss, double takeprofit, datetime expiration = 0, bool isOrder = false);
+    bool sendClose(ulong ticket, int symIdx, bool isOrder = false);
+    bool checkDoSelectOrder(ulong ticket, bool isOrder = false);
+    
+    long OrderType(bool isOrder);
+    long OrderTicket(bool isOrder);
+    double OrderStopLoss(bool isOrder);
+    double OrderTakeProfit(bool isOrder);
+    long OrderMagicNumber(bool isOrder);
+    string OrderSymbol(bool isOrder);
+    double OrderLots(bool isOrder);
+    double OrderOpenPrice(bool isOrder);
+    datetime OrderExpiration(bool isOrder);
+    bool OrderSelect(int index, int select, int pool, bool isOrder);
+    double OrderProfit(bool isOrder);
+    int OrdersTotal(bool isOrder);
+#endif
+#endif
     
     //+------------------------------------------------------------------+
     // Grid

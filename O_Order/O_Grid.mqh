@@ -134,7 +134,7 @@ int OrderManager::prepareGridOrder(SignalType signal, bool isHedge, bool isDual,
     
     offsetStopLevels(Common::OrderIsShort(cmd), posSymName, posStoploss, posTakeprofit);
     
-    int resultInitial = sendOpenOrder(posSymName, cmd, posVolume, posPriceNormal, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
+    int resultInitial = sendOpen(posSymName, cmd, posVolume, posPriceNormal, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
     return resultInitial;
 }
 

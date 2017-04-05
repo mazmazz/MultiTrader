@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                                MMT_Dashboard.mqh |
+//|                                                H_Dashboard.mqh |
 //|                                          Copyright 2017, Marco Z |
 //|                                             https://www.mql5.com |
 //+------------------------------------------------------------------+
@@ -13,9 +13,9 @@
 #define _ProjectVersion ""
 #endif
 
-#include "MMT_Symbol.mqh"
-#include "MMT_Filter/MMT_FilterManager.mqh"
-#include "MMT_Data/MMT_Data.mqh"
+#include "S_Symbol.mqh"
+#include "F_Filter/F_FilterManager.mqh"
+#include "D_Data/D_Data.mqh"
 
 class DashboardManager {
     public:

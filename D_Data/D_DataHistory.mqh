@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                              MMT_DataHistory.mqh |
+//|                                              D_DataHistory.mqh |
 //|                                          Copyright 2017, Marco Z |
 //|                                       https://github.com/mazmazz |
 //+------------------------------------------------------------------+
@@ -8,8 +8,8 @@
 #property strict
 //+------------------------------------------------------------------+
 #include "../MC_Common/MC_Common.mqh"
-#include "MMT_DataUnit.mqh"
-#include "../MMT_Settings.mqh"
+#include "D_DataUnit.mqh"
+#include "../T_Settings.mqh"
 
 class DataHistory {
     // We need this to maintain a data history

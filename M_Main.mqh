@@ -2,11 +2,11 @@
 #property link      ""
 #property strict
 
-#include "MMT_Filter/MMT_FilterManager.mqh"
-#include "MMT_Symbol.mqh"
-#include "MMT_Data/MMT_Data.mqh"
-#include "MMT_Order/MMT_OrderManager.mqh"
-#include "MMT_Dashboard.mqh"
+#include "F_Filter/F_FilterManager.mqh"
+#include "S_Symbol.mqh"
+#include "D_Data/D_Data.mqh"
+#include "O_Order/O_OrderManager.mqh"
+#include "H_Dashboard.mqh"
 
 //+------------------------------------------------------------------+
 

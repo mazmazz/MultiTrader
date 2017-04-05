@@ -32,8 +32,8 @@
 #endif
 #endif
 
-#include "MMT_Settings.mqh"
-#include "MMT_Main.mqh"
+#include "T_Settings.mqh"
+#include "M_Main.mqh"
 //#include "depends/OrderReliable.mqh"
 
 TimePoint LastTickTime;
@@ -43,12 +43,12 @@ TimePoint LastTickTime;
 //    Include order affects settings order in config window
 //+------------------------------------------------------------------+
 
-#include "MMT_Filter/MMT_Filter_ATR.mqh"
-#include "MMT_Filter/MMT_Filter_StdDev.mqh"
-#include "MMT_Filter/MMT_Filter_Stoch.mqh"
+#include "F_Filter/F_Filter_ATR.mqh"
+#include "F_Filter/F_Filter_StdDev.mqh"
+#include "F_Filter/F_Filter_Stoch.mqh"
 #ifdef __MQL4__
-#include "MMT_Filter/MMT_Filter_HGI.mqh"
-//#include "MMT_Filter/MMT_Filter_CSS.mqh"
+#include "F_Filter/F_Filter_HGI.mqh"
+//#include "F_Filter/F_Filter_CSS.mqh"
 #endif
 
 //+------------------------------------------------------------------+

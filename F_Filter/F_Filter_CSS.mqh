@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                                            MMT_Filter_Stoch.mqh |
+//|                                                            F_Filter_Stoch.mqh |
 //|                                                        Copyright 2017, Marco Z |
 //|                                                            https://www.mql5.com |
 //+------------------------------------------------------------------+
@@ -7,10 +7,10 @@
 #property link        "https://www.mql5.com"
 #property strict
 
-#include "MMT_Filter.mqh"
+#include "F_Filter.mqh"
 #include "../MC_Common/MC_MultiSettings.mqh"
-#include "../MMT_Data/MMT_DataUnit.mqh"
-#include "../MMT_Symbol.mqh"
+#include "../D_Data/D_DataUnit.mqh"
+#include "../S_Symbol.mqh"
 #include "../depends/PipFactor.mqh"
 #include "depends/LibCSS.mqh"
 

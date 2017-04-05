@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                                    MMT_Order.mqh |
+//|                                                    O_Order.mqh |
 //|                                          Copyright 2017, Marco Z |
 //|                                             https://www.mql5.com |
 //+------------------------------------------------------------------+
@@ -9,21 +9,21 @@
 //+------------------------------------------------------------------+
 
 #include "../MC_Common/MC_Common.mqh"
-#include "../MMT_Symbol.mqh"
-#include "../MMT_Filter/MMT_FilterManager.mqh"
-#include "../MMT_Data/MMT_DataHistory.mqh"
+#include "../S_Symbol.mqh"
+#include "../F_Filter/F_FilterManager.mqh"
+#include "../D_Data/D_DataHistory.mqh"
 #include "../MC_Common/MC_MultiSettings.mqh"
 
-#include "MMT_Order_Defines.mqh"
+#include "O_Defines.mqh"
 
-#include "MMT_Order_Cycle.mqh"
-#include "MMT_Order_Modify.mqh"
-#include "MMT_Order_Entry.mqh"
-#include "MMT_Order_Exit.mqh"
-#include "MMT_Schedule.mqh"
-#include "MMT_Basket.mqh"
-#include "MMT_Grid.mqh"
-#include "MMT_StopLevel.mqh"
+#include "O_Cycle.mqh"
+#include "O_Modify.mqh"
+#include "O_Entry.mqh"
+#include "O_Exit.mqh"
+#include "O_Schedule.mqh"
+#include "O_Basket.mqh"
+#include "O_Grid.mqh"
+#include "O_StopLevel.mqh"
 
 void OrderManager::OrderManager() {
     int symCount = ArraySize(MainSymbolMan.symbols);

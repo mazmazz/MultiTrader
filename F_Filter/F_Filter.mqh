@@ -9,7 +9,7 @@
 
 #include "../MC_Common/MC_Error.mqh"
 #include "../MC_Common/MC_MultiSettings.mqh"
-#include "../MMT_Data/MMT_DataUnit.mqh"
+#include "../D_Data/D_DataUnit.mqh"
 
 enum SubfilterMode {
     SubfilterDisabled,
@@ -41,8 +41,8 @@ class Filter {
     bool signalMaster; // overrides all signals when getting symbolSignal
     bool alwaysStable; 
         // consider implementing as custom stable seconds, per subfilter
-        // changes in MMT_Data.mqh where updateSymbolSignal checks for filter signal stability
-        // and MMT_Dashboard.mqh where signalToString checks for stable seconds
+        // changes in D_Data.mqh where updateSymbolSignal checks for filter signal stability
+        // and H_Dashboard.mqh where signalToString checks for stable seconds
     
     int getSubfilterCount(SubfilterType type = SubfilterAllTypes);
     

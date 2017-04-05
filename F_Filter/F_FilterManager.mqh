@@ -9,9 +9,9 @@
 
 #include "../MC_Common/MC_Error.mqh"
 #include "../MC_Common/MC_MultiSettings.mqh"
-#include "MMT_Filter.mqh"
-#include "../MMT_Data/MMT_Data.mqh"
-#include "../MMT_Order/MMT_OrderManager.mqh"
+#include "F_Filter.mqh"
+#include "../D_Data/D_Data.mqh"
+#include "../O_Order/O_OrderManager.mqh"
 
 class FilterManager {
     public:

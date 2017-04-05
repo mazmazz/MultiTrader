@@ -7,10 +7,10 @@
 #property link      "https://www.mql5.com"
 #property strict
 
-#include "MMT_Settings.mqh"
+#include "T_Settings.mqh"
 #include "MC_Common/MC_Error.mqh"
 #include "MC_Common/MC_Common.mqh"
-#include "MMT_Filter/MMT_FilterManager.mqh"
+#include "F_Filter/F_FilterManager.mqh"
 
 //+------------------------------------------------------------------+
 

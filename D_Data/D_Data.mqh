@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                                     MMT_Data.mqh |
+//|                                                     D_Data.mqh |
 //|                                          Copyright 2017, Marco Z |
 //|                                             https://www.mql5.com |
 //+------------------------------------------------------------------+
@@ -7,11 +7,11 @@
 #property link      "https://www.mql5.com"
 #property strict
 
-#include "../MMT_Settings.mqh"
+#include "../T_Settings.mqh"
 #include "../MC_Common/MC_MultiSettings.mqh"
-#include "../MMT_Symbol.mqh"
-#include "../MMT_Filter/MMT_FilterManager.mqh"
-#include "MMT_DataHistory.mqh"
+#include "../S_Symbol.mqh"
+#include "../F_Filter/F_FilterManager.mqh"
+#include "D_DataHistory.mqh"
 
 //+------------------------------------------------------------------+
 // DataManager and members

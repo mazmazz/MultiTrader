@@ -12,12 +12,12 @@
 //+------------------------------------------------------------------+
 //| Constants
 
-#define OP_BUY 0           //Buy 
-#define OP_SELL 1          //Sell 
-#define OP_BUYLIMIT 2      //Pending order of BUY LIMIT type 
-#define OP_SELLLIMIT 3     //Pending order of SELL LIMIT type 
-#define OP_BUYSTOP 4       //Pending order of BUY STOP type 
-#define OP_SELLSTOP 5      //Pending order of SELL STOP type 
+//#define OP_BUY 0           //Buy 
+//#define OP_SELL 1          //Sell 
+//#define OP_BUYLIMIT 2      //Pending order of BUY LIMIT type 
+//#define OP_SELLLIMIT 3     //Pending order of SELL LIMIT type 
+//#define OP_BUYSTOP 4       //Pending order of BUY STOP type 
+//#define OP_SELLSTOP 5      //Pending order of SELL STOP type 
 //---
 #define MODE_OPEN 0
 #define MODE_CLOSE 3

@@ -26,28 +26,46 @@ bool OrderManager::checkBasketSafe() {
 void OrderManager::checkDoBasketExit() {
     if(!BasketEnableStopLoss && !BasketEnableTakeProfit) { return; }
     
+    //Error::PrintMinor("BASKET | Current: " + basketProfit + " | Booked: " + basketBookedProfit + " | Total: " + (basketProfit + basketBookedProfit) + " | SL: " + BasketStopLossValue + " | TP: " + BasketTakeProfitValue, NULL, NULL, true);
+    
     if(BasketEnableStopLoss && (basketProfit+basketBookedProfit) <= BasketStopLossValue) {
-        sendBasketClose();
+        Error::PrintInfo("Basket Stop Loss Hit: " + (basketProfit + basketBookedProfit) + " pips | Setting: " + BasketStopLossValue, NULL, NULL, true);
+#ifdef __MQL4__
+        sendBasketClose(false);
+#else
+#ifdef __MQL5__
+        sendBasketClose(true);
+        sendBasketClose(false);
+#endif
+#endif
         basketLosses++;
     }
     
     if(BasketEnableTakeProfit && (basketProfit+basketBookedProfit) >= BasketTakeProfitValue) {
-        sendBasketClose();
+        Error::PrintInfo("Basket Take Profit Hit: " + (basketProfit + basketBookedProfit) + " pips | Setting: " + BasketTakeProfitValue, NULL, NULL, true);
+#ifdef __MQL4__
+        sendBasketClose(false);
+#else
+#ifdef __MQL5__
+        sendBasketClose(true);
+        sendBasketClose(false);
+#endif
+#endif
         basketWins++;
     }
 }
 
-void OrderManager::sendBasketClose() {
-    for(int i = 0; i < OrdersTotal(cycleIsOrder); i++) {
-        OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
-        if(OrderMagicNumber(cycleIsOrder) != MagicNumber) { 
+void OrderManager::sendBasketClose(bool isPosition) {
+    for(int i = 0; i < getOrdersTotal(isPosition); i++) {
+        getOrderSelect(i, SELECT_BY_POS, MODE_TRADES, isPosition);
+        if(getOrderMagicNumber(isPosition) != MagicNumber) { 
             continue; 
         }
         
-        bool exitResult;
+        bool exitResult = false;
         
-        if(BasketClosePendings || !Common::OrderIsPending(OrderType(cycleIsOrder))) {
-            exitResult = sendClose(OrderTicket(cycleIsOrder), MainSymbolMan.getSymbolId(OrderSymbol(cycleIsOrder)));
+        if(BasketClosePendings || !Common::OrderIsPending(getOrderType(isPosition))) {
+            exitResult = sendClose(getOrderTicket(isPosition), MainSymbolMan.getSymbolId(getOrderSymbol(isPosition)), isPosition);
         }
         
         if(exitResult) {
@@ -70,10 +88,19 @@ void OrderManager::fillBasketFlags() {
 
 //+------------------------------------------------------------------+
 
-double OrderManager::getProfitPips(int ticket) {
-    double profit;
-    getProfitPips(ticket, profit);
+double OrderManager::getProfitPips(int ticket, bool isPosition) {
+    double profit = 0;
+    getProfitPips(ticket, isPosition, profit);
     return profit;
+}
+
+bool OrderManager::getProfitPips(int ticket, bool isPosition, double &profitOut) {
+    if(!checkDoSelect(ticket, isPosition)) { return false; }
+    if(Common::OrderIsPending(ticket)) { return false; }
+    
+    profitOut = getProfitPips(getOrderOpenPrice(isPosition), getOrderType(isPosition), getOrderSymbol(isPosition));
+    return true;
+    // todo: approximate commission and swap in pips?
 }
 
 double OrderManager::getProfitPips(double openPrice, int opType, string symName) {
@@ -82,14 +109,5 @@ double OrderManager::getProfitPips(double openPrice, int opType, string symName)
     double diff = isBuy ? curPrice - openPrice : openPrice - curPrice;
     return PriceToPips(symName, diff);
     
-    // todo: approximate commission and swap in pips?
-}
-
-bool OrderManager::getProfitPips(int ticket, double &profitOut) {
-    if(!checkDoSelectOrder(ticket)) { return false; }
-    if(Common::OrderIsPending(ticket)) { return false; }
-    
-    profitOut = getProfitPips(OrderOpenPrice(cycleIsOrder), OrderType(cycleIsOrder), OrderSymbol(cycleIsOrder));
-    return true;
     // todo: approximate commission and swap in pips?
 }

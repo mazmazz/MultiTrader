@@ -2,6 +2,26 @@
 #property link      "https://www.mql5.com"
 #property strict
 
+// In MQL4 and MQL5, values 0-5 are actually the same.
+
+#define OrderTypeBuy 0
+#define OrderTypeSell 1
+#define OrderTypeBuyLimit 2
+#define OrderTypeSellLimit 3
+#define OrderTypeBuyStop 4
+#define OrderTypeSellStop 5
+#ifdef __MQL4__
+#define OrderTypeBuyStopLimit -1
+#define OrderTypeSellStopLimit -1
+#define OrderTypeCloseBy -1
+#else
+#ifdef __MQL5__
+#define OrderTypeBuyStopLimit 6
+#define OrderTypeSellStopLimit 7
+#define OrderTypeCloseBy 8
+#endif
+#endif
+
 enum StopLossMode {
     StopModeNormal
     , StopModeValue
@@ -54,6 +74,49 @@ class OrderManager {
     double unOffsetValue(double value, double offset, string symName = NULL, bool offsetIsPips = true);
     
     //+------------------------------------------------------------------+
+    // Broker
+    
+#ifdef __MQL4__
+    int sendOpen(string posSymName, int posCmd, double posVolume, double posPrice, double posSlippage, double posStoploss, double posTakeprofit, string posComment = "", int posMagic = 0, datetime posExpiration = 0);
+    bool sendModify(int ticket, double price, double stoploss, double takeprofit, datetime expiration, bool isPosition);
+    bool sendClose(int ticket, int symIdx, bool isPosition);
+    bool checkDoSelect(int ticket, bool isPosition);
+    
+    int getOrderType(bool isPosition);
+    int getOrderTicket(bool isPosition);
+    double getOrderStopLoss(bool isPosition);
+    double getOrderTakeProfit(bool isPosition);
+    int getOrderMagicNumber(bool isPosition);
+    string getOrderSymbol(bool isPosition);
+    double getOrderLots(bool isPosition);
+    double getOrderOpenPrice(bool isPosition);
+    datetime getOrderExpiration(bool isPosition);
+    bool getOrderSelect(int index, int select, int pool, bool isPosition);
+    double getOrderProfit(bool isPosition);
+    int getOrdersTotal(bool isPosition);
+#else
+#ifdef __MQL5__
+    ulong sendOpen(string posSymName, int posCmd, double posVolume, double posPrice, double posSlippage, double posStoploss, double posTakeprofit, string posComment = "", int posMagic = 0, datetime posExpiration = 0);
+    bool sendModify(ulong ticket, double price, double stoploss, double takeprofit, datetime expiration, bool isPosition);
+    bool sendClose(ulong ticket, int symIdx, bool isPosition);
+    bool checkDoSelect(ulong ticket, bool isPosition);
+    
+    long getOrderType(bool isPosition);
+    long getOrderTicket(bool isPosition);
+    double getOrderStopLoss(bool isPosition);
+    double getOrderTakeProfit(bool isPosition);
+    long getOrderMagicNumber(bool isPosition);
+    string getOrderSymbol(bool isPosition);
+    double getOrderLots(bool isPosition);
+    double getOrderOpenPrice(bool isPosition);
+    datetime getOrderExpiration(bool isPosition);
+    bool getOrderSelect(int index, int select, int pool, bool isPosition);
+    double getOrderProfit(bool isPosition);
+    int getOrdersTotal(bool isPosition);
+#endif
+#endif
+    
+    //+------------------------------------------------------------------+
     // Cycle
     
     int openPendingCount[];
@@ -65,23 +128,23 @@ class OrderManager {
     bool gridExitBySignal[];
     bool gridExitByOpposite[];
     
-    bool cycleIsOrder; // for mt5, toggle between selecting order and position. in mt4, is always false.
+    //bool cycleIsPosition; // for mt5, toggle between selecting order and position. in mt4, is always false.
     
-    void doCurrentPositions(bool firstRun, bool isOrder = false);
-    void evaluateFulfilledFromOrder(int ticket, int symbolIdx);
+    void doCurrentPositions(bool firstRun, bool isPosition);
+    void evaluateFulfilledFromOrder(int ticket, int symbolIdx, bool isPosition);
     void resetOpenCount();
-    void addOrderToOpenCount(int ticket, int symIdx = -1);
+    void addOrderToOpenCount(int ticket, int symIdx, bool isPosition);
     
     //+------------------------------------------------------------------+
     // Exit
     
     bool isExitSafe(int symIdx);
-    bool checkDoExitSignals(int ticket, int symIdx);
+    bool checkDoExitSignals(int ticket, int symIdx, bool isPosition);
     
     //+------------------------------------------------------------------+
     // Modify
     
-    void doModifyPosition(int ticket, int symIdx);
+    void doModifyPosition(int ticket, int symIdx, bool isPosition);
     
     //+------------------------------------------------------------------+
     // Entry
@@ -89,48 +152,6 @@ class OrderManager {
     bool isEntrySafe(int symIdx);
     int checkDoEntrySignals(int symIdx);
     int prepareSingleOrder(int symIdx, SignalType signal, bool isPending);
-    
-    // Sending
-    
-#ifdef __MQL4__
-    int sendOpen(string posSymName, int posCmd, double posVolume, double posPrice, double posSlippage, double posStoploss, double posTakeprofit, string posComment = "", int posMagic = 0, datetime posExpiration = 0);
-    bool sendModify(int ticket, double price, double stoploss, double takeprofit, datetime expiration = 0);
-    bool sendClose(int ticket, int symIdx);
-    bool checkDoSelectOrder(int ticket);
-    
-    int OrderType(bool isOrder);
-    int OrderTicket(bool isOrder);
-    double OrderStopLoss(bool isOrder);
-    double OrderTakeProfit(bool isOrder);
-    int OrderMagicNumber(bool isOrder);
-    string OrderSymbol(bool isOrder);
-    double OrderLots(bool isOrder);
-    double OrderOpenPrice(bool isOrder);
-    datetime OrderExpiration(bool isOrder);
-    bool OrderSelect(int index, int select, int pool, bool isOrder);
-    double OrderProfit(bool isOrder);
-    int OrdersTotal(bool isOrder);
-#else
-#ifdef __MQL5__
-    ulong sendOpen(string posSymName, int posCmd, double posVolume, double posPrice, double posSlippage, double posStoploss, double posTakeprofit, string posComment = "", int posMagic = 0, datetime posExpiration = 0);
-    bool sendModify(ulong ticket, double price, double stoploss, double takeprofit, datetime expiration = 0, bool isOrder = false);
-    bool sendClose(ulong ticket, int symIdx, bool isOrder = false);
-    bool checkDoSelectOrder(ulong ticket, bool isOrder = false);
-    
-    long OrderType(bool isOrder);
-    long OrderTicket(bool isOrder);
-    double OrderStopLoss(bool isOrder);
-    double OrderTakeProfit(bool isOrder);
-    long OrderMagicNumber(bool isOrder);
-    string OrderSymbol(bool isOrder);
-    double OrderLots(bool isOrder);
-    double OrderOpenPrice(bool isOrder);
-    datetime OrderExpiration(bool isOrder);
-    bool OrderSelect(int index, int select, int pool, bool isOrder);
-    double OrderProfit(bool isOrder);
-    int OrdersTotal(bool isOrder);
-#endif
-#endif
     
     //+------------------------------------------------------------------+
     // Grid
@@ -144,8 +165,8 @@ class OrderManager {
     //+------------------------------------------------------------------+
     // Schedule
     
-    bool checkDoExitSchedule(int symIdx, int ticket);
-    bool getCloseByMarketSchedule(int symIdx, int ticket = -1);
+    bool checkDoExitSchedule(int symIdx, int ticket, bool isPosition);
+    bool getCloseByMarketSchedule(int symIdx, int ticket = -1, bool isPosition = false);
     bool getCloseDaily(int symIdx);
     bool getClose3DaySwap(int symIdx);
     bool getCloseWeekend(int symIdx);
@@ -168,30 +189,30 @@ class OrderManager {
     
     bool checkBasketSafe();
     void checkDoBasketExit();
-    void sendBasketClose();
+    void sendBasketClose(bool isPosition);
 
     void fillBasketFlags();
     
-    double getProfitPips(int ticket);
+    double getProfitPips(int ticket, bool isPosition);
+    bool getProfitPips(int ticket, bool isPosition, double &profitOut);
     double getProfitPips(double openPrice, int opType, string symName);
-    bool getProfitPips(int ticket, double &profitOut);
     
     //+------------------------------------------------------------------+
     // Stop Levels
     
     bool getInitialStopLevels(bool isLong, int symIdx, double &stoplossOut, double &takeprofitOut);
-    bool checkDoExitStopLevels(int ticket, int symIdx);
+    bool checkDoExitStopLevels(int ticket, int symIdx, bool isPosition);
     
-    bool getModifiedStopLevel(int ticket, int symIdx, double &stopLevelOut);
-    bool getTrailingStopLevel(int ticket, int symIdx, double &stopLevelOut);
-    bool getJumpingStopLevel(int ticket, int symIdx, double &stopLevelOut);
-    bool getBreakEvenStopLevel(int ticket, int symIdx, double &stopLevelOut);
-    bool isBreakEvenPassed(int ticket, int symIdx);
-    bool isStopLossProgressed(int ticket, double newStopLoss);
+    bool getModifiedStopLevel(int ticket, int symIdx, double &stopLevelOut, bool isPosition);
+    bool getTrailingStopLevel(int ticket, int symIdx, double &stopLevelOut, bool isPosition);
+    bool getJumpingStopLevel(int ticket, int symIdx, double &stopLevelOut, bool isPosition);
+    bool getBreakEvenStopLevel(int ticket, int symIdx, double &stopLevelOut, bool isPosition);
+    bool isBreakEvenPassed(int ticket, int symIdx, bool isPosition);
+    bool isStopLossProgressed(int ticket, double newStopLoss, bool isPosition);
     
-    bool unOffsetStopLevelsFromOrder(int ticket, string symName, double &stoplossOut, double &takeprofitOut);
-    bool unOffsetStopLossFromOrder(int ticket, string symName, double &stoplossOut);
-    bool unOffsetTakeProfitFromOrder(int ticket, string symName, double &takeprofitOut);
+    bool unOffsetStopLevelsFromOrder(int ticket, string symName, double &stoplossOut, double &takeprofitOut, bool isPosition);
+    bool unOffsetStopLossFromOrder(int ticket, string symName, double &stoplossOut, bool isPosition);
+    bool unOffsetTakeProfitFromOrder(int ticket, string symName, double &takeprofitOut, bool isPosition);
     void offsetStopLevels(bool isShort, string symName, double &stoploss, double &takeprofit);
     void offsetStopLoss(bool isShort, string symName, double &stoploss);
     void offsetTakeProfit(bool isShort,string symName,double &takeprofit);

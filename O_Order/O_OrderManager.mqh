@@ -16,26 +16,33 @@
 
 #include "O_Defines.mqh"
 
+#include "O_Broker.mqh"
 #include "O_Cycle.mqh"
 #include "O_Modify.mqh"
 #include "O_Entry.mqh"
 #include "O_Exit.mqh"
-#include "O_Sending.mqh"
 #include "O_Schedule.mqh"
 #include "O_Basket.mqh"
 #include "O_Grid.mqh"
 #include "O_StopLevel.mqh"
 
 void OrderManager::OrderManager() {
+    //cycleIsPosition = false;
+    basketDay = 0;
+    basketLosses = 0;
+    basketWins = 0;
+    basketProfit = 0;
+    basketBookedProfit = 0;
+
     int symCount = ArraySize(MainSymbolMan.symbols);
-    ArrayResize(openPendingCount, symCount);
-    ArrayResize(openMarketCount, symCount);
+    ArrayResize(openPendingCount, symCount); ArrayInitialize(openPendingCount, 0);
+    ArrayResize(openMarketCount, symCount); ArrayInitialize(openMarketCount, 0);
     if(isTradeModeGrid()) { 
-        ArrayResize(gridSetLong, symCount);
-        ArrayResize(gridSetShort, symCount);
-        ArrayResize(gridExit, symCount);
-        ArrayResize(gridExitBySignal, symCount);
-        ArrayResize(gridExitByOpposite, symCount);
+        ArrayResize(gridSetLong, symCount); ArrayInitialize(gridSetLong, false);
+        ArrayResize(gridSetShort, symCount); ArrayInitialize(gridSetShort, false);
+        ArrayResize(gridExit, symCount); ArrayInitialize(gridExit, false);
+        ArrayResize(gridExitBySignal, symCount); ArrayInitialize(gridExitBySignal, false);
+        ArrayResize(gridExitByOpposite, symCount); ArrayInitialize(gridExitByOpposite, false);
     }
     if(TradeBetweenDelay > 0 ) { ArrayResize(lastTradeBetween, symCount); }
     if(ValueBetweenDelay > 0 ) { ArrayResize(lastValueBetween, symCount); }
@@ -101,7 +108,7 @@ ValueLocation *OrderManager::fillValueLocation(CalcSource calcSourceIn, double s
 //+------------------------------------------------------------------+
 
 double OrderManager::getValue(ValueLocation *loc, int symbolIdx) {
-    double finalVal;
+    double finalVal = 0;
     getValue(finalVal, loc, symbolIdx);
     return finalVal;
 }
@@ -122,7 +129,7 @@ bool OrderManager::getValue(T &outVal, ValueLocation *loc, int symbolIdx) {
             DataUnit* filterData = filterHist.getData();
             if(Common::IsInvalidPointer(filterData)) { return false; }
             
-            double val;
+            double val = 0;
             if(filterData.getRawValue(val)) {
                 switch(loc.operation) {
                     case CalcOffset: outVal = val + loc.operand; break;
@@ -141,7 +148,7 @@ bool OrderManager::getValue(T &outVal, ValueLocation *loc, int symbolIdx) {
 
 template<typename T>
 bool OrderManager::getValuePrice(T &outVal, ValueLocation *loc, int symIdx) {
-    double valuePips; 
+    double valuePips = 0; 
     if(!getValue(valuePips, loc, symIdx)) { return false; }
     double valuePrice = PipsToPrice(MainSymbolMan.symbols[symIdx].name, valuePips);
     
@@ -151,7 +158,7 @@ bool OrderManager::getValuePrice(T &outVal, ValueLocation *loc, int symIdx) {
 
 template<typename T>
 bool OrderManager::getValuePoints(T &outVal, ValueLocation *loc, int symIdx) {
-    double valuePips; 
+    double valuePips = 0; 
     if(!getValue(valuePips, loc, symIdx)) { return false; }
     double valuePoints = PipsToPoints(valuePips);
     
@@ -209,4 +216,4 @@ double OrderManager::unOffsetValue(double value, double offset, string symName =
     return value-offset;
 }
 
-OrderManager *MainOrderMan;
+OrderManager *MainOrderMan = NULL;

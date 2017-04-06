@@ -110,7 +110,7 @@ void MultiSettings::Parse(string options, T &destArray[], int &idArray[], int ex
     destArraySize = ArrayResize(destArray, oldArraySize+pairValidCount);
     
     for(int i = 0; i < pairValidCount; i++) {
-        string key, value; int keyAddrInt;
+        string key = NULL, value = NULL; int keyAddrInt = 0;
         
         if(MultiSettings::IsPairValid(pairList[i])) {
             key = MultiSettings::GetPairKey(pairList[i], i);

@@ -32,28 +32,28 @@ class FilterCss : public Filter {
 // Params
 //+------------------------------------------------------------------+
 
-extern string Lbl_CSS="________ CSS Settings [CSS] ________";
-extern string CSS_Entry_Modes="a=1|b=1";
-extern string CSS_Entry_Names="a=H1|b=H1SS";
-extern string CSS_Exit_Modes="a=1|b=1";
-extern string CSS_Exit_Names="a=H1x|b=H1SSx";
+input string Lbl_CSS="________ CSS Settings [CSS] ________";
+input string CSS_Entry_Modes="a=1|b=1";
+input string CSS_Entry_Names="a=H1|b=H1SS";
+input string CSS_Exit_Modes="a=1|b=1";
+input string CSS_Exit_Names="a=H1x|b=H1SSx";
 
-extern string Lbl_CSS_General_Settings="---- CSS General Settings ----";
-extern string CSS_SymbolsToWeigh = "AUDCAD,AUDCHF,AUDJPY,AUDNZD,AUDUSD,CADJPY,CHFJPY,EURAUD,EURCAD,EURJPY,EURNZD,EURUSD,GBPAUD,GBPCAD,GBPCHF,GBPJPY,GBPNZD,GBPUSD,NZDCHF,NZDJPY,NZDUSD,USDCAD,USDCHF,USDJPY"; // CSS_SymbolsToWeigh: Leave blank to weigh all symbols
+input string Lbl_CSS_General_Settings="---- CSS General Settings ----";
+input string CSS_SymbolsToWeigh = "AUDCAD,AUDCHF,AUDJPY,AUDNZD,AUDUSD,CADJPY,CHFJPY,EURAUD,EURCAD,EURJPY,EURNZD,EURUSD,GBPAUD,GBPCAD,GBPCHF,GBPJPY,GBPNZD,GBPUSD,NZDCHF,NZDJPY,NZDUSD,USDCAD,USDCHF,USDJPY"; // CSS_SymbolsToWeigh: Leave blank to weigh all symbols
 
-extern string Lbl_CSS_Entry_Settings="---- CSS Entry Settings ----";
-extern string CSS_Entry_TimeFrame="a=60|b=60";
-extern string CSS_Entry_Shift="a=0|b=0";
-extern string CSS_Entry_MaPeriod="a=21|b=7";
-extern string CSS_Entry_AtrPeriod="a=100|b=50";
-extern string CSS_Entry_CalcMethod="a=0|b=2";
+input string Lbl_CSS_Entry_Settings="---- CSS Entry Settings ----";
+input string CSS_Entry_TimeFrame="a=60|b=60";
+input string CSS_Entry_Shift="a=0|b=0";
+input string CSS_Entry_MaPeriod="a=21|b=7";
+input string CSS_Entry_AtrPeriod="a=100|b=50";
+input string CSS_Entry_CalcMethod="a=0|b=2";
 
-extern string Lbl_CSS_Exit_Settings="---- CSS Exit Settings ----";
-extern string CSS_Exit_TimeFrame="a=60|b=60";
-extern string CSS_Exit_Shift="a=0|b=0";
-extern string CSS_Exit_MaPeriod="a=21|b=7";
-extern string CSS_Exit_AtrPeriod="a=100|b=50";
-extern string CSS_Exit_CalcMethod="a=0|b=2";
+input string Lbl_CSS_Exit_Settings="---- CSS Exit Settings ----";
+input string CSS_Exit_TimeFrame="a=60|b=60";
+input string CSS_Exit_Shift="a=0|b=0";
+input string CSS_Exit_MaPeriod="a=21|b=7";
+input string CSS_Exit_AtrPeriod="a=100|b=50";
+input string CSS_Exit_CalcMethod="a=0|b=2";
 
 
 //+------------------------------------------------------------------+

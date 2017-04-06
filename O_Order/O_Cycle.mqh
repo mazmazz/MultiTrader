@@ -16,14 +16,14 @@ void OrderManager::doPositions(bool firstRun) {
     resetOpenCount();
 
 #ifdef __MQL4__
-    doCurrentPositions(firstRun);
+    doCurrentPositions(firstRun, false);
 #else
 #ifdef __MQL5__
-    doCurrentPositions(firstRun, true); // todo: order matters? position first, order second?
-    doCurrentPositions(firstRun, false);
+    doCurrentPositions(firstRun, false); // todo: order matters? position first, order second?
+    doCurrentPositions(firstRun, true);
 #endif
 #endif
-    
+
     checkDoBasketExit();
     
     int symbolCount = MainSymbolMan.getSymbolCount();
@@ -33,42 +33,35 @@ void OrderManager::doPositions(bool firstRun) {
     }
 }
 
-void OrderManager::doCurrentPositions(bool firstRun, bool isOrder = false) {
-#ifdef __MQL5__
-    cycleIsOrder = isOrder;
-#endif
+void OrderManager::doCurrentPositions(bool firstRun, bool isPosition) {
+//#ifdef __MQL5__
+//    cycleIsPosition = isPosition;
+//#endif
 
-    for(int i = 0; i < OrdersTotal(cycleIsOrder); i++) {
-#ifdef __MQL4__
-        OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
-#else
-#ifdef __MQL5__
-        if(isOrder) {
-            OrderGetTicket(i);
-        } else {
-            PositionGetSymbol(i); // testing: does this select just the net position in netting, and multiple positions in hedging?
-        }
-#endif
-#endif
+    for(int i = 0; i < getOrdersTotal(isPosition); i++) {
+        getOrderSelect(i, SELECT_BY_POS, MODE_TRADES, isPosition);
 
-        if(OrderMagicNumber(cycleIsOrder) != MagicNumber) { 
+        if(getOrderMagicNumber(isPosition) != MagicNumber) { 
             continue; 
         }
-        int symbolIdx = MainSymbolMan.getSymbolId(OrderSymbol(cycleIsOrder));
-        int ticket = OrderTicket(cycleIsOrder);
-        double profit = getProfitPips(ticket);
+        string symbolName = getOrderSymbol(isPosition);
+        int symbolIdx = MainSymbolMan.getSymbolId(symbolName);
+        if(symbolIdx < 0) { continue; }
         
-        if(firstRun) { evaluateFulfilledFromOrder(ticket, symbolIdx); }
+        int ticket = getOrderTicket(isPosition);
+        double profit = getProfitPips(ticket, isPosition);
         
-        bool exitResult;
-        exitResult = checkDoExitSchedule(symbolIdx, ticket);
-        if(!exitResult) { exitResult = checkDoExitSignals(ticket, symbolIdx); }
-        if(!exitResult) { exitResult = checkDoExitStopLevels(ticket, symbolIdx); }
+        if(firstRun) { evaluateFulfilledFromOrder(ticket, symbolIdx, isPosition); }
+        
+        bool exitResult = false;
+        exitResult = checkDoExitSchedule(symbolIdx, ticket, isPosition);
+        if(!exitResult) { exitResult = checkDoExitSignals(ticket, symbolIdx, isPosition); }
+        if(!exitResult) { exitResult = checkDoExitStopLevels(ticket, symbolIdx, isPosition); }
         
         if(!exitResult) {
             basketProfit += profit;
-            addOrderToOpenCount(ticket);
-            doModifyPosition(ticket, symbolIdx);
+            addOrderToOpenCount(ticket, symbolIdx, isPosition);
+            doModifyPosition(ticket, symbolIdx, isPosition);
         } else {
             basketBookedProfit += profit;
             i--; // deleting a position mid-loop changes the index, attempt same index as orders shift
@@ -78,12 +71,12 @@ void OrderManager::doCurrentPositions(bool firstRun, bool isOrder = false) {
     // grid - set symbol exit signal fulfilled and in doPositions loop so we don't loop an extra time
 }
 
-void OrderManager::evaluateFulfilledFromOrder(int ticket, int symbolIdx) {
-    if(!checkDoSelectOrder(ticket)) { return; }
+void OrderManager::evaluateFulfilledFromOrder(int ticket, int symbolIdx, bool isPosition) {
+    if(!checkDoSelect(ticket, isPosition)) { return; }
 
     // if signal already exists for open order, raise fulfilled flag so no repeat is opened
 
-    int orderAct = OrderType(cycleIsOrder);
+    int orderAct = getOrderType(isPosition);
     SignalUnit *checkEntrySignal = MainDataMan.symbol[symbolIdx].getSignalUnit(true);
     if(!Common::IsInvalidPointer(checkEntrySignal)) {
         if(!isTradeModeGrid()) {
@@ -101,10 +94,14 @@ void OrderManager::resetOpenCount() {
     ArrayInitialize(openMarketCount, 0);
 }
 
-void OrderManager::addOrderToOpenCount(int ticket, int symIdx = -1) {
-    if(!checkDoSelectOrder(ticket)) { return; }
-    if(symIdx < 0) { symIdx = MainSymbolMan.getSymbolId(OrderSymbol(cycleIsOrder)); }
+void OrderManager::addOrderToOpenCount(int ticket, int symIdx, bool isPosition) {
+    if(!checkDoSelect(ticket, isPosition)) { return; }
+#ifdef __MQL5__
+    if(isPosition && !Common::IsAccountHedging() && ticket != PositionGetInteger(POSITION_IDENTIFIER)) { return; }
+#endif
+    if(symIdx < 0) { symIdx = MainSymbolMan.getSymbolId(getOrderSymbol(isPosition)); }
+    if(symIdx < 0) { return; }
     
-    if(Common::OrderIsPending(OrderType(cycleIsOrder))) { openPendingCount[symIdx]++; }
+    if(Common::OrderIsPending(getOrderType(isPosition))) { openPendingCount[symIdx]++; }
     else { openMarketCount[symIdx]++; }
 }

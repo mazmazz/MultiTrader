@@ -22,9 +22,10 @@ class FilterStdDev : public Filter {
     int method[];
     int appliedPrice[];
     int periodShift[];
-    
-    ArrayDimInt iStdDevHandle[];
-    
+#ifdef __MQL5__
+    ArrayDim<int> iStdDevHandle[];
+#endif
+
     public:
     void init();
     void deInit();
@@ -38,18 +39,18 @@ class FilterStdDev : public Filter {
 // Params
 //+------------------------------------------------------------------+
 
-extern string Lbl_StdDev="________ StdDev Settings [StdDev] ________";
-extern string StdDev_Value_Modes="a=1|b=1|c=1";
-extern string StdDev_Value_Names="a=H1|b=H4|c=D1";
-extern string StdDev_Value_Hidden="a=0|b=0|c=0";
+input string Lbl_StdDev="________ StdDev Settings [StdDev] ________";
+input string StdDev_Value_Modes="a=1|b=1|c=1";
+input string StdDev_Value_Names="a=H1|b=H4|c=D1";
+input string StdDev_Value_Hidden="a=0|b=0|c=0";
 
-extern string Lbl_StdDev_Value_Settings="---- StdDev Value Settings ----";
-extern string StdDev_Value_TimeFrame="a=60|b=240|c=1440";
-extern string StdDev_Value_Period="a=20|b=20|c=20";
-extern string StdDev_Value_Shift="a=0|b=0|c=0";
-extern string StdDev_Value_Method="a=0|b=0|c=0";
-extern string StdDev_Value_AppliedPrice="a=0|b=0|c=0";
-extern string StdDev_Value_PeriodShift="a=0|b=0|c=0";
+input string Lbl_StdDev_Value_Settings="---- StdDev Value Settings ----";
+input string StdDev_Value_TimeFrame="a=60|b=240|c=1440";
+input string StdDev_Value_Period="a=20|b=20|c=20";
+input string StdDev_Value_Shift="a=0|b=0|c=0";
+input string StdDev_Value_Method="a=0|b=0|c=0";
+input string StdDev_Value_AppliedPrice="a=0|b=0|c=0";
+input string StdDev_Value_PeriodShift="a=0|b=0|c=0";
 
 //+------------------------------------------------------------------+
 // Methods

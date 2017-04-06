@@ -188,4 +188,4 @@ void FilterManager::calculateFilters(int symbolIndex) {
 // Helper methods [HELPERS]
 //+------------------------------------------------------------------+
 
-FilterManager *MainFilterMan;
+FilterManager *MainFilterMan = NULL;

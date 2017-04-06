@@ -44,6 +44,7 @@ class Filter {
         // changes in D_Data.mqh where updateSymbolSignal checks for filter signal stability
         // and H_Dashboard.mqh where signalToString checks for stable seconds
     
+    Filter();
     ~Filter();
     
     int getSubfilterCount(SubfilterType type = SubfilterAllTypes);
@@ -59,9 +60,15 @@ class Filter {
     
 #ifdef __MQL5__
     virtual int getNewIndicatorHandle(int symIdx, int subIdx) { return INVALID_HANDLE; }
-    void loadIndicatorHandles(ArrayDimInt &buffer[]);
-    void unloadIndicatorHandles(ArrayDimInt &buffer[]);
+    void loadIndicatorHandles(ArrayDim<int> &buffer[]);
+    void unloadIndicatorHandles(ArrayDim<int> &buffer[]);
 #endif
+};
+
+void Filter::Filter() {
+    shortName = NULL;
+    signalMaster = false;
+    alwaysStable = false;
 };
 
 void Filter::~Filter() {
@@ -116,12 +123,12 @@ void Filter::setupSubfilters(string pairList, string nameList, string hiddenList
 
 bool Filter::checkSafe(int subfilterId) {
     if(subfilterId >= getSubfilterCount()) {
-        Error::ThrowError(ErrorNormal, "Subfilter index does not exist", FunctionTrace, shortName + "-" + subfilterId + "|" + getSubfilterCount());
+        Error::PrintNormal("Subfilter index does not exist", FunctionTrace, shortName + "-" + subfilterId + "|" + getSubfilterCount());
         return false;
     }
     
     if(subfilterMode[subfilterId] <= 0) {
-        Error::ThrowError(ErrorMinor, "Subfilter index is disabled, skipping.", FunctionTrace, shortName + "-" + subfilterId);
+        //Error::PrintMinor("Subfilter index is disabled, skipping.", FunctionTrace, shortName + "-" + subfilterId);
         return false;
     }
 
@@ -129,7 +136,7 @@ bool Filter::checkSafe(int subfilterId) {
 }
 
 #ifdef __MQL5__
-void Filter::loadIndicatorHandles(ArrayDimInt &buffer[]) {
+void Filter::loadIndicatorHandles(ArrayDim<int> &buffer[]) {
     int subfilterCount = getSubfilterCount();
     int symbolCount = MainSymbolMan.getSymbolCount();
     
@@ -149,7 +156,7 @@ void Filter::loadIndicatorHandles(ArrayDimInt &buffer[]) {
     }
 }
 
-void Filter::unloadIndicatorHandles(ArrayDimInt &buffer[]) {
+void Filter::unloadIndicatorHandles(ArrayDim<int> &buffer[]) {
     int subfilterCount = getSubfilterCount();
     int symbolCount = MainSymbolMan.getSymbolCount();
     for(int i = 0; i < symbolCount; i++) {

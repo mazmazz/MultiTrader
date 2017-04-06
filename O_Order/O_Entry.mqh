@@ -23,7 +23,7 @@ bool OrderManager::isEntrySafe(int symIdx) {
         if(!getOpenByMarketSchedule(symIdx)) { return false; }
     } else { return false; }
 
-    int maxSpread;
+    int maxSpread = 0;
     if(!getValuePoints(maxSpread, maxSpreadLoc, symIdx)) { return false; }
     int currentSpread = SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_SPREAD);
     if(currentSpread > maxSpread) { return false; }
@@ -70,7 +70,7 @@ int OrderManager::checkDoEntrySignals(int symIdx) {
         if(checkUnit.type == SignalShort && checkExitUnit.type == SignalLong) { return 0; }
     }
     
-    int posCmd, result;
+    int result = 0;
     switch(TradeModeType) {
         case TradeGrid: 
             result = prepareGrid(symIdx, checkUnit.type);
@@ -100,14 +100,14 @@ int OrderManager::prepareSingleOrder(int symIdx, SignalType signal, bool isPendi
     string posSymName = MainSymbolMan.symbols[symIdx].name;
     bool isLong = (signal == SignalLong);
     
-    int posCmd;
-    if(isPending) { posCmd = (isLong ? OP_BUYLIMIT : OP_SELLLIMIT); }
-    else { posCmd = (isLong ? OP_BUY : OP_SELL); }
+    int posCmd = -1;
+    if(isPending) { posCmd = (isLong ? OrderTypeBuyLimit : OrderTypeSellLimit); }
+    else { posCmd = (isLong ? OrderTypeBuy : OrderTypeSell); }
     
-    double posVolume;
+    double posVolume = 0;
     if(!getValue(posVolume, lotSizeLoc, symIdx)) { return -1; }
     
-    double posPrice; //, oppPrice;
+    double posPrice = 0; //, oppPrice;
     if(isLong) {
         posPrice = SymbolInfoDouble(posSymName, SYMBOL_ASK); 
         //oppPrice = SymbolInfoDouble(posSymName, SYMBOL_BID); 
@@ -116,15 +116,15 @@ int OrderManager::prepareSingleOrder(int symIdx, SignalType signal, bool isPendi
         //oppPrice = SymbolInfoDouble(posSymName, SYMBOL_ASK); 
     } 
     
-    int posSlippage;
+    int posSlippage = 0;
     if(!getValuePoints(posSlippage, maxSlippageLoc, symIdx)) { return -1; }
     
-    double posStoploss, posTakeprofit;
+    double posStoploss = 0, posTakeprofit = 0;
     if((StopLossEnabled || TakeProfitEnabled) && (!isPending || SetStopsOnPendings)) {
         if(!getInitialStopLevels(isLong, symIdx, posStoploss, posTakeprofit)) { return -1; }
     }
         
-    offsetStopLevels(isLong, posSymName, posStoploss, posTakeprofit);
+    offsetStopLevels(!isLong, posSymName, posStoploss, posTakeprofit);
     
     string posComment = OrderComment_;
     int posMagic = MagicNumber;

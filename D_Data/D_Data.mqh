@@ -92,6 +92,12 @@ class DataSymbol {
 };
 
 void DataSymbol::DataSymbol(int filterCount) {
+    pendingEntrySignalType = SignalNone;
+    pendingExitSignalType = SignalNone;
+    masterEntrySet = false;
+    masterExitSet = false;
+    signalHistoryCount = 0;
+
     ArrayResize(filter, filterCount);
     
     for(int i = 0; i < filterCount; i++) {
@@ -131,8 +137,8 @@ void DataSymbol::setHistoryCount(int signalHistoryCountIn = -1) {
 }
 
 void DataSymbol::addSignalUnit(SignalType signal, bool isEntry) {
-    bool force; 
-    SignalType compareSignal;
+    bool force = false; 
+    SignalType compareSignal = SignalNone;
     SignalUnit *compareUnit = getSignalUnit(isEntry);
     if(Common::IsInvalidPointer(compareUnit)) { force = true; }
     else { compareSignal = compareUnit.type; }
@@ -148,7 +154,7 @@ void DataSymbol::addSignalUnit(SignalType signal, bool isEntry) {
             // retracement avoidance: for entry, check last entrySignal[1] if signal type is equal and was fulfilled, then also set fulfilled flag on new unit
             SignalUnit *secondCompareUnit = getSignalUnit(isEntry, 1); // todo: loop through entire buffer to see if current signal exists then check for stability
             if(!Common::IsInvalidPointer(secondCompareUnit) && !Common::IsInvalidPointer(compareUnit)) {
-                bool retraceGuard;
+                bool retraceGuard = false;
                 
                 if(SignalRetraceOpen) {
                     // todo: more sophisticated rule? should extra lots be allowed to open, after a time?
@@ -223,7 +229,7 @@ void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx) {
     SubfilterType subType = MainFilterMan.filters[filterIdx].subfilterType[subfilterIdx];
     SubfilterMode subMode = MainFilterMan.filters[filterIdx].subfilterMode[subfilterIdx];
     SignalType subSignalType = filter[filterIdx].subfilter[subfilterIdx].history.getSignal();
-    bool subSignalStable;
+    bool subSignalStable = false;
     bool filterMaster = MainFilterMan.filters[filterIdx].signalMaster;
     
     if(subMode == SubfilterDisabled) { return; }
@@ -233,7 +239,7 @@ void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx) {
     if(subType == SubfilterEntry && masterEntrySet) { return; }
     if(subType == SubfilterExit && masterExitSet) { return; }
 
-    SignalType compareSignalType;
+    SignalType compareSignalType = SignalNone;
     SignalType resultSignalType = SignalNone;
     
     if(subType == SubfilterEntry) { compareSignalType = pendingEntrySignalType; }
@@ -345,9 +351,10 @@ void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx) {
                     // default: break; // do nothing, only set signal if affirmative
                 }
             } else if(
-                (compareSignalType == SignalLong && subSignalType == SignalSell)
-                || (compareSignalType == SignalShort && subSignalType == SignalBuy)
-                || (compareSignalType == SignalClose && subSignalType == SignalNone) // or subSignalType != SignalClose ?
+                ((compareSignalType == SignalLong && subSignalType == SignalSell)
+                    || (compareSignalType == SignalShort && subSignalType == SignalBuy)
+                    || (compareSignalType == SignalClose && subSignalType == SignalNone)
+                    ) // or subSignalType != SignalClose ?
                  && !filterMaster // signalMaster can't place SignalHold
             ) {
                 resultSignalType = SignalHold;
@@ -460,4 +467,4 @@ bool DataManager::retrieveDataFromFilters() {
     return true;
 }
 
-DataManager *MainDataMan;
+DataManager *MainDataMan = NULL;

@@ -19,7 +19,9 @@ class FilterAtr : public Filter {
     int timeFrame[];
     int period[];
     int shift[];
-    ArrayDimInt iAtrHandle[];
+#ifdef __MQL5__
+    ArrayDim<int> iAtrHandle[];
+#endif
     
     public:
     void init();
@@ -34,15 +36,15 @@ class FilterAtr : public Filter {
 // Params
 //+------------------------------------------------------------------+
 
-extern string Lbl_ATR="________ ATR Settings [ATR] ________";
-extern string ATR_Value_Modes="a=1|b=1|c=1";
-extern string ATR_Value_Names="a=H1|b=H4|c=D1";
-extern string ATR_Value_Hidden="a=0|b=0|c=0";
+input string Lbl_ATR="________ ATR Settings [ATR] ________";
+input string ATR_Value_Modes="a=1|b=1|c=1";
+input string ATR_Value_Names="a=H1|b=H4|c=D1";
+input string ATR_Value_Hidden="a=0|b=0|c=0";
 
-extern string Lbl_ATR_Value_Settings="---- ATR Value Settings ----";
-extern string ATR_Value_TimeFrame="a=60|b=240|c=1440";
-extern string ATR_Value_Period="a=20|b=20|c=20";
-extern string ATR_Value_Shift="a=0|b=0|c=0";
+input string Lbl_ATR_Value_Settings="---- ATR Value Settings ----";
+input string ATR_Value_TimeFrame="a=60|b=240|c=1440";
+input string ATR_Value_Period="a=20|b=20|c=20";
+input string ATR_Value_Shift="a=0|b=0|c=0";
 
 //+------------------------------------------------------------------+
 // Methods

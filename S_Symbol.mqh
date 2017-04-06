@@ -84,10 +84,10 @@ void SymbolManager::~SymbolManager() {
 
 void SymbolManager::retrieveActiveSymbols(string includeSym, string excludeSymIn, string excludeCurIn) {
     ArrayFree(excludeCur);
-    string finalSymString;
+    string finalSymString = NULL;
     
     string includeSymSplit[];
-    int includeSymCount; int excludeCurCount;
+    int includeSymCount = 0; int excludeCurCount = 0;
     
     if(SingleSymbolMode) {
         includeSymCount = Common::ArrayPush(includeSymSplit, Symbol());
@@ -249,8 +249,8 @@ string SymbolManager::stripSymbolName(string symName) {
 }
 
 string SymbolManager::getSymbolBaseCurrency(string symName) {
-    string baseCur;
-    string quoteCur;
+    string baseCur = NULL;
+    string quoteCur = NULL;
     SymbolInfoString(symName, SYMBOL_CURRENCY_BASE, baseCur);
     SymbolInfoString(symName, SYMBOL_CURRENCY_PROFIT, quoteCur);
     
@@ -265,7 +265,7 @@ string SymbolManager::getSymbolBaseCurrency(string symName) {
 }
 
 string SymbolManager::getSymbolQuoteCurrency(string symName) {
-    string result;
+    string result = NULL;
     SymbolInfoString(symName, SYMBOL_CURRENCY_PROFIT, result);
     return result;
 }

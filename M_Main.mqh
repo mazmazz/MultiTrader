@@ -32,6 +32,9 @@ class MainMultiTrader {
 };
 
 void MainMultiTrader::MainMultiTrader() {
+    firstRunComplete = false;
+    averageTickLength = AverageTickStartMil;
+    
     MainSymbolMan = new SymbolManager(IncludeSymbols, ExcludeSymbols, ExcludeCurrencies);
     MainFilterMan = new FilterManager();
     
@@ -52,7 +55,6 @@ int MainMultiTrader::onInit() {
 }
 
 void MainMultiTrader::onTick() {
-    
     doCycle();
 }
 
@@ -61,6 +63,11 @@ void MainMultiTrader::onTimer() {
 }
 
 void MainMultiTrader::doCycle() {
+#ifdef _Benchmark
+    static int filterCounter; static uint lastMilCounter; ulong workMilCounter = GetTickCount();
+    Error::PrintMinor(TimeCurrent() + " | Cycle started: " + (++filterCounter) + " | Timer mils: " + (GetTickCount() - lastMilCounter));
+#endif
+    
     MainDataMan.retrieveDataFromFilters();
         // iterates through symbols, calls filters and subs on all of them
         // filters feed data
@@ -70,6 +77,11 @@ void MainMultiTrader::doCycle() {
     MainDashboardMan.updateDashboard();
     
     // MainDataWriterMan.writeStuff();
+    
+#ifdef _Benchmark
+    Error::PrintMinor(TimeCurrent() + " | Cycle finished: " + filterCounter + " | Work mils: " + (GetTickCount() - workMilCounter));
+    lastMilCounter = GetTickCount();
+#endif
 }
 
 void MainMultiTrader::onDeinit(const int reason) {
@@ -105,4 +117,4 @@ void MainMultiTrader::doFirstRun() {
     firstRunComplete = true;
 }
 
-MainMultiTrader *Main;
+MainMultiTrader *Main = NULL;

@@ -19,7 +19,7 @@
 
 #ifdef __MQL4__
 int OrderManager::sendOpen(string posSymName, int posCmd, double posVolume, double posPrice, double posSlippage, double posStoploss, double posTakeprofit, string posComment = "", int posMagic = 0, datetime posExpiration = 0) {
-    int result;
+    int result = 0;
     
 #ifdef _OrderReliable
     result = OrderSendReliable(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
@@ -36,7 +36,7 @@ int OrderManager::sendOpen(string posSymName, int posCmd, double posVolume, doub
     }
 #endif
 
-    if(result > 0) { addOrderToOpenCount(result); }
+    if(result > 0) { addOrderToOpenCount(result, -1, false); }
     
     return result;
 }
@@ -44,35 +44,35 @@ int OrderManager::sendOpen(string posSymName, int posCmd, double posVolume, doub
 #ifdef __MQL5__
 ulong OrderManager::sendOpen(string posSymName, int posCmd, double posVolume, double posPrice, double posSlippage, double posStoploss, double posTakeprofit, string posComment = "", int posMagic = 0, datetime posExpiration = 0) {
     ulong finalResult = 0;
-    bool callResult, isPending;
+    bool callResult = false, isPending = false;
     MqlTradeRequest request={0};
     MqlTradeResult result={0};
     
     switch(posCmd) {
-        case OP_BUY:
+        case OrderTypeBuy:
             request.action = TRADE_ACTION_DEAL;
             request.type = ORDER_TYPE_BUY;
             break;
-        case OP_SELL:
+        case OrderTypeSell:
             request.action = TRADE_ACTION_DEAL;
             request.type = ORDER_TYPE_SELL;
             break;
-        case OP_BUYSTOP:
+        case OrderTypeBuyStop:
             request.action = TRADE_ACTION_PENDING;
             request.type = ORDER_TYPE_BUY_STOP;
             isPending = true;
             break;
-        case OP_SELLSTOP:
+        case OrderTypeSellStop:
             request.action = TRADE_ACTION_PENDING;
             request.type = ORDER_TYPE_SELL_STOP;
             isPending = true;
             break;
-        case OP_BUYLIMIT:
+        case OrderTypeBuyLimit:
             request.action = TRADE_ACTION_PENDING;
             request.type = ORDER_TYPE_BUY_LIMIT;
             isPending = true;
             break;
-        case OP_SELLLIMIT:
+        case OrderTypeSellLimit:
             request.action = TRADE_ACTION_PENDING;
             request.type = ORDER_TYPE_SELL_LIMIT;
             isPending = true;
@@ -98,12 +98,10 @@ ulong OrderManager::sendOpen(string posSymName, int posCmd, double posVolume, do
     if(BrokerTwoStep && (posStoploss > 0 || posTakeprofit > 0)) { //  && !Common::OrderIsPending(posCmd)
         callResult = OrderSend(request, result);
         if(callResult && Common::IsOrderRetcodeSuccess(result.retcode, false)) {
-            // todo: is correct? TRADE_ACTION_MODIFY = modify sltp of pending order, TRADE_ACTION_SLTP = modify sltp of open position
-            finalResult = isPending ? result.order : result.deal;
-            ulong targetTicket = isPending ? finalResult : HistoryDealGetInteger(finalResult, DEAL_POSITION_ID);
-            
-            if(!sendModify(targetTicket, result.price, posStoploss, posTakeprofit, posExpiration, isPending)) {
-                Error::PrintError(ErrorNormal, "Could not modify order " + finalResult, NULL, NULL, true);
+            ulong targetTicket = result.order; //isPending ? result.order : HistoryDealGetInteger(result.deal, DEAL_POSITION_ID);
+            double targetPrice = isPending ? posPrice : result.price;
+            if(!sendModify(targetTicket, targetPrice, posStoploss, posTakeprofit, posExpiration, !isPending)) {
+                Error::PrintError(ErrorNormal, "Could not set immediate SLTP for order " + targetTicket, NULL, NULL, true);
             }
         }
     } else {
@@ -114,11 +112,11 @@ ulong OrderManager::sendOpen(string posSymName, int posCmd, double posVolume, do
 
     if(callResult && Common::IsOrderRetcodeSuccess(result.retcode, false)) {
         // note: 10008 (TRADE_RETCODE_PLACED) result for OrderAsync, 10009 (TRADE_RETCODE_DONE) for OrderSend
-        finalResult = isPending ? result.order : result.deal;
-        addOrderToOpenCount(finalResult); // todo: count deals, or positions? // if(PositionSelect(posSymName) && HistoryDealGetInteger(finalResult, DEAL_POSITION_ID) == PositionGetInteger(POSITION_IDENTIFIER))
+        finalResult = result.order; //isPending ? result.order : HistoryDealGetInteger(result.deal, DEAL_POSITION_ID); // todo: we pass net position as result and unit position to the counter?
+        addOrderToOpenCount(finalResult, -1, !isPending);
     }
     
-    return finalResult; // todo: is order/deal/position ID what we want to pass?
+    return finalResult; 
 }
 #endif
 #endif
@@ -126,8 +124,8 @@ ulong OrderManager::sendOpen(string posSymName, int posCmd, double posVolume, do
 //+------------------------------------------------------------------+
 
 #ifdef __MQL4__
-bool OrderManager::sendModify(int ticket, double price, double stoploss, double takeprofit, datetime expiration = 0) {
-    bool result;
+bool OrderManager::sendModify(int ticket, double price, double stoploss, double takeprofit, datetime expiration, bool isPosition) {
+    bool result = false;
     
 #ifdef _OrderReliable
     result = OrderModifyReliable(ticket, price, stoploss, takeprofit, expiration);
@@ -139,12 +137,11 @@ bool OrderManager::sendModify(int ticket, double price, double stoploss, double 
 }
 #else
 #ifdef __MQL5__
-bool OrderManager::sendModify(ulong ticket, double price, double stoploss, double takeprofit, datetime expiration = 0, bool isOrder = false) {
-    bool finalResult;
+bool OrderManager::sendModify(ulong ticket, double price, double stoploss, double takeprofit, datetime expiration, bool isPosition) {
     MqlTradeRequest modRequest = {0};
     MqlTradeResult modResult = {0};
     
-    if(isOrder) {
+    if(!isPosition) {
         modRequest.action = TRADE_ACTION_MODIFY;
         modRequest.order = ticket; // ticket = order ID
     } else {
@@ -166,7 +163,7 @@ bool OrderManager::sendModify(ulong ticket, double price, double stoploss, doubl
     modRequest.expiration = expiration;
     
     if(!OrderSend(modRequest, modResult) 
-        || Common::IsOrderRetcodeSuccess(modResult.retcode, true) 
+        || !Common::IsOrderRetcodeSuccess(modResult.retcode, true) 
     ) {
         return false;
     } else { return true; }
@@ -177,20 +174,20 @@ bool OrderManager::sendModify(ulong ticket, double price, double stoploss, doubl
 //+------------------------------------------------------------------+
 
 #ifdef __MQL4__
-bool OrderManager::sendClose(int ticket, int symIdx) {
+bool OrderManager::sendClose(int ticket, int symIdx, bool isPosition) {
     if(IsTradeContextBusy()) { return false; }
 
-    bool result;
-    if(!checkDoSelectOrder(ticket)) { return false; }
+    bool result = false;
+    if(!checkDoSelect(ticket, isPosition)) { return false; }
 
-    string posSymName = OrderSymbol(cycleIsOrder);
-    double posLots = OrderLots(cycleIsOrder);
-    int posType = OrderType(cycleIsOrder);
-    double posPrice;
+    string posSymName = getOrderSymbol(isPosition);
+    double posLots = getOrderLots(isPosition);
+    int posType = getOrderType(isPosition);
+    double posPrice = 0;
     if(Common::OrderIsLong(posType)) { posPrice = SymbolInfoDouble(posSymName, SYMBOL_BID); } // Buy order, even idx
     else { posPrice = SymbolInfoDouble(posSymName, SYMBOL_ASK); } // Sell order, odd idx
     
-    int posSlippage;
+    int posSlippage = 0;
     if(!getValuePoints(posSlippage, maxSlippageLoc, symIdx)) { return -1; }
     
 #ifdef _OrderReliable
@@ -221,17 +218,17 @@ bool OrderManager::sendClose(int ticket, int symIdx) {
 }
 #else
 #ifdef __MQL5__
-bool OrderManager::sendClose(ulong ticket, int symIdx, bool isOrder = false) {
+bool OrderManager::sendClose(ulong ticket, int symIdx, bool isPosition) {
     MqlTradeRequest closeRequest = {0};
     MqlTradeResult closeResult = {0};
     
-    bool callResult;
-    if(isOrder) {
+    bool callResult = false;
+    if(!isPosition) {
         closeRequest.action = TRADE_ACTION_REMOVE;
         closeRequest.order = ticket;
         callResult = OrderSend(closeRequest, closeResult);
     } else { // is position
-        if(!checkDoSelectOrder(ticket, false)) { return false; }
+        if(!checkDoSelect(ticket, isPosition)) { return false; }
         
         // stupid: take the current position ticket number (already passed in) and send an opposite order of the same lotsize
         if((ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE)==POSITION_TYPE_BUY) {
@@ -245,7 +242,7 @@ bool OrderManager::sendClose(ulong ticket, int symIdx, bool isOrder = false) {
             closeRequest.price=SymbolInfoDouble(PositionGetString(POSITION_SYMBOL),SYMBOL_ASK);
         }
         
-        int posSlippage;
+        int posSlippage = 0;
         if(!getValuePoints(posSlippage, maxSlippageLoc, symIdx)) { return -1; }
         
         closeRequest.action = TRADE_ACTION_DEAL;
@@ -266,8 +263,8 @@ bool OrderManager::sendClose(ulong ticket, int symIdx, bool isOrder = false) {
 //+------------------------------------------------------------------+
 
 #ifdef __MQL4__
-bool OrderManager::checkDoSelectOrder(int ticket) {
-    if(OrderTicket(cycleIsOrder) != ticket) { 
+bool OrderManager::checkDoSelect(int ticket, bool isPosition) {
+    if(getOrderTicket(false) != ticket) { 
         if(!OrderSelect(ticket, SELECT_BY_TICKET)) { 
             return false; 
         } 
@@ -277,10 +274,10 @@ bool OrderManager::checkDoSelectOrder(int ticket) {
 }
 #else
 #ifdef __MQL5__
-bool OrderManager::checkDoSelectOrder(ulong ticket, bool isOrder = false) {
-    if(isOrder) {
-        if(OrderTicket(cycleIsOrder) != ticket) { 
-            if(!OrderSelect(ticket, SELECT_BY_TICKET)) { 
+bool OrderManager::checkDoSelect(ulong ticket, bool isPosition) {
+    if(!isPosition) {
+        if(getOrderTicket(isPosition) != ticket) { 
+            if(!OrderSelect(ticket)) { 
                 return false; 
             } 
         }
@@ -300,75 +297,75 @@ bool OrderManager::checkDoSelectOrder(ulong ticket, bool isOrder = false) {
 //+------------------------------------------------------------------+
 
 #ifdef __MQL4__
-int OrderManager::OrderType(bool isOrder) { return OrderType(); }
-int OrderManager::OrderTicket(bool isOrder) { return OrderTicket(); }
-double OrderManager::OrderStopLoss(bool isOrder) { return OrderStopLoss(); }
-double OrderManager::OrderTakeProfit(bool isOrder) { return OrderTakeProfit(); }
-int OrderManager::OrderMagicNumber(bool isOrder) { return OrderMagicNumber(); }
-string OrderManager::OrderSymbol(bool isOrder) { return OrderSymbol(); }
-double OrderManager::OrderLots(bool isOrder) { return OrderLots(); }
-double OrderManager::OrderOpenPrice(bool isOrder) { return OrderOpenPrice(); }
-datetime OrderManager::OrderExpiration(bool isOrder) { return OrderExpiration(); }
-bool OrderManager::OrderSelect(int index, int select, int pool, bool isOrder) { return OrderSelect(index, select, pool); }
-double OrderManager::OrderProfit(bool isOrder) { return OrderProfit(); }
-int OrderManager::OrdersTotal(bool isOrder) { return OrdersTotal(); }
+int OrderManager::getOrderType(bool isPosition) { return OrderType(); }
+int OrderManager::getOrderTicket(bool isPosition) { return OrderTicket(); }
+double OrderManager::getOrderStopLoss(bool isPosition) { return OrderStopLoss(); }
+double OrderManager::getOrderTakeProfit(bool isPosition) { return OrderTakeProfit(); }
+int OrderManager::getOrderMagicNumber(bool isPosition) { return OrderMagicNumber(); }
+string OrderManager::getOrderSymbol(bool isPosition) { return OrderSymbol(); }
+double OrderManager::getOrderLots(bool isPosition) { return OrderLots(); }
+double OrderManager::getOrderOpenPrice(bool isPosition) { return OrderOpenPrice(); }
+datetime OrderManager::getOrderExpiration(bool isPosition) { return OrderExpiration(); }
+bool OrderManager::getOrderSelect(int index, int select, int pool, bool isPosition) { return OrderSelect(index, select, pool); }
+double OrderManager::getOrderProfit(bool isPosition) { return OrderProfit(); }
+int OrderManager::getOrdersTotal(bool isPosition) { return OrdersTotal(); }
 #else
 #ifdef __MQL5__
-long OrderManager::OrderType(bool isOrder) {
-    if(isOrder) { return OrderGetInteger(ORDER_TYPE); }
+long OrderManager::getOrderType(bool isPosition) {
+    if(!isPosition) { return OrderGetInteger(ORDER_TYPE); }
     else { return PositionGetInteger(POSITION_TYPE); }
 }
 
-long OrderManager::OrderTicket(bool isOrder) {
-    if(isOrder) { return OrderGetInteger(ORDER_TICKET); }
+long OrderManager::getOrderTicket(bool isPosition) {
+    if(!isPosition) { return OrderGetInteger(ORDER_TICKET); }
     else { return PositionGetInteger(POSITION_TICKET); }
 }
 
-double OrderManager::OrderStopLoss(bool isOrder) {
-    if(isOrder) { return OrderGetDouble(ORDER_SL); }
+double OrderManager::getOrderStopLoss(bool isPosition) {
+    if(!isPosition) { return OrderGetDouble(ORDER_SL); }
     else { return PositionGetDouble(POSITION_SL); }
 }
 
-double OrderManager::OrderTakeProfit(bool isOrder) {
-    if(isOrder) { return OrderGetDouble(ORDER_TP); }
+double OrderManager::getOrderTakeProfit(bool isPosition) {
+    if(!isPosition) { return OrderGetDouble(ORDER_TP); }
     else { return PositionGetDouble(POSITION_TP); }
 }
 
-long OrderManager::OrderMagicNumber(bool isOrder) {
-    if(isOrder) { return OrderGetInteger(ORDER_MAGIC); }
+long OrderManager::getOrderMagicNumber(bool isPosition) {
+    if(!isPosition) { return OrderGetInteger(ORDER_MAGIC); }
     else { return PositionGetInteger(POSITION_MAGIC); }
 }
 
-string OrderManager::OrderSymbol(bool isOrder) {
-    if(isOrder) { return OrderGetString(ORDER_SYMBOL); }
+string OrderManager::getOrderSymbol(bool isPosition) {
+    if(!isPosition) { return OrderGetString(ORDER_SYMBOL); }
     else { return PositionGetString(POSITION_SYMBOL); }
 }
 
-double OrderManager::OrderLots(bool isOrder) {
-    if(isOrder) { return OrderGetDouble(ORDER_VOLUME_CURRENT); }
+double OrderManager::getOrderLots(bool isPosition) {
+    if(!isPosition) { return OrderGetDouble(ORDER_VOLUME_CURRENT); }
     else { return PositionGetDouble(POSITION_VOLUME); }
 }
 
-double OrderManager::OrderOpenPrice(bool isOrder) {
-    if(isOrder) { return OrderGetDouble(ORDER_PRICE_OPEN); }
+double OrderManager::getOrderOpenPrice(bool isPosition) {
+    if(!isPosition) { return OrderGetDouble(ORDER_PRICE_OPEN); }
     else { return PositionGetDouble(POSITION_PRICE_OPEN); }
 }
 
-datetime OrderManager::OrderExpiration(bool isOrder) {
-    if(isOrder) { return (datetime)OrderGetInteger(ORDER_TIME_EXPIRATION); }
+datetime OrderManager::getOrderExpiration(bool isPosition) {
+    if(!isPosition) { return (datetime)OrderGetInteger(ORDER_TIME_EXPIRATION); }
     else { return 0; }
 }
 
-bool OrderManager::OrderSelect(int index, int select, int pool=MODE_TRADES, bool isOrder = false) {
+bool OrderManager::getOrderSelect(int index, int select, int pool=MODE_TRADES, bool isPosition = false) {
     switch(pool) {
         case MODE_TRADES:
             switch(select) {
                 case SELECT_BY_TICKET:
-                    if(isOrder) { return OrderSelect(index); }
+                    if(!isPosition) { return OrderSelect(index); }
                     else { return PositionSelectByTicket(index); }
                 
                 case SELECT_BY_POS:
-                    if(isOrder) { return (OrderGetTicket(index) > 0); }
+                    if(!isPosition) { return (OrderGetTicket(index) > 0); }
                     else { return PositionGetSymbol(index) != NULL; }
                 
                 default: 
@@ -384,8 +381,8 @@ bool OrderManager::OrderSelect(int index, int select, int pool=MODE_TRADES, bool
     }
 }
 
-double OrderManager::OrderProfit(bool isOrder) { // should always be called for a position
-    if(isOrder) { 
+double OrderManager::getOrderProfit(bool isPosition) { // should always be called for a position
+    if(!isPosition) { 
         // todo: MQL4 OrderProfit returns this in deposit currency. how do?
         int type = OrderGetInteger(ORDER_TYPE);
         bool isLong = (type == ORDER_TYPE_BUY || type == ORDER_TYPE_BUY_LIMIT || type == ORDER_TYPE_BUY_STOP || type == ORDER_TYPE_BUY_STOP_LIMIT);
@@ -397,8 +394,8 @@ double OrderManager::OrderProfit(bool isOrder) { // should always be called for 
     }
 }
 
-int OrderManager::OrdersTotal(bool isOrder) {
-    if(isOrder) {
+int OrderManager::getOrdersTotal(bool isPosition) {
+    if(!isPosition) {
         return OrdersTotal();
     } else {
         return PositionsTotal();

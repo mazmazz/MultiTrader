@@ -7,9 +7,11 @@
 #property link      "https://github.com/mazmazz"
 #property strict
 
-#define _ProjectName "MultiTrader"
-#define _ProjectShortName "MMT"
+#define _ProjectName "MultiOp"
+#define _ProjectShortName "MMO"
 #define _ProjectVersion "v0.1 04/2017"
+
+//#define _Benchmark
 
 //+------------------------------------------------------------------+
 //| Comments
@@ -74,6 +76,11 @@ int OnInit() {
     O_R_Config_FinetuneEntries(true);
 #endif
 
+#ifdef _Benchmark
+    uint setupMilCounter = GetTickCount();
+    Error::PrintMinor(TimeCurrent() + " | Setup started");
+#endif
+
     Main = new MainMultiTrader();
     Main.addFilter(new FilterAtr());
     Main.addFilter(new FilterStdDev());
@@ -84,6 +91,10 @@ int OnInit() {
 #endif
 
     int result = Main.onInit();
+    
+#ifdef _Benchmark
+    Error::PrintMinor(TimeCurrent() + " | Setup finished: " + (GetTickCount() - setupMilCounter));
+#endif
     
     Main.doFirstRun();
 
@@ -122,10 +133,10 @@ bool ValidateSettings() {
         finalResult = false;
     }
     
-    if(AccountInfoDouble(ACCOUNT_MARGIN_LEVEL) > TradeMinMarginLevel) {
+    if(AccountInfoDouble(ACCOUNT_MARGIN_SO_CALL) > TradeMinMarginLevel) {
         //TradeMinMarginLevel = AccountInfoDouble(ACCOUNT_MARGIN_SO_CALL);
         //Error::PrintInfo_v02(ErrorInfo, "Setting TradeMinMarginLevel to account margin call level: " + AccountInfoDouble(ACCOUNT_MARGIN_SO_CALL));
-        Error::ThrowFatal("TradeMinMarginLevel must be set greater than broker's stopout level");
+        Error::ThrowFatal("TradeMinMarginLevel must be set greater than broker's stopout level: " + AccountInfoDouble(ACCOUNT_MARGIN_SO_CALL));
         finalResult = false;
     }
     
@@ -139,7 +150,8 @@ bool SetCycle() {
         case CycleRealTicks:
             result = true; // we don't set a timer for real ticks, just handle OnTick()
             break;
-            
+
+#ifdef __MQL4__
         case CycleTimerTicks: // emulated average ticks, still on timer interval
             result = Main.setAverageTickTimer((IsTesting() || IsOptimization()));
             if(IsTesting() || IsOptimization()) { LastTickTime.update(); }
@@ -155,6 +167,22 @@ bool SetCycle() {
             if(IsTesting() || IsOptimization()) { result = true; LastTickTime.update(); } // go by ticks
             else { result = Common::EventSetTimerReliable(CycleLength); }
             break;
+#else
+#ifdef __MQL5__
+        case CycleTimerTicks: // emulated average ticks, still on timer interval
+            result = Main.setAverageTickTimer((IsTesting() || IsOptimization()));
+            break;
+            
+        case CycleTimerMilliseconds:
+            result = Common::EventSetMillisecondTimerReliable(CycleLength);
+            break;
+            
+        case CycleTimerSeconds:
+        default:
+            result = Common::EventSetTimerReliable(CycleLength);
+            break;
+#endif
+#endif
     }
     
     if(!result) {
@@ -169,6 +197,7 @@ void OnTimer() {
 }
 
 void OnTick() {
+#ifdef __MQL4__
     if(CycleMode == CycleRealTicks) { 
         Main.onTick(); 
     } else if(IsTesting() || IsOptimization()) {
@@ -189,4 +218,9 @@ void OnTick() {
             LastTickTime.update();
         }
     }
+#else
+#ifdef __MQL5__
+    Main.onTick(); 
+#endif
+#endif
 }

@@ -29,6 +29,14 @@ class SignalUnit { // ordinarily this would be a struct, but you can't get point
     uint timeCycles;
     
     bool fulfilled;
+    
+    SignalUnit() {
+        type = SignalNone;
+        timeMilliseconds = 0;
+        timeDatetime = 0;
+        timeCycles = 0;
+        fulfilled = false;
+    }
 };
 
 //+------------------------------------------------------------------+
@@ -67,14 +75,39 @@ class DataUnit {
 
 void DataUnit::DataUnit() { 
     success = false;
+    signal = SignalNone;
+    rawValueType = NULL; 
+    stringValue = NULL;
+    lastChangedTime = 0;
+    rawValueString = NULL;
+    rawValueInt = 0;
+    rawValueDouble = 0;
+    rawValueBool = false;
 }
 
 void DataUnit::DataUnit(bool successIn) {
     success = successIn;
+    signal = SignalNone;
+    rawValueType = NULL; 
+    stringValue = NULL;
+    lastChangedTime = 0;
+    rawValueString = NULL;
+    rawValueInt = 0;
+    rawValueDouble = 0;
+    rawValueBool = false;
 }
 
 template <typename T>
 void DataUnit::DataUnit(bool successIn, T value, SignalType signalInput = SignalNone, string stringValueInput = "", datetime lastUpdate = 0) {
+    success = successIn;
+    signal = SignalNone;
+    rawValueType = NULL; 
+    stringValue = NULL;
+    lastChangedTime = 0;
+    rawValueString = NULL;
+    rawValueInt = 0;
+    rawValueDouble = 0;
+    rawValueBool = false;
     setRawValue(value, signalInput, stringValueInput, lastUpdate);
 }
 
@@ -114,7 +147,7 @@ T DataUnit::getRawValue() {
 }
 
 string DataUnit::getStringValue(int doubleDigits = -1) {
-    string result;
+    string result = NULL;
     
     if(StringLen(stringValue) > 0) { return stringValue; }
     

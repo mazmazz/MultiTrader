@@ -17,26 +17,26 @@
 
 #include "O_Defines.mqh"
 
-bool OrderManager::checkDoExitSchedule(int symIdx, int ticket) {
-    if(getCloseByMarketSchedule(symIdx, ticket)) {
+bool OrderManager::checkDoExitSchedule(int symIdx, int ticket, bool isPosition) {
+    if(getCloseByMarketSchedule(symIdx, ticket, isPosition)) {
         Error::PrintInfo("Closing order " + ticket + ": Broker schedule", NULL, NULL, true);
-        return sendClose(ticket, symIdx);
+        return sendClose(ticket, symIdx, isPosition);
     } else { return false; }
 }
 
-bool OrderManager::getCloseByMarketSchedule(int symIdx, int ticket = -1) {
+bool OrderManager::getCloseByMarketSchedule(int symIdx, int ticket = -1, bool isPosition = false) {
     if(!SchedCloseDaily && !SchedCloseSession && !SchedClose3DaySwap && !SchedCloseWeekend) { return false;}
     
     if(ticket > 0) {
-        if(!checkDoSelectOrder(ticket)) { return false; }
+        if(!checkDoSelect(ticket, isPosition)) { return false; }
         
-        int orderOp = OrderType(cycleIsOrder);
+        int orderOp = getOrderType(isPosition);
         
         if(!SchedClosePendings && Common::OrderIsPending(orderOp)) { return false; }
         if(SchedCloseOrderOp == OrderOnlyLong && !Common::OrderIsLong(orderOp)) { return false; }
         if(SchedCloseOrderOp == OrderOnlyShort && !Common::OrderIsShort(orderOp)) { return false; }
-        if(SchedCloseOrderProfit == OrderOnlyProfitable && getProfitPips(ticket) < 0) { return false; } // todo: do this properly: refer to pips? include swaps?
-        if(SchedCloseOrderProfit == OrderOnlyLoss && getProfitPips(ticket) >= 0) { return false; }
+        if(SchedCloseOrderProfit == OrderOnlyProfitable && getProfitPips(ticket, isPosition) < 0) { return false; } // todo: do this properly: refer to pips? include swaps?
+        if(SchedCloseOrderProfit == OrderOnlyLoss && getProfitPips(ticket, isPosition) >= 0) { return false; }
     }
     
     // todo: swap - if minimum swap trigger set, check swap: if it's greater than the negative swap value, return false
@@ -84,13 +84,13 @@ bool OrderManager::getCloseOffSessions(int symIdx) {
 
     // off session: current day (or midnight) has a session gap exceeding SchedGapIgnoreMinutes
     datetime dt = Common::StripDateFromDatetime(TimeCurrent());
-    datetime fromCurrent, toCurrent; 
+    datetime fromCurrent = 0, toCurrent = 0; 
     int weekdayCurrent = DayOfWeek();
     int sessCurrent = getCurrentSessionIdx(symIdx, fromCurrent, toCurrent, dt, weekdayCurrent);
     if(sessCurrent < 0) { return false; }
     
-    datetime fromNext, toNext; 
-    int weekdayNext, sessNext;
+    datetime fromNext = 0, toNext = 0; 
+    int weekdayNext = -1, sessNext = -1;
     if(sessCurrent == (sessCount - 1)) { 
         sessNext = 0;
         weekdayNext = (weekdayCurrent == SATURDAY) ? SUNDAY : weekdayCurrent + 1; 
@@ -120,13 +120,13 @@ bool OrderManager::getOpenByMarketSchedule(int symIdx) {
     
     if(SchedOpenMinutesWeekend <= 0 && SchedOpenMinutesDaily <= 0 && SchedOpenMinutesSession <= 0) { return true; }
     
-    datetime fromCur, toCur, dt = Common::StripDateFromDatetime(TimeCurrent()); int dayCur = DayOfWeek();
+    datetime fromCur = 0, toCur = 0, dt = Common::StripDateFromDatetime(TimeCurrent()); int dayCur = DayOfWeek();
     int sessCount = getSessionCountByWeekday(symIdx, dayCur);
     int sessCur = getCurrentSessionIdx(symIdx, fromCur, toCur, dt, dayCur);
     if(sessCur < 0) { return false; }
     
     
-    int dayPrev, sessPrev, sessCountPrev;
+    int dayPrev = 0, sessPrev = 0, sessCountPrev = 0;
     if(sessCur == 0) { 
         if(SchedOpenMinutesWeekend <= 0 && SchedOpenMinutesDaily <= 0) { return true; }
         
@@ -141,7 +141,7 @@ bool OrderManager::getOpenByMarketSchedule(int symIdx) {
         dayPrev = dayCur;
         
         int fromCompare = fromCur;
-        datetime fromPrev, toPrev;
+        datetime fromPrev = 0, toPrev = 0;
         if(SchedGapIgnoreMinutes > 0 && sessCountPrev > 0 && SymbolInfoSessionTrade(MainSymbolMan.symbols[symIdx].name, (ENUM_DAY_OF_WEEK)dayPrev, sessPrev, fromPrev, toPrev)) {
             int gap = fromCur - toPrev;
             if(gap <= SchedGapIgnoreMinutes*60) { return true; } 
@@ -156,7 +156,7 @@ bool OrderManager::getOpenByMarketSchedule(int symIdx) {
 //+------------------------------------------------------------------+
 
 int OrderManager::getCurrentSessionIdx(int symIdx, datetime dt = 0, int weekday = -1) {
-    datetime from, to;
+    datetime from = 0, to = 0;
     return getCurrentSessionIdx(symIdx, from, to, dt, weekday);
 }
 

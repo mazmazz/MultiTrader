@@ -33,9 +33,10 @@ class TimePoint {
     }
 };
 
-class ArrayDimInt {
+template<typename T>
+class ArrayDim {
     public:
-    int _[];
+    T _[];
 };
 
 string StringZeroArray[1];
@@ -150,7 +151,7 @@ int Common::ArrayPush(T &array[], T unit, int maxSize = -1) {
         // Theory: https://www.forexfactory.com/showthread.php?p=2878455#post2878455
         // Workaround: https://www.forexfactory.com/showthread.php?p=4686709#post4686709
 
-    int callResult;
+    int callResult = -1;
     if(maxSize > 0 && target >= maxSize) {
         int maxDiff = target-maxSize+1;
         ArrayDelete(array, 0, maxDiff, false);
@@ -169,7 +170,7 @@ int Common::ArrayPush(T &array[], T unit, int maxSize = -1) {
 
 template<typename T>
 int Common::ArrayReserve(T &array[], int reserveSize) {
-    int size;
+    int size = -1;
     
     size = ArraySize(array);
     ArrayResize(array, size, reserveSize);
@@ -243,7 +244,7 @@ string Common::AddrIntToAbc(int addrInt, bool zeroBased=true) {
 
     int dividend = addrInt + (int)zeroBased; // make 0 based, not 1 based
     string columnName ="";
-    int modulo;
+    int modulo = 0;
 
     while (dividend > 0)
     {
@@ -272,7 +273,7 @@ StringType Common::GetStringType(string test) {
     if(len <= 0) { return Type_Empty; }
     
     bool uppercase = false; bool lowercase = false; bool numeric = false;
-    ushort code;
+    ushort code = 0;
     
     for(int i= 0; i < len; i++) {
         code = StringGetCharacter(test, i);
@@ -315,7 +316,7 @@ string Common::GetUuid()
    string alphabet_x="0123456789abcdef";
    string alphabet_y="89ab";
    string id="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"; // 36 char = (8-4-4-4-12)
-   ushort character;
+   ushort character = 0;
    for(int i=0; i<36; i++)
      {
       if(i==8 || i==13 || i==18 || i==23)
@@ -503,9 +504,18 @@ double Common::GetSingleValueFromBuffer(int indiHandle, int shift=0, int bufferN
 
 bool Common::OrderIsLong(int opType) {
     switch(opType) {
+#ifdef __MQL4__
         case OP_BUY:
         case OP_BUYLIMIT:
         case OP_BUYSTOP:
+#else
+#ifdef __MQL5__
+        case ORDER_TYPE_BUY:
+        case ORDER_TYPE_BUY_LIMIT:
+        case ORDER_TYPE_BUY_STOP:
+        case ORDER_TYPE_BUY_STOP_LIMIT:
+#endif
+#endif
             return true;
         default:
             return false;
@@ -514,9 +524,18 @@ bool Common::OrderIsLong(int opType) {
 
 bool Common::OrderIsShort(int opType) {
     switch(opType) {
+#ifdef __MQL4__
         case OP_SELL:
         case OP_SELLLIMIT:
         case OP_SELLSTOP:
+#else
+#ifdef __MQL5__
+        case ORDER_TYPE_SELL:
+        case ORDER_TYPE_SELL_LIMIT:
+        case ORDER_TYPE_SELL_STOP:
+        case ORDER_TYPE_SELL_STOP_LIMIT:
+#endif
+#endif
             return true;
         default:
             return false;
@@ -525,10 +544,21 @@ bool Common::OrderIsShort(int opType) {
 
 bool Common::OrderIsPending(int opType) {
     switch(opType) {
+#ifdef __MQL4__
         case OP_BUYLIMIT:
         case OP_BUYSTOP:
         case OP_SELLLIMIT:
         case OP_SELLSTOP:
+#else
+#ifdef __MQL5__
+        case ORDER_TYPE_BUY_LIMIT:
+        case ORDER_TYPE_BUY_STOP:
+        case ORDER_TYPE_BUY_STOP_LIMIT:
+        case ORDER_TYPE_SELL_LIMIT:
+        case ORDER_TYPE_SELL_STOP:
+        case ORDER_TYPE_SELL_STOP_LIMIT:
+#endif
+#endif
             return true;
         default:
             return false;
@@ -537,8 +567,15 @@ bool Common::OrderIsPending(int opType) {
 
 bool Common::OrderIsMarket(int opType) {
     switch(opType) {
+#ifdef __MQL4__
         case OP_BUY:
         case OP_SELL:
+#else
+#ifdef __MQL5__
+        case ORDER_TYPE_BUY:
+        case ORDER_TYPE_SELL:
+#endif
+#endif
             return true;
         default:
             return false;

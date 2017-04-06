@@ -76,12 +76,15 @@ input int DisplayScale=0; // DisplayScale: 0 = Normal, 1+ = Large
 input string Lbl_CycleSettings="---- Cycle Settings ----"; // :
 input CycleType CycleMode=CycleTimerSeconds;
 input int CycleLength=1; // CycleLength: Length between cycles (seconds or milliseconds)
+input int AverageTickStartMil = 500;
+input int AverageTickLowestMil = 250;
+input int AverageTickHighestMil = 1000;
 
 input string Lbl_Symbols="********** Symbols & Currencies Settings **********"; // :
 input bool SingleSymbolMode=false; // SingleSymbolMode: Use only the current chart symbol
 input string IncludeSymbols="AUDCAD,AUDCHF,AUDJPY,AUDNZD,AUDUSD,CADCHF,CADJPY,CHFJPY,EURAUD,EURCAD,EURJPY,EURNZD,EURUSD,EURGBP,GBPAUD,GBPCAD,GBPCHF,GBPJPY,GBPNZD,GBPUSD,NZDCAD,NZDCHF,NZDJPY,NZDUSD,USDCAD,USDCHF,USDJPY";
 input string ExcludeSymbols="";
-input string ExcludeCurrencies="SEK,SGD,DKK,NOK,TRY,HKD,ZAR,MXN,XAG,XAU";
+input string ExcludeCurrencies="SEK,CHF,DKK,NOK,TRY,HKD,ZAR,MXN,XAG,XAU";
 
 input string Lbl_Trade="********** Trade Settings **********"; // :
 input bool TradeEntryEnabled=true;
@@ -101,7 +104,7 @@ input int MaxTradesPerSymbol=0;
 input double TradeMinMarginLevel=200; // MinTradeMarginLevel (percent)
 input string MaxSpreadCalc = "4.0";
 input string MaxSlippageCalc = "4.0";
-input string LotSizeCalc = "0.1";
+input string LotSizeCalc = "0.01";
 
 input string Lbl_TradeDelays="---- Trade Delay Settings ----"; // :
 input TimeUnits TimeSettingUnit=UnitSeconds; // TimeSettingUnit: Unit for values below
@@ -142,12 +145,14 @@ input bool BasketClosePendings=true;
 
 input string Lbl_StopLoss="---- Stop Loss Settings ----"; // :
 input bool StopLossEnabled=false;
+input bool StopLossTossOrderByBrokerMinimum = true;
 input bool StopLossInternal=true; // StopLossInternal: Track and fire SL using EA
 input double StopLossBrokerOffset=0.0; // StopLossBrokerOffset: Offset broker SL if Internal enabled
 input string StopLossCalc = "-30.0";
 
 input string Lbl_TakeProfit="---- Take Profit Settings ----"; // :
 input bool TakeProfitEnabled=false;
+input bool TakeProfitTossOrderByBrokerMinimum = false;
 input bool TakeProfitInternal=true; // TakeProfitInternal: Track and fire TP using EA
 input double TakeProfitBrokerOffset=0.0; // TakeProfitBrokerOffset: Offset broker TP if Internal enabled
 input string TakeProfitCalc = "30.0";

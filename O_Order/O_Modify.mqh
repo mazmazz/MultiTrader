@@ -11,27 +11,27 @@
 
 #include "O_Defines.mqh"
 
-void OrderManager::doModifyPosition(int ticket, int symIdx) {
+void OrderManager::doModifyPosition(int ticket, int symIdx, bool isPosition) {
     // For each setting (sltp, etc) retrieve filter value and update if necessary
     if(!TradeValueEnabled) { return; }
     if(!getLastTimeElapsed(symIdx, false, TimeSettingUnit, ValueBetweenDelay)) { return; }
-    if(!checkDoSelectOrder(ticket)) { return; }
+    if(!checkDoSelect(ticket, isPosition)) { return; }
     
-    double stopLevel;
-    double profitLevel;
-    unOffsetTakeProfitFromOrder(ticket, OrderSymbol(cycleIsOrder), profitLevel);
-    if(getModifiedStopLevel(ticket, symIdx, stopLevel) 
+    double stopLevel = 0;
+    double profitLevel = 0;
+    unOffsetTakeProfitFromOrder(ticket, getOrderSymbol(isPosition), profitLevel, isPosition);
+    if(getModifiedStopLevel(ticket, symIdx, stopLevel, isPosition) 
         && stopLevel != 0 
-        && (profitLevel == 0 || (Common::OrderIsLong(OrderType(cycleIsOrder)) ? stopLevel < profitLevel : stopLevel > profitLevel))
+        && (profitLevel == 0 || (Common::OrderIsLong(getOrderType(isPosition)) ? stopLevel < profitLevel : stopLevel > profitLevel))
     ) { // todo: compare to SL
-        offsetStopLoss(Common::OrderIsShort(OrderType(cycleIsOrder)), OrderSymbol(cycleIsOrder), stopLevel);
-        sendModify(ticket, OrderOpenPrice(cycleIsOrder), stopLevel, OrderTakeProfit(cycleIsOrder), OrderExpiration(cycleIsOrder));
-    } else if(OrderStopLoss(cycleIsOrder) == 0 && OrderTakeProfit(cycleIsOrder) == 0 && !Common::OrderIsPending(OrderType(cycleIsOrder))
-        && getInitialStopLevels(Common::OrderIsLong(OrderType(cycleIsOrder)), symIdx, stopLevel, profitLevel)
+        offsetStopLoss(Common::OrderIsShort(getOrderType(isPosition)), getOrderSymbol(isPosition), stopLevel);
+        sendModify(ticket, getOrderOpenPrice(isPosition), stopLevel, getOrderTakeProfit(isPosition), getOrderExpiration(isPosition), isPosition);
+    } else if(getOrderStopLoss(isPosition) == 0 && getOrderTakeProfit(isPosition) == 0 && !Common::OrderIsPending(getOrderType(isPosition))
+        && getInitialStopLevels(Common::OrderIsLong(getOrderType(isPosition)), symIdx, stopLevel, profitLevel)
         && (stopLevel != 0 || profitLevel != 0)
     ) {
-        offsetStopLevels(Common::OrderIsShort(OrderType(cycleIsOrder)), OrderSymbol(cycleIsOrder), stopLevel, profitLevel);
-        sendModify(ticket, OrderOpenPrice(cycleIsOrder), stopLevel, profitLevel, OrderExpiration(cycleIsOrder));
+        offsetStopLevels(Common::OrderIsShort(getOrderType(isPosition)), getOrderSymbol(isPosition), stopLevel, profitLevel);
+        sendModify(ticket, getOrderOpenPrice(isPosition), stopLevel, profitLevel, getOrderExpiration(isPosition), isPosition);
     }
     
     setLastTimePoint(symIdx, false);

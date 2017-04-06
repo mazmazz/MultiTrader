@@ -52,6 +52,8 @@ class DataHistory {
 };
 
 void DataHistory::DataHistory() {
+    dataHistoryCount = 0;
+    signalHistoryCount = 0;
     ArraySetAsSeries(data, true); 
     ArraySetAsSeries(signal, true);
         // this affects ArrayResize behavior by shifting all values up in index 
@@ -59,6 +61,8 @@ void DataHistory::DataHistory() {
 }
 
 void DataHistory::DataHistory(int dataHistoryCountIn, int signalHistoryCountIn) {
+    dataHistoryCount = 0;
+    signalHistoryCount = 0;
     ArraySetAsSeries(data, true); 
     ArraySetAsSeries(signal, true);
         // this affects ArrayResize behavior by s
@@ -93,7 +97,7 @@ void DataHistory::addData(DataUnit *unit) {
 
 template<typename T>
 void DataHistory::addData(bool success, T value, SignalType signal = SignalNone, string debugValue = "", datetime lastUpdate = 0) {
-    DataUnit *newData;
+    DataUnit *newData = NULL;
     newData = new DataUnit(success, value, signal, debugValue, lastUpdate);
     
     addData(newData);
@@ -110,8 +114,8 @@ SignalType DataHistory::getSignal(int unitIdx = 0) { // kept for compatibility, 
 }
 
 void DataHistory::addSignalUnit(SignalType curSignal, int checkIndex = 0) {
-    bool force;
-    SignalType compareSignal;
+    bool force = false;
+    SignalType compareSignal = SignalNone;
     SignalUnit *compareUnit = getSignalUnit(checkIndex);
     if(Common::IsInvalidPointer(compareUnit)) { force = true; }
     else { compareSignal = compareUnit.type; }

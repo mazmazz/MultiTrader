@@ -146,7 +146,7 @@ void DashboardManager::drawHeader() {
     pos += drawText(prefixName("status"), statusText);
     
     // insert results here
-    //drawText(prefixName("results"), "Results");
+    drawText(prefixName("results"), "Results");
 }
 
 void DashboardManager::drawLegend() {
@@ -191,7 +191,7 @@ void DashboardManager::drawSymbols() {
 }
 
 void DashboardManager::drawSubfilterColData(int symbolIdx, SubfilterType subType, bool writeSep = true) {
-    string emptyString;
+    string emptyString = NULL;
     drawSubfilterCol(emptyString, symbolIdx, subType, false, writeSep);
 }
 
@@ -230,7 +230,7 @@ void DashboardManager::drawSubfilterCol(string &legendText, int symbolIdx, Subfi
         int subCount = MainFilterMan.filters[i].getSubfilterCount(subType);
         
         for(int j = 0; j < subCount; j++) {
-            int subIdx;
+            int subIdx = -1;
             switch(subType) {
                 case SubfilterValue: subIdx = MainFilterMan.filters[i].valueSubfilterId[j]; break;
                 case SubfilterEntry: subIdx = MainFilterMan.filters[i].entrySubfilterId[j]; break;
@@ -309,8 +309,8 @@ void DashboardManager::updateDashboard() {
 
 void DashboardManager::updateData(int symbolId, int filterId, int subfilterId, bool exists = false) {
     // mmt_data_[symbolId]_[filterId]_[subfilterId]
-    string objName;
-    string dataResult;
+    string objName = NULL;
+    string dataResult = NULL;
 
     string suffixName = getDataSuffix(filterId, subfilterId);
 
@@ -349,11 +349,11 @@ void DashboardManager::updateSymbolSignal(int symbolId,SubfilterType subType, bo
     if(!exists) { exists = (ObjectFind(0, objName) >= 0); }
     
     if(exists) {
-        SignalType signal;
-        string dataResult;
-        color fontColor;
+        SignalType signal = SignalNone;
+        string dataResult = NULL;
+        color fontColor = 0;
         
-        SignalUnit *signalUnit;
+        SignalUnit *signalUnit = NULL;
         signalUnit = MainDataMan.symbol[symbolId].getSignalUnit(subType == SubfilterEntry);
         if(!Common::IsInvalidPointer(signalUnit)) { signal = signalUnit.type; }
         else { signal = SignalNone; }
@@ -484,4 +484,4 @@ void DashboardManager::deleteAllObjects()
     }
 }
 
-DashboardManager *MainDashboardMan;
+DashboardManager *MainDashboardMan = NULL;

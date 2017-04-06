@@ -29,13 +29,13 @@ int OrderManager::prepareGrid(int symIdx, SignalType signal) {
 
     string posSymName = MainSymbolMan.symbols[symIdx].name;
     
-    double posVolume;
+    double posVolume = 0;
     if(!getValue(posVolume, lotSizeLoc, symIdx)) { return -1; }
     
-    int posSlippage;
+    int posSlippage = 0;
     if(!getValuePoints(posSlippage, maxSlippageLoc, symIdx)) { return -1; }
     
-    double stoplossOffset, takeprofitOffset;
+    double stoplossOffset = 0, takeprofitOffset = 0;
     if(StopLossEnabled) {
         if(!getValuePrice(stoplossOffset, stopLossLoc, symIdx)) { return -1; }
     }
@@ -48,10 +48,10 @@ int OrderManager::prepareGrid(int symIdx, SignalType signal) {
     datetime posExpiration = 0;
     // datetime posExpiration
     
-    double priceDistPoints; 
+    double priceDistPoints = 0; 
     if(!getValuePrice(priceDistPoints, gridDistanceLoc, symIdx)) { return -1; }
 
-    int finalResult;
+    int finalResult = 0;
     
     if(GridOpenMarketInitial) {
         if(prepareGridOrder(signal, false, false, true, 0, posSymName, posVolume, priceDistPoints, posSlippage, stoplossOffset, takeprofitOffset, posComment, posMagic, posExpiration)) { 
@@ -96,23 +96,23 @@ int OrderManager::prepareGrid(int symIdx, SignalType signal) {
 }
 
 int OrderManager::prepareGridOrder(SignalType signal, bool isHedge, bool isDual, bool isMarket, int gridIndex, string posSymName, double posVolume, double posPriceDist, int posSlippage, double stoplossOffset, double takeprofitOffset, string posComment = "", int posMagic = 0, datetime posExpiration = 0) {
-    int cmd, gridIndexPrice;
+    int cmd = -1, gridIndexPrice = 0;
     if(!isDual) {
         if(isMarket) {
-            if(!isHedge) { cmd = (signal == SignalLong) ? OP_BUY : OP_SELL; }
-            else { cmd = (signal == SignalLong) ? OP_SELL : OP_BUY; }
+            if(!isHedge) { cmd = (signal == SignalLong) ? OrderTypeBuy : OrderTypeSell; }
+            else { cmd = (signal == SignalLong) ? OrderTypeSell : OrderTypeBuy; }
         } else {
-            if(!isHedge) { cmd = (signal == SignalLong) ? OP_BUYSTOP : OP_SELLSTOP; }
-            else { cmd = (signal == SignalLong) ? OP_SELLSTOP : OP_BUYSTOP; }
+            if(!isHedge) { cmd = (signal == SignalLong) ? OrderTypeBuyStop : OrderTypeSellStop; }
+            else { cmd = (signal == SignalLong) ? OrderTypeSellStop : OrderTypeBuyStop; }
         }
         gridIndexPrice = Common::OrderIsShort(cmd) ? (MathAbs(gridIndex)*-1) : gridIndex;
     } else {
         if(isMarket) {
-            if(!isHedge) { cmd = (signal == SignalLong) ? OP_SELL : OP_BUY; }
-            else { cmd = (signal == SignalLong) ? OP_BUY : OP_SELL; }
+            if(!isHedge) { cmd = (signal == SignalLong) ? OrderTypeSell : OrderTypeBuy; }
+            else { cmd = (signal == SignalLong) ? OrderTypeBuy : OrderTypeSell; }
         } else {
-            if(!isHedge) { cmd = (signal == SignalLong) ? OP_SELLLIMIT : OP_BUYLIMIT; }
-            else { cmd = (signal == SignalLong) ? OP_BUYLIMIT : OP_SELLLIMIT; }
+            if(!isHedge) { cmd = (signal == SignalLong) ? OrderTypeSellLimit : OrderTypeBuyLimit; }
+            else { cmd = (signal == SignalLong) ? OrderTypeBuyLimit : OrderTypeSellLimit; }
         }
         gridIndexPrice = Common::OrderIsLong(cmd) ? (MathAbs(gridIndex)*-1) : gridIndex;
     }
@@ -124,7 +124,7 @@ int OrderManager::prepareGridOrder(SignalType signal, bool isHedge, bool isDual,
     double posPriceNormal = priceBaseNormal+(posPriceDist*gridIndexPrice);
     double posPriceOpposite = priceBaseOpposite+(posPriceDist*gridIndexPrice);
     
-    double posStoploss, posTakeprofit;
+    double posStoploss = 0, posTakeprofit = 0;
     if((isMarket || SetStopsOnPendings) && stoplossOffset != 0) {
         posStoploss = Common::OrderIsLong(cmd) ? posPriceOpposite + stoplossOffset : posPriceOpposite - stoplossOffset; // offset is negative
     }

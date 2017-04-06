@@ -33,29 +33,29 @@ class FilterHgi : public Filter {
 // Params
 //+------------------------------------------------------------------+
 
-extern string Lbl_Hgi_1="________ HGI Settings [HGI] ________";
-extern string Hgi_Entry_Modes="a=1";
-extern string Hgi_Entry_Names="a=M60";
-extern string Hgi_Exit_Modes="a=1";
-extern string Hgi_Exit_Names="a=M60";
+input string Lbl_Hgi_1="________ HGI Settings [HGI] ________";
+input string Hgi_Entry_Modes="a=1";
+input string Hgi_Entry_Names="a=M60";
+input string Hgi_Exit_Modes="a=1";
+input string Hgi_Exit_Names="a=M60";
 
-extern string LbL_Hgi_Entry="---- HGI Entry Settings ----";
-extern string Hgi_Entry_TimeFrame="a=60";
-extern string Hgi_Entry_Shift="a=0";
-extern string Hgi_Entry_OnTrend="a=1";
-extern string Hgi_Entry_OnRange="a=1";
-extern string Hgi_Entry_OnRad="a=0";
-extern string Hgi_Entry_OnSignal="a=1";
-extern string Hgi_Entry_OnSlope="a=0";
+input string LbL_Hgi_Entry="---- HGI Entry Settings ----";
+input string Hgi_Entry_TimeFrame="a=60";
+input string Hgi_Entry_Shift="a=0";
+input string Hgi_Entry_OnTrend="a=1";
+input string Hgi_Entry_OnRange="a=1";
+input string Hgi_Entry_OnRad="a=0";
+input string Hgi_Entry_OnSignal="a=1";
+input string Hgi_Entry_OnSlope="a=0";
 
-extern string LbL_Hgi_Exit="---- HGI Exit Settings ----";
-extern string Hgi_Exit_TimeFrame="a=60";
-extern string Hgi_Exit_Shift="a=0";
-extern string Hgi_Exit_OnTrend="a=1";
-extern string Hgi_Exit_OnRange="a=1";
-extern string Hgi_Exit_OnRad="a=0";
-extern string Hgi_Exit_OnSignal="a=1";
-extern string Hgi_Exit_OnSlope="a=0";
+input string LbL_Hgi_Exit="---- HGI Exit Settings ----";
+input string Hgi_Exit_TimeFrame="a=60";
+input string Hgi_Exit_Shift="a=0";
+input string Hgi_Exit_OnTrend="a=1";
+input string Hgi_Exit_OnRange="a=1";
+input string Hgi_Exit_OnRad="a=0";
+input string Hgi_Exit_OnSignal="a=1";
+input string Hgi_Exit_OnSlope="a=0";
 
 //+------------------------------------------------------------------+
 // Methods
@@ -108,9 +108,9 @@ bool FilterHgi::calculate(int subfilterId, int symbolIndex, DataUnit *dataOut) {
     int OR = 1;
     int AND = 2;
     
-    SignalType signalTrend;
-    SignalType signalSlope;
-    SignalType signalFinal;
+    SignalType signalTrend = SignalNone;
+    SignalType signalSlope = SignalNone;
+    SignalType signalFinal = SignalNone;
     
     switch(hgiSignal) {
         case TRENDUP: signalTrend = onTrend[subfilterId] ? SignalBuy  : SignalNone; break;

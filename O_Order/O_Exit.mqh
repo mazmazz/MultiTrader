@@ -25,27 +25,27 @@ bool OrderManager::isExitSafe(int symIdx) {
     return (getCurrentSessionIdx(symIdx) >= 0);
 }
 
-bool OrderManager::checkDoExitSignals(int ticket, int symIdx) {
+bool OrderManager::checkDoExitSignals(int ticket, int symIdx, bool isPosition) {
     if(!isExitSafe(symIdx)) { return false; }
-    if(!checkDoSelectOrder(ticket)) { return false; }
+    if(!checkDoSelect(ticket, isPosition)) { return false; }
     
-    int posType = OrderType(cycleIsOrder);
+    int posType = getOrderType(isPosition);
     
     if(isTradeModeGrid()) {
         if(!GridCloseMarketOnSignal && !Common::OrderIsPending(posType)) { return false; }
         if(!GridClosePendingOnSignal && Common::OrderIsPending(posType)) { return false; }
     }
     
-    string posSymName = OrderSymbol(cycleIsOrder);
+    string posSymName = getOrderSymbol(isPosition);
     
     // todo: grid - how to close pendings when encountering an opposite signal?
-    bool checkSig;
+    bool checkSig = false;
     SignalUnit *checkUnit = MainDataMan.symbol[symIdx].getSignalUnit(false);
     checkSig = !Common::IsInvalidPointer(checkUnit) && !checkUnit.fulfilled; // todo: how is this affected by retrace?
     if(!checkSig && !CloseOrderOnOppositeSignal && !isTradeModeGrid()) { return false; }
     
-    bool checkEntry;
-    SignalUnit *entryCheckUnit;
+    bool checkEntry = false;
+    SignalUnit *entryCheckUnit = NULL;
     if(CloseOrderOnOppositeSignal || isTradeModeGrid()) {
         entryCheckUnit = MainDataMan.symbol[symIdx].getSignalUnit(true);
         checkEntry = !Common::IsInvalidPointer(entryCheckUnit) && !entryCheckUnit.fulfilled;
@@ -54,7 +54,7 @@ bool OrderManager::checkDoExitSignals(int ticket, int symIdx) {
     
     bool posIsBuy = (isTradeModeGrid()) ? gridSetLong[symIdx] : Common::OrderIsLong(posType);
     
-    bool entryIsTrigger,exitIsTrigger;
+    bool entryIsTrigger = false,exitIsTrigger = false;
     if(!checkEntry) { 
         if(checkUnit.type != SignalLong && checkUnit.type != SignalShort && checkUnit.type != SignalClose) { return false; }
         if(posIsBuy && checkUnit.type == SignalLong) { return false; } // signals are negated for exits -- "SignalLong" means Buy OK, close Shorts.
@@ -62,7 +62,7 @@ bool OrderManager::checkDoExitSignals(int ticket, int symIdx) {
         else { exitIsTrigger = true; }
     }
     else {
-        bool checkIsEmpty, entryIsEmpty;
+        bool checkIsEmpty = false, entryIsEmpty = false;
         if(checkUnit.type != SignalLong && checkUnit.type != SignalShort && checkUnit.type != SignalClose) { checkIsEmpty = true; }
         if(entryCheckUnit.type != SignalLong && entryCheckUnit.type != SignalShort && entryCheckUnit.type != SignalClose) { entryIsEmpty = true; }
         if(checkIsEmpty && entryIsEmpty) { return false; }
@@ -88,17 +88,17 @@ bool OrderManager::checkDoExitSignals(int ticket, int symIdx) {
     
     if(isTradeModeGrid()) { // if order is market, not pending, then close according to signal
         if(exitIsTrigger) {
-            if(posType == OP_BUY && checkUnit.type == SignalLong) { return false; }
-            if(posType == OP_SELL && checkUnit.type == SignalShort) { return false; }
+            if(posType == OrderTypeBuy && checkUnit.type == SignalLong) { return false; }
+            if(posType == OrderTypeSell && checkUnit.type == SignalShort) { return false; }
         } else if(entryIsTrigger) {
-            if(posType == OP_BUY && entryCheckUnit.type == SignalLong) { return false; }
-            if(posType == OP_SELL && entryCheckUnit.type == SignalShort) { return false; }
+            if(posType == OrderTypeBuy && entryCheckUnit.type == SignalLong) { return false; }
+            if(posType == OrderTypeSell && entryCheckUnit.type == SignalShort) { return false; }
         }
     }
     
     // todo: retracement protection?
     
-    bool result = sendClose(ticket, symIdx);
+    bool result = sendClose(ticket, symIdx, isPosition);
     if(result) {
         if(!isTradeModeGrid()) { 
             if(exitIsTrigger) { checkUnit.fulfilled = true; } // do not set opposite entry fulfilled; that's set by entry action

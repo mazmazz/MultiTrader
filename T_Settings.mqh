@@ -10,6 +10,8 @@
 #include "MC_Common/MC_Error.mqh"
 #include "MC_Common/MC_MultiSettings.mqh"
 
+#define _FontColorDefault C'145,145,145'
+
 enum TimeUnits {
     UnitSeconds // Seconds
     , UnitMilliseconds // Milliseconds
@@ -64,11 +66,13 @@ int SignalHistoryLevel=3;
 input string LblDisplay="---- Display Settings ----"; // :
 input bool DisplayShow=true;
 input bool DisplayShowTable=true;
+input bool DisplayShowBasketSymbolLongShort=false;
 input bool DisplayColor=true;
 //input bool DisplayShowOrders=true;
 //input string DisplayFont="Lucida Console";
+input color DisplayFontColorDefault = _FontColorDefault;
 string DisplayFont="Lucida Console"; // Integral font to monospace layout and scaling, should not be user setting
-input int DisplayScale=0; // DisplayScale: 0 = Normal, 1+ = Large
+input int DisplayScale=1; // DisplayScale: 0 = Small, 1+ = Large
 //input int DisplayFontSize=11;
 //input int DisplaySpacing=13;
 //input DisplayStyleEnum DisplayStyle=ValueAndSignal;
@@ -82,7 +86,7 @@ input int AverageTickHighestMil = 1000;
 
 input string Lbl_Symbols="********** Symbols & Currencies Settings **********"; // :
 input bool SingleSymbolMode=false; // SingleSymbolMode: Use only the current chart symbol
-input string IncludeSymbols="AUDCAD,AUDCHF,AUDJPY,AUDNZD,AUDUSD,CADCHF,CADJPY,CHFJPY,EURAUD,EURCAD,EURJPY,EURNZD,EURUSD,EURGBP,GBPAUD,GBPCAD,GBPCHF,GBPJPY,GBPNZD,GBPUSD,NZDCAD,NZDCHF,NZDJPY,NZDUSD,USDCAD,USDCHF,USDJPY";
+input string IncludeSymbols="AUDCAD,AUDJPY,AUDNZD,AUDUSD,CADJPY,EURAUD,EURCAD,EURJPY,EURNZD,EURUSD,EURGBP,GBPAUD,GBPCAD,GBPJPY,GBPNZD,GBPUSD,NZDCAD,NZDJPY,NZDUSD,USDCAD,USDJPY";
 input string ExcludeSymbols="";
 input string ExcludeCurrencies="SEK,CHF,DKK,NOK,TRY,HKD,ZAR,MXN,XAG,XAU";
 

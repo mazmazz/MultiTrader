@@ -32,6 +32,22 @@ enum StopLossMode {
 
 class OrderManager {
     public:
+    int basketDay;
+    int basketLosses;
+    int basketWins;
+    double basketProfit;
+    double basketLongProfit;
+    double basketShortProfit;
+    double basketBookedProfit;
+    
+    double basketProfitSymbol[];
+    double basketLongProfitSymbol[];
+    double basketShortProfitSymbol[];
+    double basketBookedProfitSymbol[];
+    
+    int openPendingCount[];
+    int openMarketCount[];
+    
     OrderManager();
     ~OrderManager();
     
@@ -119,17 +135,6 @@ class OrderManager {
     //+------------------------------------------------------------------+
     // Cycle
     
-    int openPendingCount[];
-    int openMarketCount[];
-    
-    bool gridSetLong[];
-    bool gridSetShort[];
-    bool gridExit[];
-    bool gridExitBySignal[];
-    bool gridExitByOpposite[];
-    
-    //bool cycleIsPosition; // for mt5, toggle between selecting order and position. in mt4, is always false.
-    
     void doCurrentPositions(bool firstRun, bool isPosition);
     void evaluateFulfilledFromOrder(int ticket, int symbolIdx, bool isPosition);
     void resetOpenCount();
@@ -156,6 +161,12 @@ class OrderManager {
     //+------------------------------------------------------------------+
     // Grid
     
+    bool gridSetLong[];
+    bool gridSetShort[];
+    bool gridExit[];
+    bool gridExitBySignal[];
+    bool gridExitByOpposite[];
+    
     int prepareGrid(int symIdx, SignalType signal);
     int prepareGridOrder(SignalType signal, bool isHedge, bool isDual, bool isMarket, int gridIndex, string posSymName, double posVolume, double posPriceDist, int posSlippage, double stoplossOffset, double takeprofitOffset, string posComment = "", int posMagic = 0, datetime posExpiration = 0);
     void fillGridExitFlags(int symbolIdx);
@@ -180,12 +191,6 @@ class OrderManager {
     
     //+------------------------------------------------------------------+
     // Basket
-    
-    int basketDay;
-    int basketLosses;
-    int basketWins;
-    double basketProfit;
-    double basketBookedProfit;
     
     bool checkBasketSafe();
     void checkDoBasketExit();

@@ -78,6 +78,11 @@ void OrderManager::sendBasketClose(bool isPosition) {
 
 void OrderManager::fillBasketFlags() {
     basketProfit = 0;
+    basketLongProfit = 0;
+    basketShortProfit = 0;
+    ArrayInitialize(basketProfitSymbol, 0);
+    ArrayInitialize(basketLongProfitSymbol, 0);
+    ArrayInitialize(basketShortProfitSymbol, 0);
     if(!BasketTotalPerDay || basketDay != DayOfWeek()) { basketBookedProfit = 0; } // basketDay != DayOfWeek() is done in checkDoBasketExit()
     if(basketDay != DayOfWeek()) { // todo: basket - period length: hours? days? weeks?
         basketLosses = 0;
@@ -96,7 +101,7 @@ double OrderManager::getProfitPips(int ticket, bool isPosition) {
 
 bool OrderManager::getProfitPips(int ticket, bool isPosition, double &profitOut) {
     if(!checkDoSelect(ticket, isPosition)) { return false; }
-    if(Common::OrderIsPending(ticket)) { return false; }
+    if(Common::OrderIsPending(getOrderType(isPosition))) { return false; }
     
     profitOut = getProfitPips(getOrderOpenPrice(isPosition), getOrderType(isPosition), getOrderSymbol(isPosition));
     return true;

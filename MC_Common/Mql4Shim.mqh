@@ -212,9 +212,9 @@ double MarketInfo(string symbol,
 //+------------------------------------------------------------------+
 //| Objects
 
-//int ObjectFind(const string object_name) {
-//    return ObjectFind(0, object_name);
-//}
+int ObjectFind(const string object_name) {
+    return ObjectFind(0, object_name);
+}
 
 bool ObjectSetText(
    string   object_name,         // object name

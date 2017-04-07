@@ -13,6 +13,10 @@
 #define _ProjectVersion ""
 #endif
 
+#ifndef _FontColorDefault
+#define _FontColorDefault C'145,145,145'
+#endif
+
 #include "S_Symbol.mqh"
 #include "F_Filter/F_FilterManager.mqh"
 #include "D_Data/D_Data.mqh"
@@ -24,16 +28,14 @@ class DashboardManager {
     
     void initDashboard();
     void updateDashboard();
-    void updateData(int symbolId, int filterId, int subfilterId, bool exists = false);
-    void updateSymbolSignal(int symbolId, SubfilterType subType, bool exists = false);
     void deleteAllObjects();
 
     private:
     string objPrefix;
     string fontFace;
     int fontSize;
+
     color fontColorDefault;
-    
     color fontColorBuy;
     color fontColorSell;
     color fontColorAction;
@@ -60,7 +62,10 @@ class DashboardManager {
     string prefixName(string subPrefix, string name = NULL);
     string truncText(string text, int length);
     string padText(string text, int length);
-    int getPosSize();
+    
+    void updateResults();
+    void updateData(int symbolId, int filterId, int subfilterId, bool exists = false);
+    void updateSymbolSignal(int symbolId, SubfilterType subType, bool exists = false);
     string signalToString(SignalType signal, bool shortCode = true, bool alwaysStable = false);
     string signalToString(SignalType signal, int duration, SubfilterType type, bool shortCode = true, bool alwaysStable = false);
     
@@ -90,7 +95,7 @@ void DashboardManager::initDashboard() {
     fontFace = DisplayFont;
     fontSize = 11+(DisplayScale < 1 ? -4 : (DisplayScale-1)*4); //DisplayFontSize;
     
-    fontColorDefault = C'145,145,145';
+    fontColorDefault = DisplayFontColorDefault;
     if(DisplayColor) {
         fontColorBuy = C'0,178,0';
         fontColorSell = clrRed;
@@ -121,46 +126,67 @@ void DashboardManager::initDashboard() {
     
     if(!DisplayShow) { return; }
     
-    drawHeader(); row++; pos=1;
-    
-    if(!DisplayShowTable) { return; }
-    
-    drawLegend(); row++;
-    drawSymbols(); row=0; pos=0;
+    if(!DisplayShowTable) {
+        drawHeader(); row=0; pos=0;
+    } else {
+        pos=1;
+        drawLegend(); row++;
+        drawSymbols(); row++; pos=1;
+        drawHeader(); row=0; pos=0;
+    }
 }
 
 void DashboardManager::drawHeader() {
+    int maxTextPos = 7; // "Symbols " minus 1
+
     string headerText = _ProjectName + " " + _ProjectVersion +
-        spacedSepChar + IntegerToString(MagicNumber) + " " + ConfigComment + spacedSepChar;
+        spacedSepChar + IntegerToString(MagicNumber) + (StringLen(ConfigComment) > 0 ? " " + ConfigComment : "") + spacedSepChar;
     
     string statusText = 
-        "Control: "
-        + (TradeEntryEnabled ? "Entry/": "") 
+        (TradeEntryEnabled ? "Entry/": "") 
         + (TradeExitEnabled ? "Exit/" : "") 
         + (TradeValueEnabled ? "Value" : "")
-        + (!TradeEntryEnabled && !TradeExitEnabled && !TradeValueEnabled ? "None" : "")
+        + (!TradeEntryEnabled && !TradeExitEnabled && !TradeValueEnabled ? "Viewing Only" : "")
         + spacedSepChar
         ;
     
-    pos += drawText(prefixName("header"), headerText);
+    // insert results here
+    pos += drawText(prefixName("results_total_label"), padText("Total", maxTextPos+1));
+    pos += drawText(prefixName("results_total"), "       ");
+    pos += drawText(prefixName("results_longs_label"), "Longs ");
+    pos += drawText(prefixName("results_long"), "       ");
+    pos += drawText(prefixName("results_shorts_label"), "Shorts ");
+    pos += drawText(prefixName("results_short"), "       ");
+    
+    if(BasketTotalPerDay) {
+        pos += drawText(prefixName("results_booked_label"), "Closed ");
+        pos += drawText(prefixName("results_booked"), "       ");
+    }
+    
+    pos += drawText(prefixName("header"), spacedSepChar + headerText);
     pos += drawText(prefixName("status"), statusText);
     
-    // insert results here
-    drawText(prefixName("results"), "Results");
+    updateResults();
 }
 
 void DashboardManager::drawLegend() {
     int maxLabelPos = colSize-1;
+    int maxTextPos = 7; // "Symbols " minus 1
     string legendText = "";
     string filterText = "";
     
-    legendText += "Symbols" + spacedSepChar;
+    string basketLegendText = " Total";
+    if(TradeModeType == TradeGrid || DisplayShowBasketSymbolLongShort) {
+        basketLegendText += sepChar+"Long "+sepChar+"Short" + (BasketTotalPerDay ? sepChar+"Close" : "");
+    }
+    
+    legendText += padText("Symbols", maxTextPos) + basketLegendText + spacedSepChar;
     
     dataPosStart = StringLen(legendText)+1;
     
-    drawSubfilterColLegend(legendText, SubfilterValue);
     drawSubfilterColLegend(legendText, SubfilterEntry);
     drawSubfilterColLegend(legendText, SubfilterExit);
+    drawSubfilterColLegend(legendText, SubfilterValue);
     
     legendText += "Symbols";
     
@@ -177,14 +203,23 @@ void DashboardManager::drawSymbols() {
     int j = 0; int k = 0;
     for(int i = 0; i < size; i++) {
         col = 0; colOffset = 0; pos = 1;
-        drawText(prefixName(IntegerToString(i)), padText(truncText(MainSymbolMan.symbols[i].name, maxTextPos), maxTextPos) + spacedSepChar);
+        pos += drawText(prefixName(IntegerToString(i)), padText(truncText(MainSymbolMan.symbols[i].name, maxTextPos), maxTextPos) + " ");
         
-        drawSubfilterColData(i, SubfilterValue);
+        pos += drawText(prefixName(i+"_total"), "     " + (TradeModeType == TradeGrid || DisplayShowBasketSymbolLongShort ? " " : ""));
+        if(TradeModeType == TradeGrid || DisplayShowBasketSymbolLongShort) {
+            pos += drawText(prefixName(i+"_long"), "      ");
+            pos += drawText(prefixName(i+"_short"), "     " + (BasketTotalPerDay ? " " : ""));
+            if(BasketTotalPerDay) { pos += drawText(prefixName(i+"_booked"), "     "); }
+        }
+        
+        pos += drawText(prefixName(i+"_symSep"), spacedSepChar);
+        
         drawSubfilterColData(i, SubfilterEntry);
-        drawSubfilterColData(i, SubfilterExit, false);
+        drawSubfilterColData(i, SubfilterExit);
+        drawSubfilterColData(i, SubfilterValue, false);
         
         pos = dataPosStart + (colSize*col) + colOffset-1;
-        drawText(prefixName(IntegerToString(i)+"_end"), spacedSepChar + truncText(MainSymbolMan.symbols[i].name, maxTextPos));
+        drawText(prefixName(i+"_end"), spacedSepChar + truncText(MainSymbolMan.symbols[i].name, maxTextPos));
         
         row++;
     }
@@ -267,7 +302,7 @@ void DashboardManager::drawSubfilterCol(string &legendText, int symbolIdx, Subfi
 
 void DashboardManager::drawData(int symbolId, int filterId, int subfilterId) {
     string dataObjName = prefixName(symbolId + "_" + filterId + "_" + subfilterId, getDataSuffix(filterId, subfilterId));
-    if(ObjectCreate(0, dataObjName, OBJ_LABEL, 0, 0, 0)) {
+    if(ObjectFind(dataObjName) >= 0 || ObjectCreate(0, dataObjName, OBJ_LABEL, 0, 0, 0)) {
         ObjectSetInteger(0, dataObjName, OBJPROP_XDISTANCE, posSize * (dataPosStart + (col*colSize) + colOffset));
         ObjectSetInteger(0, dataObjName, OBJPROP_YDISTANCE, rowSize * row);
         ObjectSetInteger(0, dataObjName, OBJPROP_CORNER, 0);
@@ -277,7 +312,7 @@ void DashboardManager::drawData(int symbolId, int filterId, int subfilterId) {
 
 void DashboardManager::drawSymbolSignal(int symbolId,SubfilterType subType) {
     string dataObjName = prefixName(symbolId + "_" + EnumToString(subType) + "_signal");
-    if(ObjectCreate(0, dataObjName, OBJ_LABEL, 0, 0, 0)) {
+    if(ObjectFind(dataObjName) >= 0 || ObjectCreate(0, dataObjName, OBJ_LABEL, 0, 0, 0)) {
         ObjectSetInteger(0, dataObjName, OBJPROP_XDISTANCE, posSize * (dataPosStart + (col*colSize) + colOffset));
         ObjectSetInteger(0, dataObjName, OBJPROP_YDISTANCE, rowSize * row);
         ObjectSetInteger(0, dataObjName, OBJPROP_CORNER, 0);
@@ -286,7 +321,11 @@ void DashboardManager::drawSymbolSignal(int symbolId,SubfilterType subType) {
 }
 
 void DashboardManager::updateDashboard() {
-    if(!DisplayShow || !DisplayShowTable) { return; }
+    if(!DisplayShow) { return; }
+    
+    updateResults();
+    
+    if(!DisplayShowTable) { return; }
     
     int filterCount = MainFilterMan.getFilterCount();
     int subfilterCount = 0;
@@ -304,7 +343,33 @@ void DashboardManager::updateDashboard() {
                 updateData(i, j, k);
             }
         }
+        
+        // results
+        string basketTotal = " ", basketLong = " ", basketShort = " ", basketBooked = " ";
+        if(MainOrderMan.openMarketCount[i] > 0) {
+            basketTotal = padText(StringFormat("%.1f", (MainOrderMan.basketProfitSymbol[i]+MainOrderMan.basketBookedProfitSymbol[i])), 5) + (TradeModeType == TradeGrid || DisplayShowBasketSymbolLongShort ? sepChar : "");
+            basketLong = padText(StringFormat("%.1f", MainOrderMan.basketLongProfitSymbol[i]), 5) + sepChar;
+            basketShort = padText(StringFormat("%.1f", MainOrderMan.basketShortProfitSymbol[i]), 5) + (BasketTotalPerDay ? sepChar : " ");
+            if(BasketTotalPerDay) { basketBooked = StringFormat("%f.2", MainOrderMan.basketBookedProfitSymbol[i]); }
+        } else if(BasketTotalPerDay && MainOrderMan.basketBookedProfitSymbol[i] != 0 && MainOrderMan.basketProfitSymbol[i] == 0 && MainOrderMan.basketLongProfitSymbol[i] == 0 && MainOrderMan.basketShortProfitSymbol[i] == 0) {
+            basketTotal = "     "+sepChar; basketLong = "     "+sepChar; basketShort = "     "+sepChar;
+            if(BasketTotalPerDay) { basketBooked = StringFormat("%f.2", MainOrderMan.basketBookedProfitSymbol[i]); }
+        }
+        ObjectSetText(prefixName(i+"_total"), basketTotal, fontSize, fontFace, fontColorDefault);
+        if(TradeModeType == TradeGrid || DisplayShowBasketSymbolLongShort) {
+            ObjectSetText(prefixName(i+"_long"), basketLong, fontSize, fontFace, fontColorDefault);
+            ObjectSetText(prefixName(i+"_short"), basketShort, fontSize, fontFace, fontColorDefault);
+            if(BasketTotalPerDay) { ObjectSetText(prefixName(i+"_booked"), basketBooked, fontSize, fontFace, fontColorDefault); }
+        }
     }
+}
+
+void DashboardManager::updateResults() {
+    if(!DisplayShow) { return; }
+    ObjectSetText(prefixName("results_total"), StringFormat("%.1f", (MainOrderMan.basketProfit+MainOrderMan.basketBookedProfit)), fontSize, fontFace, fontColorDefault);
+    ObjectSetText(prefixName("results_long"), StringFormat("%.1f", MainOrderMan.basketLongProfit), fontSize, fontFace, fontColorDefault);
+    ObjectSetText(prefixName("results_short"), StringFormat("%.1f", MainOrderMan.basketShortProfit), fontSize, fontFace, fontColorDefault);
+    if(BasketTotalPerDay) { ObjectSetText(prefixName("results_booked"), StringFormat("%f.2", MainOrderMan.basketBookedProfit), fontSize, fontFace, fontColorDefault); }
 }
 
 void DashboardManager::updateData(int symbolId, int filterId, int subfilterId, bool exists = false) {
@@ -431,21 +496,6 @@ string DashboardManager::padText(string text,int length) {
     return text;
 }
 
-int DashboardManager::getPosSize() {
-    string objName = prefixName("test");
-    int size = 0;
-    if(ObjectCreate(0, objName, OBJ_LABEL, 0, 0, 0)) {
-        ObjectSetText(objName, "W", fontSize, fontFace, clrWhite);
-        ObjectSetInteger(0, objName, OBJPROP_XDISTANCE, 0);
-        ObjectSetInteger(0, objName, OBJPROP_YDISTANCE, 0);
-        ObjectSetInteger(0, objName, OBJPROP_CORNER, 0);
-        size = ObjectGetInteger(0, objName, OBJPROP_XSIZE);
-        ObjectDelete(0, objName);
-    }
-    
-    return size;
-}
-
 string DashboardManager::prefixName(string subPrefix, string name = NULL) {
     if(name == NULL) { return objPrefix + subPrefix; }
     else { return objPrefix + subPrefix + "_" + name; }
@@ -463,7 +513,7 @@ int DashboardManager::drawText(string objName, string text, color textColor) {
     
     for(int i = 0; i < multiple; i++) {
         finalObjName = objName + (i <= 0 ? "" : i+1);
-        if(ObjectCreate(0, finalObjName, OBJ_LABEL, 0, 0, 0)) {
+        if(ObjectFind(finalObjName) >= 0 || ObjectCreate(0, finalObjName, OBJ_LABEL, 0, 0, 0)) {
             ObjectSetText(finalObjName, StringSubstr(text, i*maxSize, maxSize+1), fontSize, fontFace, textColor);
             ObjectSetInteger(0, finalObjName, OBJPROP_XDISTANCE, posSize*(pos+(i*maxSize)));
             ObjectSetInteger(0, finalObjName, OBJPROP_YDISTANCE, rowSize*row);

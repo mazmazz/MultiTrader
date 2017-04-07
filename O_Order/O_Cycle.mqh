@@ -50,6 +50,7 @@ void OrderManager::doCurrentPositions(bool firstRun, bool isPosition) {
         
         int ticket = getOrderTicket(isPosition);
         double profit = getProfitPips(ticket, isPosition);
+        int type = getOrderType(isPosition);
         
         if(firstRun) { evaluateFulfilledFromOrder(ticket, symbolIdx, isPosition); }
         
@@ -59,11 +60,26 @@ void OrderManager::doCurrentPositions(bool firstRun, bool isPosition) {
         if(!exitResult) { exitResult = checkDoExitStopLevels(ticket, symbolIdx, isPosition); }
         
         if(!exitResult) {
-            basketProfit += profit;
+            if(Common::OrderIsMarket(type)) {
+                basketProfit += profit;
+                basketProfitSymbol[symbolIdx] += profit;
+                if(Common::OrderIsLong(type)) { 
+                    basketLongProfit += profit; 
+                    basketLongProfitSymbol[symbolIdx] += profit; 
+                }
+                else if(Common::OrderIsShort(type)) { 
+                    basketShortProfit += profit; 
+                    basketShortProfitSymbol[symbolIdx] += profit; 
+                }
+            }
+            
             addOrderToOpenCount(ticket, symbolIdx, isPosition);
             doModifyPosition(ticket, symbolIdx, isPosition);
         } else {
-            basketBookedProfit += profit;
+            if(Common::OrderIsMarket(type)) {
+                basketBookedProfit += profit;
+                basketBookedProfitSymbol[symbolIdx] += profit;
+            }
             i--; // deleting a position mid-loop changes the index, attempt same index as orders shift
         }
     }

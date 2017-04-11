@@ -60,6 +60,12 @@ class Error {
     static int FileLevel;
     static int FatalStateLevel;
 
+    static void ThrowFatal(string message, bool printCurrentTime, int location = ErrorDefault);
+    static void PrintNormal(string message, bool printCurrentTime, int location = ErrorDefault);
+    static void PrintInfo(string message, bool printCurrentTime, int location = ErrorDefault);
+    static void PrintMinor(string message, bool printCurrentTime, int location = ErrorDefault);
+    static void PrintError(int level, string message, bool printCurrentTime, int location = ErrorDefault);
+
     static void ThrowFatal(string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault);
     static void PrintNormal(string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault);
     static void PrintInfo(string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault);
@@ -69,6 +75,8 @@ class Error {
     static void ThrowError(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault); // kept for back compat
     static void PrintInfo_v02(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault); // kept for back compat
     static void CloseErrorFile();
+    
+    static bool HasLevel(int level, int location = ErrorTerminal);
     
     private:
     static int FileHandle;
@@ -112,6 +120,27 @@ void Error::PrintMinor(string message = "", string funcTrace = "", string extraI
 void Error::PrintError(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault) {
     OutputError(level, message, funcTrace, extraInfo, printCurrentTime, location);
 }
+
+void Error::ThrowFatal(string message, bool printCurrentTime, int location = ErrorDefault) {
+    ThrowFatal(message, NULL, NULL, printCurrentTime, location);
+}
+
+void Error::PrintNormal(string message, bool printCurrentTime, int location = ErrorDefault) {
+    PrintNormal(message, NULL, NULL, printCurrentTime, location);
+}
+
+void Error::PrintInfo(string message, bool printCurrentTime, int location = ErrorDefault) {
+    PrintInfo(message, NULL, NULL, printCurrentTime, location);
+}
+
+void Error::PrintMinor(string message, bool printCurrentTime, int location = ErrorDefault) {
+    PrintMinor(message, NULL, NULL, printCurrentTime, location);
+}
+
+void Error::PrintError(int level, string message, bool printCurrentTime, int location = ErrorDefault) {
+    PrintError(level, message, NULL, NULL, printCurrentTime, location);
+}
+
 
 // kept for back compat
 void Error::ThrowFatalError(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault) {
@@ -194,6 +223,15 @@ bool Error::OutputErrorToFile(string message = "") {
 
 void Error::OutputErrorToAlert(string message="") {
     Alert(message);
+}
+
+bool Error::HasLevel(int level, int location = ErrorTerminal) {
+    switch(location) {
+        case ErrorTerminal: return (TerminalLevel & level) == level;
+        case ErrorAlert: return (AlertLevel & level) == level;
+        case ErrorFile: return (FileLevel & level) == level;
+        default: return false;
+    }
 }
 
 // Changelog

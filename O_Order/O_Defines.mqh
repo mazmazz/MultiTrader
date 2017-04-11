@@ -45,8 +45,15 @@ class OrderManager {
     double basketShortProfitSymbol[];
     double basketBookedProfitSymbol[];
     
-    int openPendingCount[];
-    int openMarketCount[];
+    int openPendingLongCount[];
+    int openMarketLongCount[];
+    int openPendingShortCount[];
+    int openMarketShortCount[];
+    
+    // we need these to distinguish for grid counts: these technically count as the opposite positioning
+    // these subtract from the total of Pending/Market
+    int openPendingLongLimitCount[];
+    int openPendingShortLimitCount[];
     
     OrderManager();
     ~OrderManager();
@@ -138,7 +145,8 @@ class OrderManager {
     void doCurrentPositions(bool firstRun, bool isPosition);
     void evaluateFulfilledFromOrder(int ticket, int symbolIdx, bool isPosition);
     void resetOpenCount();
-    void addOrderToOpenCount(int ticket, int symIdx, bool isPosition);
+    void addOrderToOpenCount(int ticket, int symIdx, bool isPosition, bool subtract);
+    void addOrderToOpenCount(int symIdx, int orderType, bool subtract);
     
     //+------------------------------------------------------------------+
     // Exit
@@ -170,7 +178,8 @@ class OrderManager {
     int prepareGrid(int symIdx, SignalType signal);
     int prepareGridOrder(SignalType signal, bool isHedge, bool isDual, bool isMarket, int gridIndex, string posSymName, double posVolume, double posPriceDist, int posSlippage, double stoplossOffset, double takeprofitOffset, string posComment = "", int posMagic = 0, datetime posExpiration = 0);
     void fillGridExitFlags(int symbolIdx);
-    bool isGridOpen(int symIdx, bool checkPendingsOnly = false);
+    bool isGridOpen(int symIdx, bool checkPendingsOnly);
+    bool isGridOpen(int symIdx, bool isLong, bool checkPendingsOnly);
     bool isTradeModeGrid();
     
     //+------------------------------------------------------------------+

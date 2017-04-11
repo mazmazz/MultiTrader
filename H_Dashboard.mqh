@@ -346,8 +346,8 @@ void DashboardManager::updateDashboard() {
         
         // results
         string basketTotal = " ", basketLong = " ", basketShort = " ", basketBooked = " ";
-        if(MainOrderMan.openMarketCount[i] > 0) {
-            basketTotal = padText(StringFormat("%.1f", (MainOrderMan.basketProfitSymbol[i]+MainOrderMan.basketBookedProfitSymbol[i])), 5) + (TradeModeType == TradeGrid || DisplayShowBasketSymbolLongShort ? sepChar : "");
+        if(MainOrderMan.openMarketLongCount[i] + MainOrderMan.openMarketShortCount[i] > 0) {
+            basketTotal = padText(StringFormat("%.1f", (MainOrderMan.basketProfitSymbol[i]+(BasketTotalPerDay ? MainOrderMan.basketBookedProfitSymbol[i] : 0))), 5) + (TradeModeType == TradeGrid || DisplayShowBasketSymbolLongShort ? sepChar : "");
             basketLong = padText(StringFormat("%.1f", MainOrderMan.basketLongProfitSymbol[i]), 5) + sepChar;
             basketShort = padText(StringFormat("%.1f", MainOrderMan.basketShortProfitSymbol[i]), 5) + (BasketTotalPerDay ? sepChar : " ");
             if(BasketTotalPerDay) { basketBooked = StringFormat("%f.2", MainOrderMan.basketBookedProfitSymbol[i]); }
@@ -355,6 +355,7 @@ void DashboardManager::updateDashboard() {
             basketTotal = "     "+sepChar; basketLong = "     "+sepChar; basketShort = "     "+sepChar;
             if(BasketTotalPerDay) { basketBooked = StringFormat("%f.2", MainOrderMan.basketBookedProfitSymbol[i]); }
         }
+        
         ObjectSetText(prefixName(i+"_total"), basketTotal, fontSize, fontFace, fontColorDefault);
         if(TradeModeType == TradeGrid || DisplayShowBasketSymbolLongShort) {
             ObjectSetText(prefixName(i+"_long"), basketLong, fontSize, fontFace, fontColorDefault);

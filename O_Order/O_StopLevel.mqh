@@ -68,7 +68,7 @@ bool OrderManager::checkDoExitStopLevels(int ticket, int symIdx, bool isPosition
     }
     
     if(trigger) {
-        Error::PrintInfo("Closing order " + ticket + ": Internal stop level triggered.", NULL, "Offset SL: " + stoploss + " | Offset TP: " + takeprofit, true);
+        Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Internal stop level", NULL, "Internal SL: " + stoploss + " | Internal TP: " + takeprofit, true);
         return sendClose(ticket, symIdx, isPosition);
     } else { return false; }
 }

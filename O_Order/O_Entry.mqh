@@ -35,7 +35,7 @@ int OrderManager::checkDoEntrySignals(int symIdx) {
     if(!isEntrySafe(symIdx)) { return 0; }
     if(!getLastTimeElapsed(symIdx, true, TimeSettingUnit, TradeBetweenDelay)) { return 0; }
     if(AccountInfoDouble(ACCOUNT_MARGIN) > 0 && AccountInfoDouble(ACCOUNT_MARGIN_LEVEL) < TradeMinMarginLevel) { return 0; }
-    if(!isTradeModeGrid() && MaxTradesPerSymbol > 0 && MaxTradesPerSymbol <= (openPendingCount[symIdx] + openMarketCount[symIdx])) { return 0; }
+    if(!isTradeModeGrid() && MaxTradesPerSymbol > 0 && MaxTradesPerSymbol <= (openPendingLongCount[symIdx] + openPendingShortCount[symIdx] + openMarketLongCount[symIdx] + openMarketShortCount[symIdx])) { return 0; }
 
     SignalUnit *checkUnit = MainDataMan.symbol[symIdx].getSignalUnit(true);
     if(Common::IsInvalidPointer(checkUnit)) { return 0; }
@@ -70,6 +70,8 @@ int OrderManager::checkDoEntrySignals(int symIdx) {
         if(checkUnit.type == SignalShort && checkExitUnit.type == SignalLong) { return 0; }
     }
     
+    Error::PrintInfo("Open " + MainSymbolMan.symbols[symIdx].name + ": Entry signal - " + EnumToString(checkUnit.type));
+    
     int result = 0;
     switch(TradeModeType) {
         case TradeGrid: 
@@ -83,7 +85,11 @@ int OrderManager::checkDoEntrySignals(int symIdx) {
             break;
     }
     
-    if(result > 0) {
+    if(result > 0 
+        || (TradeModeType == TradeGrid 
+            && ((checkUnit.type == SignalLong && gridSetLong[symIdx]) || (checkUnit.type == SignalShort && gridSetShort[symIdx]))
+            )
+    ) {
         checkUnit.fulfilled = true;
         setLastTimePoint(symIdx, true);
     }

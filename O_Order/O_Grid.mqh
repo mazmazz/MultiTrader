@@ -25,7 +25,10 @@ int OrderManager::prepareGrid(int symIdx, SignalType signal) {
     if(IsTradeContextBusy()) { return -1; }
 #endif
     
-    if((signal == SignalLong && gridSetLong[symIdx]) || (signal == SignalShort && gridSetShort[symIdx])) { return -1; } // only one grid set at a time // gridSetLong/Short is set after successful setup, and reset after closing
+    if((signal == SignalLong && gridSetLong[symIdx]) || (signal == SignalShort && gridSetShort[symIdx])) { 
+        Error::PrintInfo("Aborting open: Grid already set up for direction - " + EnumToString(signal), true);
+        return -1; 
+    } // only one grid set at a time // gridSetLong/Short is set after successful setup, and reset after closing
 
     string posSymName = MainSymbolMan.symbols[symIdx].name;
     
@@ -60,25 +63,27 @@ int OrderManager::prepareGrid(int symIdx, SignalType signal) {
     }
     
     for(int i = 1; i <= GridCount; i++) {
-        if(prepareGridOrder(signal, false, false, false, i, posSymName, posVolume, priceDistPoints, posSlippage, stoplossOffset, takeprofitOffset, posComment, posMagic, posExpiration)) {
-            finalResult++;
+        if(GridSetStopOrders) {
+            if(prepareGridOrder(signal, false, false, false, i, posSymName, posVolume, priceDistPoints, posSlippage, stoplossOffset, takeprofitOffset, posComment, posMagic, posExpiration)) {
+                finalResult++;
+            }
         }
         
-        if(GridSetDualPendings) {
+        if(GridSetLimitOrders) {
             if(prepareGridOrder(signal, false, true, false, i, posSymName, posVolume, priceDistPoints, posSlippage, stoplossOffset, takeprofitOffset, posComment, posMagic, posExpiration)) {
                 finalResult++;
             }
         }
         
-        if(GridHedging) {
+        if(GridSetHedgeStopOrders) {
             if(prepareGridOrder(signal, true, false, false, i, posSymName, posVolume, priceDistPoints, posSlippage, stoplossOffset, takeprofitOffset, posComment, posMagic, posExpiration)) {
                 finalResult++;
             }
+        }
             
-            if(GridSetDualPendings) {
-                if(prepareGridOrder(signal, true, true, false, i, posSymName, posVolume, priceDistPoints, posSlippage, stoplossOffset, takeprofitOffset, posComment, posMagic, posExpiration)) {
-                    finalResult++;
-                }
+        if(GridSetHedgeLimitOrders) {
+            if(prepareGridOrder(signal, true, true, false, i, posSymName, posVolume, priceDistPoints, posSlippage, stoplossOffset, takeprofitOffset, posComment, posMagic, posExpiration)) {
+                finalResult++;
             }
         }
     }
@@ -86,10 +91,10 @@ int OrderManager::prepareGrid(int symIdx, SignalType signal) {
     // todo: grid - check if all orders succeeded
     if(signal == SignalLong) { 
         gridSetLong[symIdx] = true;
-        if(GridHedging) { gridSetShort[symIdx] = true; }
+        if(GridSetHedgeStopOrders || GridSetLimitOrders) { gridSetShort[symIdx] = true; } // these set the opposite type of long/short
     } else { 
         gridSetShort[symIdx] = true; 
-        if(GridHedging) { gridSetLong[symIdx] = true; }
+        if(GridSetHedgeStopOrders || GridSetLimitOrders) { gridSetLong[symIdx] = true; }
     }
     
     return finalResult;
@@ -149,15 +154,26 @@ void OrderManager::fillGridExitFlags(int symbolIdx) {
         gridExit[symbolIdx] = false;
     }
     
-    if(!isGridOpen(symbolIdx, GridOpenIfMarketExists)) { // todo: grid - should grid direction be reset even if market orders are still open?
-        gridSetLong[symbolIdx] = false;
-        gridSetShort[symbolIdx] = false;
-    }
+    // in the past, these flags are not reset at cycle start, because exit cycle needed this last known info
+    // so we set these here in the affirmative before starting the entry cycle
+    // right now, we reset these flags at cycle start
+    gridSetLong[symbolIdx] = isGridOpen(symbolIdx, true, GridOpenIfMarketExists);
+    gridSetShort[symbolIdx] = isGridOpen(symbolIdx, false, GridOpenIfMarketExists);
 }
 
-bool OrderManager::isGridOpen(int symIdx, bool checkPendingsOnly = false) {
-    if(checkPendingsOnly) { return (openPendingCount[symIdx] > 0); }
-    else { return (openPendingCount[symIdx] > 0 || openMarketCount[symIdx] > 0); }
+bool OrderManager::isGridOpen(int symIdx, bool checkPendingsOnly) {
+    return isGridOpen(symIdx, true, checkPendingsOnly) && isGridOpen(symIdx, false, checkPendingsOnly);
+}
+
+bool OrderManager::isGridOpen(int symIdx, bool isLong, bool checkPendingsOnly) {
+    // short limit orders are considered part of a long grid and buy limit orders are part of a short grid
+    if(isLong) {
+        if(checkPendingsOnly) { return (openPendingLongCount[symIdx]-openPendingLongLimitCount[symIdx]+openPendingShortLimitCount[symIdx] > 0); }
+        else { return (openPendingLongCount[symIdx]-openPendingLongLimitCount[symIdx]+openPendingShortLimitCount[symIdx] > 0 || openMarketLongCount[symIdx] > 0); }
+    } else {
+        if(checkPendingsOnly) { return (openPendingShortCount[symIdx]-openPendingShortLimitCount[symIdx]+openPendingLongLimitCount[symIdx] > 0); }
+        else { return (openPendingShortCount[symIdx]-openPendingShortLimitCount[symIdx]+openPendingLongLimitCount[symIdx] > 0 || openMarketShortCount[symIdx] > 0); }
+    }
 }
 
 bool OrderManager::isTradeModeGrid() {

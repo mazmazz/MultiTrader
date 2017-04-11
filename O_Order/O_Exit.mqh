@@ -39,75 +39,65 @@ bool OrderManager::checkDoExitSignals(int ticket, int symIdx, bool isPosition) {
     string posSymName = getOrderSymbol(isPosition);
     
     // todo: grid - how to close pendings when encountering an opposite signal?
-    bool checkSig = false;
-    SignalUnit *checkUnit = MainDataMan.symbol[symIdx].getSignalUnit(false);
-    checkSig = !Common::IsInvalidPointer(checkUnit) && !checkUnit.fulfilled; // todo: how is this affected by retrace?
-    if(!checkSig && !CloseOrderOnOppositeSignal && !isTradeModeGrid()) { return false; }
+    bool checkExit = false, exitIsEmpty = false;
+    SignalUnit *exitCheckUnit = MainDataMan.symbol[symIdx].getSignalUnit(false);
+    checkExit = !Common::IsInvalidPointer(exitCheckUnit) && !exitCheckUnit.fulfilled; // todo: how is this affected by retrace?
+    if(checkExit) { exitIsEmpty = exitCheckUnit.type != SignalLong && exitCheckUnit.type != SignalShort && exitCheckUnit.type != SignalClose; }
     
-    bool checkEntry = false;
+    if(!checkExit && !CloseOrderOnOppositeSignal && !isTradeModeGrid()) { return false; }
+    
+    bool checkEntry = false, entryIsEmpty = false;
     SignalUnit *entryCheckUnit = NULL;
-    if(CloseOrderOnOppositeSignal || isTradeModeGrid()) {
+    if(CloseOrderOnOppositeSignal/* || isTradeModeGrid()*/) {
         entryCheckUnit = MainDataMan.symbol[symIdx].getSignalUnit(true);
         checkEntry = !Common::IsInvalidPointer(entryCheckUnit) && !entryCheckUnit.fulfilled;
-        if(!checkSig && !checkEntry) { return false; }
+        if(checkEntry) { entryIsEmpty = entryCheckUnit.type != SignalLong && entryCheckUnit.type != SignalShort && entryCheckUnit.type != SignalClose; }
     }
     
-    bool posIsBuy = (isTradeModeGrid()) ? gridSetLong[symIdx] : Common::OrderIsLong(posType);
+    if(!checkExit && !checkEntry) { return false; }
+    if(exitIsEmpty && entryIsEmpty) { return false; }
     
     bool entryIsTrigger = false,exitIsTrigger = false;
-    if(!checkEntry) { 
-        if(checkUnit.type != SignalLong && checkUnit.type != SignalShort && checkUnit.type != SignalClose) { return false; }
-        if(posIsBuy && checkUnit.type == SignalLong) { return false; } // signals are negated for exits -- "SignalLong" means Buy OK, close Shorts.
-        else if(!posIsBuy && checkUnit.type == SignalShort) { return false; }
-        else { exitIsTrigger = true; }
-    }
-    else {
-        bool checkIsEmpty = false, entryIsEmpty = false;
-        if(checkUnit.type != SignalLong && checkUnit.type != SignalShort && checkUnit.type != SignalClose) { checkIsEmpty = true; }
-        if(entryCheckUnit.type != SignalLong && entryCheckUnit.type != SignalShort && entryCheckUnit.type != SignalClose) { entryIsEmpty = true; }
-        if(checkIsEmpty && entryIsEmpty) { return false; }
-        
-        if(posIsBuy) {
-            if(!checkIsEmpty && checkUnit.type == SignalLong) { return false; }
-            if(!entryIsEmpty && entryCheckUnit.type == SignalLong) { return false; }
-            
-            if(!checkIsEmpty && (checkUnit.type == SignalShort || checkUnit.type == SignalClose)) { exitIsTrigger = true; }
-            if(!exitIsTrigger && !entryIsEmpty && (entryCheckUnit.type == SignalShort || checkUnit.type == SignalClose)) { entryIsTrigger = true; }
-        } else {
-            if(!checkIsEmpty && checkUnit.type == SignalShort) { return false; }
-            if(!entryIsEmpty && entryCheckUnit.type == SignalShort) { return false; }
-            
-            if(!checkIsEmpty && (checkUnit.type == SignalLong || checkUnit.type == SignalClose)) { exitIsTrigger = true; }
-            if(!exitIsTrigger && !entryIsEmpty && (entryCheckUnit.type == SignalLong || checkUnit.type == SignalClose)) { entryIsTrigger = true; }
-        } 
-    }
-    
-    if(!exitIsTrigger && !entryIsTrigger) { 
-        Error::PrintNormal("Neither exit nor entry is trigger", FunctionTrace, posSymName +"|"+posType, true);
-    }
-    
-    if(isTradeModeGrid()) { // if order is market, not pending, then close according to signal
-        if(exitIsTrigger) {
-            if(posType == OrderTypeBuy && checkUnit.type == SignalLong) { return false; }
-            if(posType == OrderTypeSell && checkUnit.type == SignalShort) { return false; }
-        } else if(entryIsTrigger) {
-            if(posType == OrderTypeBuy && entryCheckUnit.type == SignalLong) { return false; }
-            if(posType == OrderTypeSell && entryCheckUnit.type == SignalShort) { return false; }
+//    if(isTradeModeGrid() && Common::OrderIsPending(posType)) { // market orders follow same rules as non-grid
+//        if(checkExit && !exitIsEmpty) {
+//            if(gridSetLong[symIdx] && exitCheckUnit.type == SignalLong) { return false; } // signals are negated for exits -- "SignalLong" means Buy OK, close Shorts.
+//            else if(Common::OrderIsShort(posType) && exitCheckUnit.type == SignalShort) { return false; }
+//            else { exitIsTrigger = true; }
+//        }
+//        
+//        if(!exitIsTrigger && checkEntry && !entryIsEmpty) {
+//            if(Common::OrderIsLong(posType) && entryCheckUnit.type == SignalLong) { return false; }
+//            else if(Common::OrderIsShort(posType) && entryCheckUnit.type == SignalShort) { return false; }
+//            else { entryIsTrigger = true; }
+//        }
+//    } else {
+        if(checkExit && !exitIsEmpty) {
+            if(Common::OrderIsLong(posType) && exitCheckUnit.type == SignalLong) { return false; } // signals are negated for exits -- "SignalLong" means Buy OK, close Shorts.
+            else if(Common::OrderIsShort(posType) && exitCheckUnit.type == SignalShort) { return false; }
+            else { exitIsTrigger = true; }
         }
-    }
+        
+        if(!exitIsTrigger && checkEntry && !entryIsEmpty) {
+            if(Common::OrderIsLong(posType) && entryCheckUnit.type == SignalLong) { return false; }
+            else if(Common::OrderIsShort(posType) && entryCheckUnit.type == SignalShort) { return false; }
+            else { entryIsTrigger = true; }
+        }
+    //}
+    
+    if(!exitIsTrigger && !entryIsTrigger) { return false; }
     
     // todo: retracement protection?
+    
+    Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": " + (exitIsTrigger ? "Exit signal - " + EnumToString(exitCheckUnit.type) : entryIsTrigger ? "Entry signal - " + EnumToString(entryCheckUnit.type) : "No trigger"), true);
     
     bool result = sendClose(ticket, symIdx, isPosition);
     if(result) {
         if(!isTradeModeGrid()) { 
-            if(exitIsTrigger) { checkUnit.fulfilled = true; } // do not set opposite entry fulfilled; that's set by entry action
+            if(exitIsTrigger) { exitCheckUnit.fulfilled = true; } // do not set opposite entry fulfilled; that's set by entry action
         } else {
             gridExitBySignal[symIdx] = exitIsTrigger;
             gridExitByOpposite[symIdx] = entryIsTrigger;
         }
-    } else {
-        Error::PrintNormal((exitIsTrigger ? "Exit: " + checkUnit.type : entryIsTrigger ? "Entry: " + entryCheckUnit.type : "No trigger"), NULL, NULL, true);
     }
     return result;
 }

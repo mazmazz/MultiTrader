@@ -36,7 +36,7 @@ int OrderManager::sendOpen(string posSymName, int posCmd, double posVolume, doub
     }
 #endif
 
-    if(result > 0) { addOrderToOpenCount(result, -1, false); }
+    if(result > 0) { addOrderToOpenCount(result, -1, false, false); }
     
     return result;
 }
@@ -113,7 +113,7 @@ ulong OrderManager::sendOpen(string posSymName, int posCmd, double posVolume, do
     if(callResult && Common::IsOrderRetcodeSuccess(result.retcode, false)) {
         // note: 10008 (TRADE_RETCODE_PLACED) result for OrderAsync, 10009 (TRADE_RETCODE_DONE) for OrderSend
         finalResult = result.order; //isPending ? result.order : HistoryDealGetInteger(result.deal, DEAL_POSITION_ID); // todo: we pass net position as result and unit position to the counter?
-        addOrderToOpenCount(finalResult, -1, !isPending);
+        addOrderToOpenCount(finalResult, -1, !isPending, false);
     }
     
     return finalResult; 

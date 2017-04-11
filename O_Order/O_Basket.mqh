@@ -29,7 +29,7 @@ void OrderManager::checkDoBasketExit() {
     //Error::PrintMinor("BASKET | Current: " + basketProfit + " | Booked: " + basketBookedProfit + " | Total: " + (basketProfit + basketBookedProfit) + " | SL: " + BasketStopLossValue + " | TP: " + BasketTakeProfitValue, NULL, NULL, true);
     
     if(BasketEnableStopLoss && (basketProfit+basketBookedProfit) <= BasketStopLossValue) {
-        Error::PrintInfo("Basket Stop Loss Hit: " + (basketProfit + basketBookedProfit) + " pips | Setting: " + BasketStopLossValue, NULL, NULL, true);
+        Error::PrintInfo("Close Basket: Stop Loss - " + (basketProfit + basketBookedProfit) + " pips | Setting: " + BasketStopLossValue, true);
 #ifdef __MQL4__
         sendBasketClose(false);
 #else
@@ -42,7 +42,7 @@ void OrderManager::checkDoBasketExit() {
     }
     
     if(BasketEnableTakeProfit && (basketProfit+basketBookedProfit) >= BasketTakeProfitValue) {
-        Error::PrintInfo("Basket Take Profit Hit: " + (basketProfit + basketBookedProfit) + " pips | Setting: " + BasketTakeProfitValue, NULL, NULL, true);
+        Error::PrintInfo("Close Basket: Take Profit - " + (basketProfit + basketBookedProfit) + " pips | Setting: " + BasketTakeProfitValue, true);
 #ifdef __MQL4__
         sendBasketClose(false);
 #else
@@ -62,14 +62,19 @@ void OrderManager::sendBasketClose(bool isPosition) {
             continue; 
         }
         
+        long ticket = getOrderTicket(isPosition);
+        int symIdx = MainSymbolMan.getSymbolId(getOrderSymbol(isPosition));
+        long orderType = getOrderType(isPosition);
         bool exitResult = false;
         
         if(BasketClosePendings || !Common::OrderIsPending(getOrderType(isPosition))) {
-            exitResult = sendClose(getOrderTicket(isPosition), MainSymbolMan.getSymbolId(getOrderSymbol(isPosition)), isPosition);
+            Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Basket", true);
+            exitResult = sendClose(ticket, symIdx, isPosition);
         }
         
         if(exitResult) {
             i--; // deleting a position mid-loop changes the index, attempt same index as orders shift
+            addOrderToOpenCount(symIdx, orderType, true); // subtract
         }
     }
 }

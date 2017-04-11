@@ -124,10 +124,13 @@ input int ValueBetweenDelay=0; // ValueBetweenDelay: Wait between value changes
 //input int Exit_expirySeconds=900;
 //
 
-input string LbL_Grid="---- Grid Settings ----"; // Grid settings: Set TradeModeType above to enable grids
-input bool GridHedging=false; // GridHedging: Set pendings in both directions 
+input string LbL_Grid="---- Grid Settings ----";
+input string GridNote = "Set TradeModeType above to enable grids."; // :
+input bool GridSetStopOrders = true;
+input bool GridSetHedgeStopOrders = false;
+input bool GridSetLimitOrders = false;
+input bool GridSetHedgeLimitOrders = true;
 input bool GridOpenMarketInitial=false; // GridOpenMarketInitial: Place market order immediately on signal
-input bool GridSetDualPendings = false; // GridSetDualPendings: Set 1 buy and 1 sell pending on every level
 input bool GridClosePendingOnSignal = false; // GridClosePendingOnSignal: Close pending orders upon signal
 input bool GridCloseMarketOnSignal = true; // GridCloseMarketOnSignal: Close market orders upon signal
 input bool GridOpenIfMarketExists = false; // GridOpenIfMarketExists: Open if market order exists, no pendings

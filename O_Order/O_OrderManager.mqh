@@ -37,8 +37,13 @@ void OrderManager::OrderManager() {
     basketBookedProfit = 0;
 
     int symCount = ArraySize(MainSymbolMan.symbols);
-    ArrayResize(openPendingCount, symCount); ArrayInitialize(openPendingCount, 0);
-    ArrayResize(openMarketCount, symCount); ArrayInitialize(openMarketCount, 0);
+    ArrayResize(openPendingLongCount, symCount); ArrayInitialize(openPendingLongCount, 0);
+    ArrayResize(openMarketLongCount, symCount); ArrayInitialize(openMarketLongCount, 0);
+    ArrayResize(openPendingShortCount, symCount); ArrayInitialize(openPendingShortCount, 0);
+    ArrayResize(openMarketShortCount, symCount); ArrayInitialize(openMarketShortCount, 0);
+    ArrayResize(openPendingLongLimitCount, symCount); ArrayInitialize(openPendingLongLimitCount, 0);
+    ArrayResize(openPendingShortLimitCount, symCount); ArrayInitialize(openPendingShortLimitCount, 0);
+
     ArrayResize(basketProfitSymbol, symCount); ArrayInitialize(basketProfitSymbol, 0);
     ArrayResize(basketLongProfitSymbol, symCount); ArrayInitialize(basketLongProfitSymbol, 0);
     ArrayResize(basketShortProfitSymbol, symCount); ArrayInitialize(basketShortProfitSymbol, 0);

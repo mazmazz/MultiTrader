@@ -24,6 +24,7 @@ enum SignalType {
 class SignalUnit { // ordinarily this would be a struct, but you can't get pointers from structs
     public: 
     SignalType type;
+    string message;
     uint timeMilliseconds;
     datetime timeDatetime;
     uint timeCycles;
@@ -32,6 +33,7 @@ class SignalUnit { // ordinarily this would be a struct, but you can't get point
     
     SignalUnit() {
         type = SignalNone;
+        message = NULL;
         timeMilliseconds = 0;
         timeDatetime = 0;
         timeCycles = 0;

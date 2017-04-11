@@ -73,7 +73,7 @@ void OrderManager::doCurrentPositions(bool firstRun, bool isPosition) {
                 }
             }
             
-            addOrderToOpenCount(ticket, symbolIdx, isPosition);
+            addOrderToOpenCount(ticket, symbolIdx, isPosition, false);
             doModifyPosition(ticket, symbolIdx, isPosition);
         } else {
             if(Common::OrderIsMarket(type)) {
@@ -99,25 +99,72 @@ void OrderManager::evaluateFulfilledFromOrder(int ticket, int symbolIdx, bool is
             if(
                 (Common::OrderIsLong(orderAct) && checkEntrySignal.type == SignalLong)
                 || (Common::OrderIsShort(orderAct) && checkEntrySignal.type == SignalShort)
-            ) { checkEntrySignal.fulfilled = true; }
-        } else if(checkEntrySignal.type == SignalLong || checkEntrySignal.type == SignalShort) { checkEntrySignal.fulfilled = true; }
+            ) { 
+                checkEntrySignal.fulfilled = true; 
+            }
+        } else if(checkEntrySignal.type == SignalLong || checkEntrySignal.type == SignalShort) { 
+            checkEntrySignal.fulfilled = true; 
+        }
             // todo: grid - better firstRun rules. set gridDirection by checking if all buy stops are above current price point, etc. ???
     }
 }
 
 void OrderManager::resetOpenCount() {
-    ArrayInitialize(openPendingCount, 0);
-    ArrayInitialize(openMarketCount, 0);
+    ArrayInitialize(openPendingLongCount, 0);
+    ArrayInitialize(openMarketLongCount, 0);
+    ArrayInitialize(openPendingShortCount, 0);
+    ArrayInitialize(openMarketShortCount, 0);
+    ArrayInitialize(openPendingLongLimitCount, 0);
+    ArrayInitialize(openPendingShortLimitCount, 0);
+    
+    // not sure about these: exit cycle used to check for these (not currently)
+    // if we need to check this before resetGridFlags, we can comment this out
+    // or use isGridOpen
+    ArrayInitialize(gridSetLong, false);
+    ArrayInitialize(gridSetShort, false);
 }
 
-void OrderManager::addOrderToOpenCount(int ticket, int symIdx, bool isPosition) {
+void OrderManager::addOrderToOpenCount(int ticket, int symIdx, bool isPosition, bool subtract) {
     if(!checkDoSelect(ticket, isPosition)) { return; }
 #ifdef __MQL5__
     if(isPosition && !Common::IsAccountHedging() && ticket != PositionGetInteger(POSITION_IDENTIFIER)) { return; }
 #endif
     if(symIdx < 0) { symIdx = MainSymbolMan.getSymbolId(getOrderSymbol(isPosition)); }
+    
+    addOrderToOpenCount(symIdx, getOrderType(isPosition), subtract);
+}
+
+void OrderManager::addOrderToOpenCount(int symIdx, int orderType, bool subtract) {
     if(symIdx < 0) { return; }
     
-    if(Common::OrderIsPending(getOrderType(isPosition))) { openPendingCount[symIdx]++; }
-    else { openMarketCount[symIdx]++; }
+    if(Common::OrderIsPending(orderType)) { 
+        if(Common::OrderIsLong(orderType)) { 
+            if(subtract) { openPendingLongCount[symIdx]--; }
+            else { openPendingLongCount[symIdx]++; }
+            
+            if(orderType == OrderTypeBuyLimit) {
+                if(subtract) { openPendingLongLimitCount[symIdx]--; }
+                else { openPendingLongLimitCount[symIdx]++; }
+            }
+        }
+        else { 
+            if(subtract) { openPendingShortCount[symIdx]--; }
+            else { openPendingShortCount[symIdx]++; }
+            
+            if(orderType == OrderTypeSellLimit) {
+                if(subtract) { openPendingShortLimitCount[symIdx]--; }
+                else { openPendingShortLimitCount[symIdx]++; }
+            }
+        }
+    }
+    else { 
+        if(Common::OrderIsLong(orderType)) { 
+            if(subtract) { openMarketLongCount[symIdx]--; }
+            else { openMarketLongCount[symIdx]++; }
+        }
+        else { 
+            if(subtract) { openMarketShortCount[symIdx]--; }
+            else { openMarketShortCount[symIdx]++; }
+        }
+    }
 }

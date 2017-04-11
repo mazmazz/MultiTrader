@@ -19,7 +19,6 @@
 
 bool OrderManager::checkDoExitSchedule(int symIdx, int ticket, bool isPosition) {
     if(getCloseByMarketSchedule(symIdx, ticket, isPosition)) {
-        Error::PrintInfo("Closing order " + ticket + ": Broker schedule", NULL, NULL, true);
         return sendClose(ticket, symIdx, isPosition);
     } else { return false; }
 }
@@ -41,11 +40,25 @@ bool OrderManager::getCloseByMarketSchedule(int symIdx, int ticket = -1, bool is
     
     // todo: swap - if minimum swap trigger set, check swap: if it's greater than the negative swap value, return false
     
-    if(SchedCloseDaily && getCloseDaily(symIdx)) { return true; }
-    else if(SchedClose3DaySwap && getClose3DaySwap(symIdx)) { return true; }
-    else if(SchedCloseWeekend && getCloseWeekend(symIdx)) { return true; }
-    else if(SchedCloseSession && getCloseOffSessions(symIdx)) { return true; }
-    else { return false; }
+    if(SchedCloseDaily && getCloseDaily(symIdx)) {
+        if(ticket > 0) { Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Schedule daily", true); }
+        return true; 
+    }
+    else if(SchedClose3DaySwap && getClose3DaySwap(symIdx)) {
+        if(ticket > 0) { Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Schedule 3-day swap", true); }
+        return true; 
+    }
+    else if(SchedCloseWeekend && getCloseWeekend(symIdx)) {
+        if(ticket > 0) { Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Schedule weekend", true); }
+        return true; 
+    }
+    else if(SchedCloseSession && getCloseOffSessions(symIdx)) { 
+        if(ticket > 0) { Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Schedule end of session", true); }
+        return true; 
+    }
+    else { 
+        return false; 
+    }
 }
 
 bool OrderManager::getCloseDaily(int symIdx) {

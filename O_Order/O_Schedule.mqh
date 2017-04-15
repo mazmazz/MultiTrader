@@ -25,8 +25,19 @@ bool OrderManager::checkDoExitSchedule(int symIdx, int ticket, bool isPosition) 
 }
 
 bool OrderManager::getCloseByMarketSchedule(int symIdx, int ticket = -1, bool isPosition = false) {
-    if(!SchedCloseDaily && !SchedCloseSession && !SchedClose3DaySwap && !SchedCloseWeekend) { return false;}
+    bool isLong = false;
     
+    if(ticket > 0) {
+        if(!checkDoSelect(ticket, isPosition)) { return false; }
+        isLong = Common::OrderIsLong(getOrderType(isPosition));
+    }
+    
+    return getCloseByMarketSchedule(symIdx, ticket, isLong, isPosition);
+}
+
+bool OrderManager::getCloseByMarketSchedule(int symIdx, int ticket, bool isLong, bool isPosition) {
+    if(!SchedCloseDaily && !SchedCloseSession && !SchedClose3DaySwap && !SchedCloseWeekend) { return false;}
+
     if(ticket > 0) {
         if(!checkDoSelect(ticket, isPosition)) { return false; }
         
@@ -39,18 +50,26 @@ bool OrderManager::getCloseByMarketSchedule(int symIdx, int ticket = -1, bool is
         if(SchedCloseOrderProfit == OrderOnlyLoss && getProfitPips(ticket, isPosition) >= 0) { return false; }
     }
     
-    // todo: swap - if minimum swap trigger set, check swap: if it's greater than the negative swap value, return false
-    
     if(SchedCloseCustom && getCloseCustom(symIdx)) {
         if(ticket > 0) { Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Schedule custom", true); }
         return true; 
     }
-    else if(SchedCloseDaily && getCloseDaily(symIdx)) {
-        if(ticket > 0) { Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Schedule daily", true); }
+    else if(SchedClose3DaySwap && getClose3DaySwap(symIdx)) {
+        if(ticket > 0) { 
+            if(SchedCloseBySwap3DaySwap && !isSwapThresholdBroken(isLong, symIdx, true)) { return false; }
+        } else {
+            if(SchedCloseBySwap3DaySwap) { return false; } // allow checkDoEntrySignals to call isSwapThresholdBroken separately
+        }
+        Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Schedule 3-day swap", true); 
         return true; 
     }
-    else if(SchedClose3DaySwap && getClose3DaySwap(symIdx)) {
-        if(ticket > 0) { Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Schedule 3-day swap", true); }
+    else if(SchedCloseDaily && getCloseDaily(symIdx)) {
+        if(ticket > 0) { 
+            if(SchedCloseBySwapDaily && !isSwapThresholdBroken(isLong, symIdx, false)) { return false; }
+        } else {
+            if(SchedCloseBySwapDaily) { return false; } // allow checkDoEntrySignals to call isSwapThresholdBroken separately
+        }
+        Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Schedule daily", true); 
         return true; 
     }
     else if(SchedCloseWeekend && getCloseWeekend(symIdx)) {
@@ -129,11 +148,6 @@ bool OrderManager::getCloseOffSessions(int symIdx) {
 //+------------------------------------------------------------------+
 
 bool OrderManager::getOpenByMarketSchedule(int symIdx) {
-    //extern int SchedOpenMinutesDaily = 0; // are we in first session of today? are we at least X minutes from open?
-    //extern int SchedOpenMinutesWeekend = 180; // are we in first session of today AND yesterday had no sessions? are we at least X minutes from open?
-    //extern int SchedOpenMinutesOffSessions = 0; // whichever session we are in, are we at least X minutes from open? ignore gaps
-    //extern int SchedGapIgnoreMinutes = 15; // SchedGapIgnoreMinutes: Ignore session gaps of X mins
-    
     if(getCloseByMarketSchedule(symIdx)) { return false; }
     
     // Custom schedule needs no processing: entry delays do not apply to custom opening times
@@ -232,6 +246,9 @@ bool OrderManager::getCloseCustom(int symIdx) {
     currentDate = Common::StripTimeFromDatetime(currentDatetime);
     currentTime = Common::StripDateFromDatetime(currentDatetime);
     
+    //+------------------------------------------------------------------+
+    // determine if recalc is needed
+    
     bool recalc = false;
     if(customSchedulePrevIdx >= 0) {
         switch(customScheduleUnits[customSchedulePrevIdx].type) {
@@ -261,9 +278,12 @@ bool OrderManager::getCloseCustom(int symIdx) {
         }
         
         if(!recalc) {
-            if(customScheduleUnits[customScheduleNextIdx].getTime() < currentTime) { recalc = true; }
+            if(customScheduleUnits[customScheduleNextIdx].getTime() <= currentTime) { recalc = true; }
         }
     }
+    
+    //+------------------------------------------------------------------+
+    // iterate through schedule units, determine closest next and prev units
     
     int nextIdx = -1, prevIdx = -1;
     if(!recalc) { 
@@ -304,10 +324,54 @@ bool OrderManager::getCloseCustom(int symIdx) {
         customSchedulePrevIdx = prevIdx;
     }
     
+    //+------------------------------------------------------------------+
+    // make determination
+    
     if(prevIdx >= 0) {
-        if(customScheduleUnits[prevIdx].definedAsClose) { return true; } // no nextIdx means no closes
+        if(customScheduleUnits[prevIdx].definedAsClose) { return true; }
         // else, assume open
     }
     
     return false;
+}
+
+//+------------------------------------------------------------------+
+
+double OrderManager::getSymbolSwap(bool isLong, int symIdx) {
+    string symName = MainSymbolMan.symbols[symIdx].name;
+    int swapMode = SymbolInfoInteger(symName, SYMBOL_SWAP_MODE);
+    
+    switch(swapMode) { // https://www.mql5.com/en/docs/constants/environment_state/marketinfoconstants#enum_symbol_swap_mode
+        case SwapModePoints:
+        case SwapModeReopenCurrent:
+        case SwapModeReopenBid:
+            if(isLong) { return PointsToPips(SymbolInfoDouble(symName, SYMBOL_SWAP_LONG)); }
+            else { return PointsToPips(SymbolInfoDouble(symName, SYMBOL_SWAP_SHORT)); }
+        
+        case SwapModeSymbolMargin:
+            if(isLong) { return PriceToPips(symName, SymbolInfoDouble(symName, SYMBOL_SWAP_LONG)); }
+            else { return PriceToPips(symName, SymbolInfoDouble(symName, SYMBOL_SWAP_SHORT)); }
+            
+        // we can't translate the others to pips for now, so return 0
+        // case SwapModeSymbolBase:
+        // case SwapModeInterest:
+        // case SwapModeCurrencyDeposit:
+        // case SwapModeInterestOpen:
+        default:
+            return 0;
+    }
+}
+
+bool OrderManager::isSwapThresholdBroken(bool isLong, int symIdx, bool isThreeDay = false) {
+    double swap = getSymbolSwap(isLong, symIdx);
+    
+    return isSwapThresholdBroken(swap, symIdx, isThreeDay);
+}
+
+bool OrderManager::isSwapThresholdBroken(double swap, int symIdx, bool isThreeDay = false) {
+    double threshold = 0;
+    if(!getValue(threshold, swapThresholdLoc, symIdx) || threshold == 0) { return false; }
+
+    if(threshold < 0) { return (isThreeDay ? swap*3 : swap) <= threshold; }
+    else { return (isThreeDay ? swap*3 : swap) >= threshold; }
 }

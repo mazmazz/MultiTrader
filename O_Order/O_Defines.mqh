@@ -11,14 +11,35 @@
 #define OrderTypeBuyStop 4
 #define OrderTypeSellStop 5
 #ifdef __MQL4__
+// all negatives are different because if identical values are used in switch/case, compile fails
 #define OrderTypeBuyStopLimit -1
-#define OrderTypeSellStopLimit -1
-#define OrderTypeCloseBy -1
+#define OrderTypeSellStopLimit -2
+#define OrderTypeCloseBy -3
+
+#define SwapModeDisabled -4
+#define SwapModePoints 0
+#define SwapModeSymbolBase 1
+#define SwapModeInterest 2
+#define SwapModeSymbolMargin 3
+#define SwapModeDepositCurrency -5
+#define SwapModeInterestOpenPrice -6
+#define SwapModeReopenCurrent -7
+#define SwapModeReopenBid -8
 #else
 #ifdef __MQL5__
 #define OrderTypeBuyStopLimit 6
 #define OrderTypeSellStopLimit 7
 #define OrderTypeCloseBy 8
+
+#define SwapModeDisabled 0
+#define SwapModePoints 1
+#define SwapModeSymbolBase 2
+#define SwapModeInterest 5
+#define SwapModeSymbolMargin 3
+#define SwapModeDepositCurrency 4
+#define SwapModeInterestOpenPrice 6
+#define SwapModeReopenCurrent 7
+#define SwapModeReopenBid 8
 #endif
 #endif
 
@@ -74,6 +95,7 @@ class OrderManager {
     ValueLocation *breakEvenJumpDistanceLoc;
     ValueLocation *trailingStopLoc;
     ValueLocation *jumpingStopLoc;
+    ValueLocation *swapThresholdLoc;
     
     TimePoint *lastTradeBetween[]; // keyed by symbolId
     TimePoint *lastValueBetween[];
@@ -191,6 +213,7 @@ class OrderManager {
     
     bool checkDoExitSchedule(int symIdx, int ticket, bool isPosition);
     bool getCloseByMarketSchedule(int symIdx, int ticket = -1, bool isPosition = false);
+    bool getCloseByMarketSchedule(int symIdx, int ticket, bool isLong, bool isPosition);
     bool getCloseDaily(int symIdx);
     bool getClose3DaySwap(int symIdx);
     bool getCloseWeekend(int symIdx);
@@ -204,6 +227,10 @@ class OrderManager {
     
     void initCustomSchedule();
     bool getCloseCustom(int symIdx);
+    
+    double getSymbolSwap(bool isLong, int symIdx);
+    bool isSwapThresholdBroken(bool isLong, int symIdx, bool isThreeDay = false);
+    bool isSwapThresholdBroken(double swap, int symIdx, bool isThreeDay = false);
     
     //+------------------------------------------------------------------+
     // Basket

@@ -70,17 +70,34 @@ int OrderManager::checkDoEntrySignals(int symIdx) {
         if(checkUnit.type == SignalShort && checkExitUnit.type == SignalLong) { return 0; }
     }
     
-    Error::PrintInfo("Open " + MainSymbolMan.symbols[symIdx].name + ": Entry signal - " + EnumToString(checkUnit.type));
-    
     int result = 0;
+    bool isLong = checkUnit.type == SignalLong;
     switch(TradeModeType) {
-        case TradeGrid: 
+        case TradeGrid:
+            // check for swap here: getCloseByMarketSchedule passes daily and 3DS closes as false
+            // for grids, we want to enforce the schedule closure despite the swap signal
+            // because some orders will be long and others short
+            if(SchedClose3DaySwap && getClose3DaySwap(symIdx)) { break; }
+            else if(SchedCloseDaily && getCloseDaily(symIdx)) { break; }
+
+            Error::PrintInfo("Open " + MainSymbolMan.symbols[symIdx].name + ": Entry signal - " + EnumToString(checkUnit.type));
             result = prepareGrid(symIdx, checkUnit.type);
             break;
             
         case TradeMarket: 
         case TradeLimitOrders:
         default: 
+            // check for swap here: getCloseByMarketSchedule passes daily and 3DS closes as false
+            // so we can check for swap closure separately here
+            if(SchedClose3DaySwap && SchedCloseBySwap3DaySwap && getClose3DaySwap(symIdx)) {
+                if(isSwapThresholdBroken(isLong, symIdx, true)) { break; }
+                // todo: do we need to check for SchedCloseOrderOp == OrderOnlyLong && isLong here? i.e., will new longs close immediately?
+            }
+            else if(SchedCloseDaily && SchedCloseBySwapDaily && getCloseDaily(symIdx)) { 
+                if(isSwapThresholdBroken(isLong, symIdx, false)) { break; }
+            }
+
+            Error::PrintInfo("Open " + MainSymbolMan.symbols[symIdx].name + ": Entry signal - " + EnumToString(checkUnit.type));
             result = prepareSingleOrder(symIdx, checkUnit.type, TradeModeType == TradeLimitOrders);
             break;
     }

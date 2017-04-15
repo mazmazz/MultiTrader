@@ -189,18 +189,25 @@ input bool JumpingStopEnabled=false;
 input bool JumpAfterBreakEvenOnly=true;
 input string JumpingStopCalc = "10.0";
 
-input string Lbl_TradeSched="---- Schedule Settings ----"; // :
-input bool SchedCloseCustom = false; // SchedCloseCustom: Exit trades following custom schedule
-input ScheduleTimeType SchedCustomType = TimeTypeGmt; // SchedCustomType: Is SchedCustom in GMT, broker, or local time?
+input string Lbl_Schedule="********** Schedule Settings **********"; // :
 input string SchedCustom = "-23:00|-00:00|+01:00"; // SchedCustom: Specify times daily, weekday, or exact date
+input ScheduleTimeType SchedCustomType = TimeTypeGmt; // SchedCustomType: Is SchedCustom in GMT, broker, or local time?
+input bool SchedCloseCustom = false; // SchedCloseCustom: Exit trades following custom schedule
 input bool SchedCloseDaily = false; // SchedCloseDaily: Exit trades before day close to prevent swap
 input bool SchedClose3DaySwap = true; // SchedClose3DaySwap: Exit trades before 3-day swap per symbol
 input bool SchedCloseWeekend = true; // SchedCloseWeekend: Exit trades before weekend
 input bool SchedCloseSession = false; // SchedCloseSession: Exit trades before current day session is closed
 input int SchedGapIgnoreMinutes = 15; // SchedGapIgnoreMinutes: Ignore session gaps of X mins
+
+input string Lbl_Schedule_Closing="---- Order closing settings ----"; // :
 input OrderProfitType SchedCloseOrderProfit = OrderBothProfitLoss; // SchedCloseOrderProfit: Close only profitable or losing trades
 input OrderOpType SchedCloseOrderOp = OrderBothLongShort; // SchedCloseOrderOp: Close only longs or shorts
 input bool SchedClosePendings = true;
+input bool SchedCloseBySwapDaily = false; // SchedCloseBySwapDaily: Only close if swap exceeds threshold
+input bool SchedCloseBySwap3DaySwap = false; // SchedCloseBySwap3DaySwap: Only close if swap exceeds threshold
+input string SchedSwapThresholdCalc = "-0.5"; // SchedSwapThresholdCalc: Swap threshold to close trades
+
+input string Lbl_Schedule_Delay="---- Delay settings ----"; // :
 input int SchedCloseMinutes = 5; // SchedCloseMinutes: Exit X mins before session close
 //input int SchedOpenLastMinutes = 60; // SchedOpenLastMinutes: Open up to X mins before session close
 input int SchedOpenMinutesDaily = 0; 

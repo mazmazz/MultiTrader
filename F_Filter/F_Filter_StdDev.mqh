@@ -32,49 +32,34 @@ class FilterStdDev : public Filter {
 #ifdef __MQL5__
     int getNewIndicatorHandle(int symIdx, int subIdx);
 #endif
+
+    void addSubfilter(int mode, string name, bool hidden, SubfilterType type
+        , int timeFrameIn
+        , int periodIn
+        , int shiftIn
+        , int methodIn
+        , int appliedPriceIn
+        , int periodShiftIn
+    );
+    void addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
+        , string timeFrameList
+        , string periodList
+        , string shiftList
+        , string methodList
+        , string appliedPriceList
+        , string periodShiftList
+        , bool addToExisting = false
+    );
+
     bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
 
-//+------------------------------------------------------------------+
-// Params
-//+------------------------------------------------------------------+
-
-input string Lbl_StdDev="________ StdDev Settings [StdDev] ________";
-input string StdDev_Value_Modes="a=1|b=1|c=1";
-input string StdDev_Value_Names="a=H1|b=H4|c=D1";
-input string StdDev_Value_Hidden="a=0|b=0|c=0";
-
-input string Lbl_StdDev_Value_Settings="---- StdDev Value Settings ----";
-input string StdDev_Value_TimeFrame="a=60|b=240|c=1440";
-input string StdDev_Value_Period="a=20|b=20|c=20";
-input string StdDev_Value_Shift="a=0|b=0|c=0";
-input string StdDev_Value_Method="a=0|b=0|c=0";
-input string StdDev_Value_AppliedPrice="a=0|b=0|c=0";
-input string StdDev_Value_PeriodShift="a=0|b=0|c=0";
-
-//+------------------------------------------------------------------+
-// Methods
 //+------------------------------------------------------------------+
 
 void FilterStdDev::init() {
     if(isInit) { return; }
     
-    // 1. Define a shortName -- other settings will refer to this filter using this name (case-insensitive).
     shortName = "StdDev";
-    
-    // 2. Call setupSubfilters for every type offered -- entry, exit, and/or value.
-    setupSubfilters(StdDev_Value_Modes, StdDev_Value_Names, StdDev_Value_Hidden, SubfilterValue);
-    
-    // 3. Set up options per subfilter type.
-    int valueSubfilterCount = getSubfilterCount(SubfilterValue);
-    if(valueSubfilterCount > 0) {
-        MultiSettings::Parse(StdDev_Value_TimeFrame, timeFrame, valueSubfilterCount);
-        MultiSettings::Parse(StdDev_Value_Period, period, valueSubfilterCount);
-        MultiSettings::Parse(StdDev_Value_Shift, shift, valueSubfilterCount);
-        MultiSettings::Parse(StdDev_Value_Method, method, valueSubfilterCount);
-        MultiSettings::Parse(StdDev_Value_AppliedPrice, appliedPrice, valueSubfilterCount);
-        MultiSettings::Parse(StdDev_Value_PeriodShift, periodShift, valueSubfilterCount);
-    }
     
 #ifdef __MQL5__
     loadIndicatorHandles(iStdDevHandle);
@@ -101,6 +86,50 @@ int FilterStdDev::getNewIndicatorHandle(int symIdx, int subIdx) {
         );
 }
 #endif
+
+//+------------------------------------------------------------------+
+
+void FilterStdDev::addSubfilter(int mode, string name, bool hidden, SubfilterType type
+    , int timeFrameIn
+    , int periodIn
+    , int shiftIn
+    , int methodIn
+    , int appliedPriceIn
+    , int periodShiftIn
+) {
+    setupSubfilters(mode, name, hidden, type);
+    
+    Common::ArrayPush(timeFrame, timeFrameIn);
+    Common::ArrayPush(period, periodIn);
+    Common::ArrayPush(shift, shiftIn);
+    Common::ArrayPush(method, methodIn);
+    Common::ArrayPush(appliedPrice, appliedPriceIn);
+    Common::ArrayPush(periodShift, periodShiftIn);
+}
+
+void FilterStdDev::addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
+    , string timeFrameList
+    , string periodList
+    , string shiftList
+    , string methodList
+    , string appliedPriceList
+    , string periodShiftList
+    , bool addToExisting = false
+) {
+    setupSubfilters(modeList, nameList, hiddenList, typeName);
+    
+    int count = getSubfilterCount(typeName);
+    if(count > 0) {
+        MultiSettings::Parse(timeFrameList, timeFrame, count, addToExisting);
+        MultiSettings::Parse(periodList, period, count, addToExisting);
+        MultiSettings::Parse(shiftList, shift, count, addToExisting);
+        MultiSettings::Parse(methodList, method, count, addToExisting);
+        MultiSettings::Parse(appliedPriceList, appliedPrice, count, addToExisting);
+        MultiSettings::Parse(periodShiftList, periodShift, count, addToExisting);
+    }
+}
+
+//+------------------------------------------------------------------+
 
 bool FilterStdDev::calculate(int subfilterId, int symbolIndex, DataUnit *dataOut) {
     if(!checkSafe(subfilterId)) { return false; }

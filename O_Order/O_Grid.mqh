@@ -38,14 +38,6 @@ int OrderManager::prepareGrid(int symIdx, SignalType signal) {
     int posSlippage = 0;
     if(!getValuePoints(posSlippage, maxSlippageLoc, symIdx)) { return -1; }
     
-    double stoplossOffset = 0, takeprofitOffset = 0;
-    if(StopLossEnabled) {
-        if(!getValuePrice(stoplossOffset, stopLossLoc, symIdx)) { return -1; }
-    }
-    if(TakeProfitEnabled) {
-        if(!getValuePrice(takeprofitOffset, takeProfitLoc, symIdx)) { return -1; }
-    }
-    
     string posComment = OrderComment_;
     int posMagic = MagicNumber;
     datetime posExpiration = 0;
@@ -57,32 +49,32 @@ int OrderManager::prepareGrid(int symIdx, SignalType signal) {
     int finalResult = 0;
     
     if(GridOpenMarketInitial) {
-        if(prepareGridOrder(signal, false, false, true, 0, posSymName, posVolume, priceDistPoints, posSlippage, stoplossOffset, takeprofitOffset, posComment, posMagic, posExpiration)) { 
+        if(prepareGridOrder(signal, false, false, true, 0, symIdx, posSymName, posVolume, priceDistPoints, posSlippage, posComment, posMagic, posExpiration)) { 
             finalResult++; 
         }
     }
     
     for(int i = 1; i <= GridCount; i++) {
         if(GridSetStopOrders) {
-            if(prepareGridOrder(signal, false, false, false, i, posSymName, posVolume, priceDistPoints, posSlippage, stoplossOffset, takeprofitOffset, posComment, posMagic, posExpiration)) {
+            if(prepareGridOrder(signal, false, false, false, i, symIdx, posSymName, posVolume, priceDistPoints, posSlippage, posComment, posMagic, posExpiration)) {
                 finalResult++;
             }
         }
         
         if(GridSetLimitOrders) {
-            if(prepareGridOrder(signal, false, true, false, i, posSymName, posVolume, priceDistPoints, posSlippage, stoplossOffset, takeprofitOffset, posComment, posMagic, posExpiration)) {
+            if(prepareGridOrder(signal, false, true, false, i, symIdx, posSymName, posVolume, priceDistPoints, posSlippage, posComment, posMagic, posExpiration)) {
                 finalResult++;
             }
         }
         
         if(GridSetHedgeStopOrders) {
-            if(prepareGridOrder(signal, true, false, false, i, posSymName, posVolume, priceDistPoints, posSlippage, stoplossOffset, takeprofitOffset, posComment, posMagic, posExpiration)) {
+            if(prepareGridOrder(signal, true, false, false, i, symIdx, posSymName, posVolume, priceDistPoints, posSlippage, posComment, posMagic, posExpiration)) {
                 finalResult++;
             }
         }
             
         if(GridSetHedgeLimitOrders) {
-            if(prepareGridOrder(signal, true, true, false, i, posSymName, posVolume, priceDistPoints, posSlippage, stoplossOffset, takeprofitOffset, posComment, posMagic, posExpiration)) {
+            if(prepareGridOrder(signal, true, true, false, i, symIdx, posSymName, posVolume, priceDistPoints, posSlippage, posComment, posMagic, posExpiration)) {
                 finalResult++;
             }
         }
@@ -100,7 +92,7 @@ int OrderManager::prepareGrid(int symIdx, SignalType signal) {
     return finalResult;
 }
 
-int OrderManager::prepareGridOrder(SignalType signal, bool isHedge, bool isDual, bool isMarket, int gridIndex, string posSymName, double posVolume, double posPriceDist, int posSlippage, double stoplossOffset, double takeprofitOffset, string posComment = "", int posMagic = 0, datetime posExpiration = 0) {
+int OrderManager::prepareGridOrder(SignalType signal, bool isHedge, bool isDual, bool isMarket, int gridIndex, int symIdx, string posSymName, double posVolume, double posPriceDist, int posSlippage, string posComment = "", int posMagic = 0, datetime posExpiration = 0) {
     int cmd = -1, gridIndexPrice = 0;
     if(!isDual) {
         if(isMarket) {
@@ -129,18 +121,17 @@ int OrderManager::prepareGridOrder(SignalType signal, bool isHedge, bool isDual,
     double posPriceNormal = priceBaseNormal+(posPriceDist*gridIndexPrice);
     double posPriceOpposite = priceBaseOpposite+(posPriceDist*gridIndexPrice);
     
-    double posStoploss = 0, posTakeprofit = 0;
-    if((isMarket || SetStopsOnPendings) && stoplossOffset != 0) {
-        posStoploss = Common::OrderIsLong(cmd) ? posPriceOpposite + stoplossOffset : posPriceOpposite - stoplossOffset; // offset is negative
-    }
-    if((isMarket || SetStopsOnPendings) && takeprofitOffset != 0) {
-        posTakeprofit = Common::OrderIsLong(cmd) ? posPriceOpposite + takeprofitOffset : posPriceOpposite - takeprofitOffset;
-    }
+    double posStoploss = 0, posTakeprofit = 0; bool doDrop = false;
+    getInitialStopLevels(Common::OrderIsLong(cmd), symIdx
+        , (isMarket || SetStopsOnPendings) && StopLossEnabled, (isMarket || SetStopsOnPendings) && TakeProfitEnabled
+        , posStoploss, posTakeprofit
+        , doDrop
+        );
     
-    offsetStopLevels(Common::OrderIsShort(cmd), posSymName, posStoploss, posTakeprofit);
-    
-    int resultInitial = sendOpen(posSymName, cmd, posVolume, posPriceNormal, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
-    return resultInitial;
+    if(!doDrop) {
+        int resultInitial = sendOpen(posSymName, cmd, posVolume, posPriceNormal, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
+        return resultInitial;
+    } else { return 0; }
 }
 
 void OrderManager::fillGridExitFlags(int symbolIdx) { 

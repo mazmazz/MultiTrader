@@ -44,6 +44,12 @@ enum OrderOpType {
     , OrderOnlyShort       // Short positions only
 };
 
+enum StopLevelMinAdjust {
+    MinAdjustDrop          // Drop new order / Do not modify existing order
+    , MinAdjustDoNotSet    // Do not set stop level for new order
+    , MinAdjustSetEqual    // Set stop level equal to minimum
+};
+
 input string LblRuntime="********** Runtime Settings **********"; // :
 input int MagicNumber=5001;
 input string ConfigComment=""; // ConfigComment: Comment to display on dashboard
@@ -92,7 +98,7 @@ input string ExcludeCurrencies="SEK,CHF,DKK,NOK,TRY,HKD,ZAR,MXN,XAG,XAU";
 
 input string Lbl_Trade="********** Trade Settings **********"; // :
 input bool TradeEntryEnabled=true;
-input bool TradeExitEnabled=true;
+input bool TradeExitEnabled=true; // TradeExitEnabled: Follow signals; does not affect basket and SLTP
 input bool TradeValueEnabled=true;
 
 input string Lbl_TradeGeneral="---- General Trade Settings ----"; // :
@@ -138,9 +144,11 @@ input int GridCount=5; // GridCount: # of pendings per direction
 input string GridDistanceCalc = "10.0";
 
 input string LbL_Exit_Basket="---- Basket Exit Settings ----"; // :
-input bool BasketTotalPerDay = false; // BasketTotalPerDay: Add total of all profits during day, not just open orders
+//input bool BasketTotalPerDay = false; // BasketTotalPerDay: Add total of all profits during day, not just open orders
+bool BasketTotalPerDay = false; // dummied out for now
 // input int BasketPeriodLengthMinutes = 1440; // BasketPeriodLengthMinutes: Time to limit baskets
-//input bool BasketIncludeFees=false; // BasketIncludeFees: Deduct fees from profit calculation
+// input bool BasketPeriodStartType = From execution, From start time; // ???
+// input datetime BasketPeriodStartTime = Monday 12:00am; // ???
 input bool BasketEnableStopLoss=false;
 input double BasketStopLossValue=-200.0;
 input int BasketMaxLosingPerDay=2;
@@ -152,15 +160,17 @@ input bool BasketClosePendings=true;
 
 input string Lbl_StopLoss="---- Stop Loss Settings ----"; // :
 input bool StopLossEnabled=false;
-input bool StopLossTossOrderByBrokerMinimum = true;
 input bool StopLossInternal=true; // StopLossInternal: Track and fire SL using EA
+input bool StopLossMinimumAdd=true; // StopLossMinimumAdd: Add broker's minimum to all SL
+input StopLevelMinAdjust StopLossBelowMinimumAction=false;
 input double StopLossBrokerOffset=0.0; // StopLossBrokerOffset: Offset broker SL if Internal enabled
 input string StopLossCalc = "-30.0";
 
 input string Lbl_TakeProfit="---- Take Profit Settings ----"; // :
 input bool TakeProfitEnabled=false;
-input bool TakeProfitTossOrderByBrokerMinimum = false;
 input bool TakeProfitInternal=true; // TakeProfitInternal: Track and fire TP using EA
+input bool TakeProfitMinimumAdd=true; // TakeProfitMinimumAdd: Add broker's minimum to all TP
+input StopLevelMinAdjust TakeProfitBelowMinimumAction=false;
 input double TakeProfitBrokerOffset=0.0; // TakeProfitBrokerOffset: Offset broker TP if Internal enabled
 input string TakeProfitCalc = "30.0";
 
@@ -180,6 +190,9 @@ input bool JumpAfterBreakEvenOnly=true;
 input string JumpingStopCalc = "10.0";
 
 input string Lbl_TradeSched="---- Schedule Settings ----"; // :
+input bool SchedCloseCustom = false; // SchedCloseCustom: Exit trades following custom schedule
+input ScheduleTimeType SchedCustomType = TimeTypeGmt; // SchedCustomType: Is SchedCustom in GMT, broker, or local time?
+input string SchedCustom = "-23:00|-00:00|+01:00"; // SchedCustom: Specify times daily, weekday, or exact date
 input bool SchedCloseDaily = false; // SchedCloseDaily: Exit trades before day close to prevent swap
 input bool SchedClose3DaySwap = true; // SchedClose3DaySwap: Exit trades before 3-day swap per symbol
 input bool SchedCloseWeekend = true; // SchedCloseWeekend: Exit trades before weekend

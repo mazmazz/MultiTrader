@@ -26,76 +26,87 @@ class FilterHgi : public Filter {
     
     public:
     void init();
+    
+    void addSubfilter(int mode, string name, bool hidden, SubfilterType type
+        , int timeFrameIn
+        , int shiftIn
+        , int onTrendIn
+        , int onRangeIn
+        , int onRadIn
+        , int onSignalIn
+        , int onSlopeIn
+    );
+    void addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
+        , string timeFrameList
+        , string shiftList
+        , string onTrendList
+        , string onRangeList
+        , string onRadList
+        , string onSignalList
+        , string onSlopeList
+        , bool addToExisting = false
+    );
+    
     bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
 
-//+------------------------------------------------------------------+
-// Params
-//+------------------------------------------------------------------+
-
-input string Lbl_Hgi_1="________ HGI Settings [HGI] ________";
-input string Hgi_Entry_Modes="a=1";
-input string Hgi_Entry_Names="a=M60";
-input string Hgi_Exit_Modes="a=1";
-input string Hgi_Exit_Names="a=M60";
-
-input string LbL_Hgi_Entry="---- HGI Entry Settings ----";
-input string Hgi_Entry_TimeFrame="a=60";
-input string Hgi_Entry_Shift="a=0";
-input string Hgi_Entry_OnTrend="a=1";
-input string Hgi_Entry_OnRange="a=1";
-input string Hgi_Entry_OnRad="a=0";
-input string Hgi_Entry_OnSignal="a=1";
-input string Hgi_Entry_OnSlope="a=0";
-
-input string LbL_Hgi_Exit="---- HGI Exit Settings ----";
-input string Hgi_Exit_TimeFrame="a=60";
-input string Hgi_Exit_Shift="a=0";
-input string Hgi_Exit_OnTrend="a=1";
-input string Hgi_Exit_OnRange="a=1";
-input string Hgi_Exit_OnRad="a=0";
-input string Hgi_Exit_OnSignal="a=1";
-input string Hgi_Exit_OnSlope="a=0";
-
-//+------------------------------------------------------------------+
-// Methods
 //+------------------------------------------------------------------+
 
 void FilterHgi::init() {
     if(isInit) { return; }
     
-    // 1. Define a shortName -- other settings will refer to this filter using this name (case-insensitive).
     shortName = "HGI";
-    
-    // 2. Call setupSubfilters for every type offered -- entry, exit, and/or value.
-    setupSubfilters(Hgi_Entry_Modes, Hgi_Entry_Names, SubfilterEntry);
-    setupSubfilters(Hgi_Exit_Modes, Hgi_Exit_Names, SubfilterExit);
-    
-    // 3. Set up options per subfilter type.
-    int entrySubfilterCount = ArraySize(entrySubfilterId);
-    int exitSubfilterCount = ArraySize(exitSubfilterId);
-    if(entrySubfilterCount > 0) {
-        MultiSettings::Parse(Hgi_Entry_TimeFrame, timeFrame, entrySubfilterCount);
-        MultiSettings::Parse(Hgi_Entry_Shift, shift, entrySubfilterCount);
-        MultiSettings::Parse(Hgi_Entry_OnTrend, onTrend, entrySubfilterCount);
-        MultiSettings::Parse(Hgi_Entry_OnRange, onRange, entrySubfilterCount);
-        MultiSettings::Parse(Hgi_Entry_OnRad, onRad, entrySubfilterCount);
-        MultiSettings::Parse(Hgi_Entry_OnSignal, onSignal, entrySubfilterCount);
-        MultiSettings::Parse(Hgi_Entry_OnSlope, onSlope, entrySubfilterCount);
-    }
-    
-    if(exitSubfilterCount > 0) {
-        MultiSettings::Parse(Hgi_Exit_TimeFrame, timeFrame, exitSubfilterCount);
-        MultiSettings::Parse(Hgi_Exit_Shift, shift, exitSubfilterCount);
-        MultiSettings::Parse(Hgi_Exit_OnTrend, onTrend, entrySubfilterCount);
-        MultiSettings::Parse(Hgi_Exit_OnRange, onRange, entrySubfilterCount);
-        MultiSettings::Parse(Hgi_Exit_OnRad, onRad, entrySubfilterCount);
-        MultiSettings::Parse(Hgi_Exit_OnSignal, onSignal, entrySubfilterCount);
-        MultiSettings::Parse(Hgi_Exit_OnSlope, onSlope, entrySubfilterCount);
-    }
     
     isInit = true;
 }
+
+//+------------------------------------------------------------------+
+
+void FilterStoch::addSubfilter(int mode, string name, bool hidden, SubfilterType type
+    , int timeFrameIn
+    , int shiftIn
+    , int onTrendIn
+    , int onRangeIn
+    , int onRadIn
+    , int onSignalIn
+    , int onSlopeIn
+) {
+    setupSubfilters(mode, name, hidden, type);
+    
+    Common::ArrayPush(timeFrame, timeFrameIn);
+    Common::ArrayPush(shift, shiftIn);
+    Common::ArrayPush(onTrend, onTrendIn);
+    Common::ArrayPush(onRange, onRangeIn);
+    Common::ArrayPush(onRad, onRadIn);
+    Common::ArrayPush(onSignal, onSignalIn);
+    Common::ArrayPush(onSlope, onSlopeIn);
+}
+
+void FilterStoch::addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
+    , string timeFrameList
+    , string shiftList
+    , string onTrendList
+    , string onRangeList
+    , string onRadList
+    , string onSignalList
+    , string onSlopeList
+    , bool addToExisting = false
+) {
+    setupSubfilters(modeList, nameList, hiddenList, typeName);
+    
+    int count = getSubfilterCount(typeName);
+    if(count > 0) {
+        MultiSettings::Parse(timeFrameList, timeFrame, count, addToExisting);
+        MultiSettings::Parse(shiftList, shift, count, addToExisting);
+        MultiSettings::Parse(onTrendList, onTrend, count, addToExisting);
+        MultiSettings::Parse(onRangeList, onRange, count, addToExisting);
+        MultiSettings::Parse(onRadList, onRad, count, addToExisting);
+        MultiSettings::Parse(onSignalList, onSignal, count, addToExisting);
+        MultiSettings::Parse(onSlopeList, onSlope, count, addToExisting);
+    }
+}
+
+//+------------------------------------------------------------------+
 
 bool FilterHgi::calculate(int subfilterId, int symbolIndex, DataUnit *dataOut) {
     if(!checkSafe(subfilterId)) { return false; }

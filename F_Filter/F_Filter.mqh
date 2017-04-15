@@ -54,6 +54,8 @@ class Filter {
     virtual bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut) { Error::ThrowError(ErrorNormal, "Filter: Calculate not implemented", FunctionTrace, shortName); return false; }
     
     protected:
+    void clearSubfilters();
+    void setupSubfilters(int mode, string name, bool hidden, SubfilterType type);
     void setupSubfilters(string pairList, string nameList, SubfilterType subfilterTypeIn, bool addToArray = true);
     void setupSubfilters(string pairList, string nameList, string hiddenList, SubfilterType subfilterTypeIn, bool addToArray = true);
     bool checkSafe(int subfilterId);
@@ -81,6 +83,31 @@ int Filter::getSubfilterCount(SubfilterType type = SubfilterAllTypes) {
         case SubfilterExit: return ArraySize(exitSubfilterId);
         case SubfilterValue: return ArraySize(valueSubfilterId);
         default: return ArraySize(subfilterMode); //ArraySize(filters[filterId].entrySubfilterId) + ArraySize(filters[filterId].exitSubfilterId) + ArraySize(filters[filterId].valueSubfilterId);
+    }
+}
+
+void Filter::clearSubfilters() {
+    // note: filter-specific settings need to be reset too
+    ArrayFree(subfilterMode);
+    ArrayFree(subfilterName);
+    ArrayFree(subfilterType);
+    ArrayFree(subfilterHidden);
+    
+    ArrayFree(entrySubfilterId);
+    ArrayFree(exitSubfilterId);
+    ArrayFree(valueSubfilterId);
+}
+
+void Filter::setupSubfilters(int mode, string name, bool hidden, SubfilterType type) {
+    int size = Common::ArrayPush(subfilterMode, (SubfilterMode)mode);
+    Common::ArrayPush(subfilterName, name);
+    Common::ArrayPush(subfilterHidden, (int)false);
+    Common::ArrayPush(subfilterType, type);
+    
+    switch(type) {
+        case SubfilterEntry: Common::ArrayPush(entrySubfilterId, size-1); break;
+        case SubfilterExit: Common::ArrayPush(exitSubfilterId, size-1); break;
+        case SubfilterValue: Common::ArrayPush(valueSubfilterId, size-1); break;
     }
 }
 

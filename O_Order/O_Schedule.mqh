@@ -9,6 +9,7 @@
 //+------------------------------------------------------------------+
 
 #include "../MC_Common/MC_Common.mqh"
+#include "../MC_Common/MC_MultiSettings.mqh"
 #include "../MC_Common/MC_Error.mqh"
 #include "../D_Data/D_Data.mqh"
 #include "../S_Symbol.mqh"
@@ -40,7 +41,11 @@ bool OrderManager::getCloseByMarketSchedule(int symIdx, int ticket = -1, bool is
     
     // todo: swap - if minimum swap trigger set, check swap: if it's greater than the negative swap value, return false
     
-    if(SchedCloseDaily && getCloseDaily(symIdx)) {
+    if(SchedCloseCustom && getCloseCustom(symIdx)) {
+        if(ticket > 0) { Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Schedule custom", true); }
+        return true; 
+    }
+    else if(SchedCloseDaily && getCloseDaily(symIdx)) {
         if(ticket > 0) { Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Schedule daily", true); }
         return true; 
     }
@@ -131,6 +136,9 @@ bool OrderManager::getOpenByMarketSchedule(int symIdx) {
     
     if(getCloseByMarketSchedule(symIdx)) { return false; }
     
+    // Custom schedule needs no processing: entry delays do not apply to custom opening times
+    // Custom schedule only governs when entries need to be closed
+    
     if(SchedOpenMinutesWeekend <= 0 && SchedOpenMinutesDaily <= 0 && SchedOpenMinutesSession <= 0) { return true; }
     
     datetime fromCur = 0, toCur = 0, dt = Common::StripDateFromDatetime(TimeCurrent()); int dayCur = DayOfWeek();
@@ -195,4 +203,111 @@ int OrderManager::getSessionCountByWeekday(int symIdx, int weekday) {
     while(SymbolInfoSessionTrade(symName, (ENUM_DAY_OF_WEEK)weekday, ++sessCount, from, to)) { }
     
     return sessCount;
+}
+
+//+------------------------------------------------------------------+
+
+void OrderManager::initCustomSchedule() {
+    if(!SchedCloseCustom) { return; }
+    
+    customScheduleNextIdx = -1;
+    customSchedulePrevIdx = -1;
+    
+    if(!MultiSettings::ParseScheduleList(SchedCustom, customScheduleUnits)) { return; }
+}
+
+bool OrderManager::getCloseCustom(int symIdx) {
+    // symIdx can be used in future for symbol-specific closes
+    int size = ArraySize(customScheduleUnits);
+    if(!SchedCloseCustom || size <= 0) { return false; }
+    
+    datetime currentDatetime = -1; int currentDayOfWeek = -1; datetime currentDate = -1, currentTime = -1;
+    switch(SchedCustomType) {
+        case TimeTypeGmt: currentDatetime = TimeGMT(); break;
+        case TimeTypeLocal: currentDatetime = TimeLocal(); break;
+        case TimeTypeBroker:
+        default: currentDatetime = TimeCurrent(); break;
+    }
+    currentDayOfWeek = TimeDayOfWeek(currentDatetime);
+    currentDate = Common::StripTimeFromDatetime(currentDatetime);
+    currentTime = Common::StripDateFromDatetime(currentDatetime);
+    
+    bool recalc = false;
+    if(customSchedulePrevIdx >= 0) {
+        switch(customScheduleUnits[customSchedulePrevIdx].type) {
+            case ScheduleDayOfWeek:
+                if(customScheduleUnits[customSchedulePrevIdx].dayOfWeek != currentDayOfWeek) { recalc = true; }
+                break;
+                
+            case ScheduleExactDatetime:
+                if(customScheduleUnits[customSchedulePrevIdx].getDate() != currentDate) { recalc = true; }
+                break;
+        }
+        
+        if(!recalc) {
+            if(customScheduleUnits[customSchedulePrevIdx].getTime() > currentTime) { recalc = true; }
+        }
+    }
+    
+    if(!recalc && customScheduleNextIdx >= 0) {
+        switch(customScheduleUnits[customScheduleNextIdx].type) {
+            case ScheduleDayOfWeek:
+                if(customScheduleUnits[customScheduleNextIdx].dayOfWeek != currentDayOfWeek) { recalc = true; }
+                break;
+                
+            case ScheduleExactDatetime:
+                if(customScheduleUnits[customScheduleNextIdx].getDate() != currentDate) { recalc = true; }
+                break;
+        }
+        
+        if(!recalc) {
+            if(customScheduleUnits[customScheduleNextIdx].getTime() < currentTime) { recalc = true; }
+        }
+    }
+    
+    int nextIdx = -1, prevIdx = -1;
+    if(!recalc) { 
+        nextIdx = customScheduleNextIdx; 
+        prevIdx = customSchedulePrevIdx; 
+    }
+    else {
+        for(int i = 0; i < size; i++) {
+            // rule out units by date
+            switch(customScheduleUnits[i].type) {
+                case ScheduleDayOfWeek:
+                    if(customScheduleUnits[i].dayOfWeek != currentDayOfWeek) { continue; }
+                    break;
+                    
+                case ScheduleExactDatetime:
+                    if(customScheduleUnits[i].getDate() != currentDate) { continue; }
+                    break;
+                    
+                // else, is ScheduleDaily and should proceed
+            }
+            
+            // is next time equal or greater than current time? is it open or close?
+            // is previous time open or close?
+            if(customScheduleUnits[i].getTime() > currentTime) {
+                if(nextIdx >= 0) {
+                    if(customScheduleUnits[i].getTime() >= customScheduleUnits[nextIdx].getTime()) { continue; }
+                }
+                nextIdx = i;
+            } else {
+                if(prevIdx >= 0) {
+                    if(customScheduleUnits[i].getTime() <= customScheduleUnits[prevIdx].getTime()) { continue; }
+                }
+                prevIdx = i;
+            }
+        }
+        
+        customScheduleNextIdx = nextIdx; 
+        customSchedulePrevIdx = prevIdx;
+    }
+    
+    if(prevIdx >= 0) {
+        if(customScheduleUnits[prevIdx].definedAsClose) { return true; } // no nextIdx means no closes
+        // else, assume open
+    }
+    
+    return false;
 }

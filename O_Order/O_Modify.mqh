@@ -20,17 +20,19 @@ void OrderManager::doModifyPosition(int ticket, int symIdx, bool isPosition) {
     double stopLevel = 0;
     double profitLevel = 0;
     unOffsetTakeProfitFromOrder(ticket, getOrderSymbol(isPosition), profitLevel, isPosition);
+    
+    // both getModifiedStopLevel and getInitialStopLevel give price levels
+    bool doCancel = false;
     if(getModifiedStopLevel(ticket, symIdx, stopLevel, isPosition) 
         && stopLevel != 0 
         && (profitLevel == 0 || (Common::OrderIsLong(getOrderType(isPosition)) ? stopLevel < profitLevel : stopLevel > profitLevel))
-    ) { // todo: compare to SL
-        offsetStopLoss(Common::OrderIsShort(getOrderType(isPosition)), getOrderSymbol(isPosition), stopLevel);
+    ) { 
         sendModify(ticket, getOrderOpenPrice(isPosition), stopLevel, getOrderTakeProfit(isPosition), getOrderExpiration(isPosition), isPosition);
     } else if(getOrderStopLoss(isPosition) == 0 && getOrderTakeProfit(isPosition) == 0 && !Common::OrderIsPending(getOrderType(isPosition))
-        && getInitialStopLevels(Common::OrderIsLong(getOrderType(isPosition)), symIdx, stopLevel, profitLevel)
+        && getInitialStopLevels(Common::OrderIsLong(getOrderType(isPosition)), symIdx, true, true, stopLevel, profitLevel, doCancel)
+        && !doCancel
         && (stopLevel != 0 || profitLevel != 0)
-    ) {
-        offsetStopLevels(Common::OrderIsShort(getOrderType(isPosition)), getOrderSymbol(isPosition), stopLevel, profitLevel);
+    ) { // initial SLTP
         sendModify(ticket, getOrderOpenPrice(isPosition), stopLevel, profitLevel, getOrderExpiration(isPosition), isPosition);
     }
     

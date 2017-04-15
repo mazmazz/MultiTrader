@@ -14,14 +14,6 @@
 //#define _Benchmark
 
 //+------------------------------------------------------------------+
-//| Comments
-//+------------------------------------------------------------------+
-//
-// How to Add Filters
-// 1. Add include to include list - search [INCLUDES]
-// 2. Add filter to OnInit() - search [HOOKS]
-//
-//+------------------------------------------------------------------+
 //| defines                                                          |
 //+------------------------------------------------------------------+
 
@@ -35,30 +27,11 @@
 #endif
 
 #include "T_Settings.mqh"
+#include "T_Presets.mqh"
 #include "M_Main.mqh"
 //#include "depends/OrderReliable.mqh"
 
 TimePoint LastTickTime;
-
-//+------------------------------------------------------------------+
-// 1. Include filter includes here [INCLUDES]
-//    Include order affects settings order in config window
-//+------------------------------------------------------------------+
-
-#include "F_Filter/F_Filter_ATR.mqh"
-#include "F_Filter/F_Filter_StdDev.mqh"
-#include "F_Filter/F_Filter_Stoch.mqh"
-#ifdef __MQL4__
-//#include "F_Filter/F_Filter_HGI.mqh"
-//#include "F_Filter/F_Filter_CSS.mqh"
-#endif
-
-//+------------------------------------------------------------------+
-// 2. Add filters to OnInit below [HOOKS]
-//    ORDER MATTERS BY DEPENDENCY! Any filter that depends on other filters' values
-//    must be added after those other filters.
-//    Add order also affects display order on dashboard.
-//+------------------------------------------------------------------+
 
 int OnInit() {
     Error::ProjectName = _ProjectShortName;
@@ -82,13 +55,7 @@ int OnInit() {
 #endif
 
     Main = new MainMultiTrader();
-    Main.addFilter(new FilterAtr());
-    Main.addFilter(new FilterStdDev());
-    Main.addFilter(new FilterStoch());
-#ifdef __MQL4__
-    //Main.addFilter(new FilterHgi());
-    //Main.addFilter(new FilterCss());
-#endif
+    LoadFilters();
 
     int result = Main.onInit();
     

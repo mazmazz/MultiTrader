@@ -42,12 +42,6 @@ class FilterManager {
 string FilterManager::DualNameDelimiter = "-";
 string FilterManager::DualIdDelimiter = "~";
 
-extern string Lbl_IndisAndFilters="********** Indicators & Filters **********"; // Filter List
-extern string Lbl_FilterLegend="0 = Disabled; 1 = Normal; 2 = Opposite; 3 = Not Opposite"; // Legend
-extern string Lbl_Format="a=1|b=0|c=1"; // Format
-extern string Lbl_Format2="# of subfilters must be same across a filter's settings."; // Format
-extern string Lbl_Format3="Do not add a trailing |";
-
 void FilterManager::FilterManager() {
 
 }

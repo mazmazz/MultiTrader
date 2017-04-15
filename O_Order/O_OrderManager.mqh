@@ -59,9 +59,11 @@ void OrderManager::OrderManager() {
     if(ValueBetweenDelay > 0 ) { ArrayResize(lastValueBetween, symCount); }
     
     initValueLocations();
+    initCustomSchedule();
 }
 
 void OrderManager::~OrderManager() {
+    Common::SafeDeletePointerArray(customScheduleUnits);
     Common::SafeDeletePointerArray(lastTradeBetween);
     Common::SafeDeletePointerArray(lastValueBetween);
 

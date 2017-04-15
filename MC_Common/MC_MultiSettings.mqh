@@ -32,6 +32,70 @@ class ValueLocation {
     int subIdx;
     double setVal;
     double operand;
+    
+    ValueLocation() {
+        filterName = "";
+        filterIdx = -1;
+        subIdx = -1;
+        setVal = -1;
+        operand = -1;
+    }
+};
+
+enum ScheduleTimeType {
+    TimeTypeGmt // GMT time
+    , TimeTypeBroker // Broker time
+    , TimeTypeLocal // Local time
+};
+
+enum ScheduleType {
+    ScheduleExactDatetime,
+    ScheduleDayOfWeek,
+    ScheduleDaily
+};
+
+class ScheduleUnit {
+    public:
+    bool definedAsClose;
+    ScheduleType type;
+    int dayOfWeek;
+    //datetime open;
+    //datetime close;
+    datetime value;
+    
+    ScheduleUnit() {
+        definedAsClose = false;
+        type = ScheduleExactDatetime;
+        dayOfWeek = -1;
+        //open = -1;
+        //close = -1;
+        value = -1;
+    }
+    
+    datetime getFullDatetime(ScheduleTimeType currentTimeType = TimeTypeBroker) {
+        datetime currentDatetime = -1;
+        switch(currentTimeType) {
+            case TimeTypeGmt: currentDatetime = TimeGMT(); break;
+            case TimeTypeLocal: currentDatetime = TimeLocal(); break;
+            case TimeTypeBroker:
+            default: currentDatetime = TimeCurrent(); break;
+        }
+        
+        switch(type) {
+            case ScheduleDaily:
+            case ScheduleDayOfWeek: return Common::StripTimeFromDatetime(currentDatetime) + value;
+            case ScheduleExactDatetime:
+            default: return value;
+        }
+    }
+    
+    datetime getDate() {
+        return Common::StripTimeFromDatetime(value);
+    }
+    
+    datetime getTime() {
+        return Common::StripDateFromDatetime(value);
+    }
 };
 
 class MultiSettings {
@@ -54,18 +118,32 @@ class MultiSettings {
     static string GetLocationFilterName(string location);
     static CalcOperation GetLocationOperation(string location);
     static double GetLocationOperand(string location, CalcOperation operation);
+    
+    static bool ParseScheduleList(string schedule, ScheduleUnit* &scheduleList[]);
+    static bool ParseDatetime(string datetimeStr, datetime &datetimeOut, ScheduleType &typeOut, int &dayOfWeekOut);
 
     private:
     static string KeyValDelimiter;
     static string PairDelimiter;
     static string OptimizeDelimiter;
     static string OptimizeParamDelimiter;
+    
+    static string DateOpenDelimiter;
+    static string DateCloseDelimiter;
+    static string DateSegmentDelimiter;
+    static string DateDayDelimiter;
+    static string DateTimeDelimiter;
 };
 
 string MultiSettings::KeyValDelimiter = "=";
 string MultiSettings::PairDelimiter = "|";
-string MultiSettings::OptimizeDelimiter = "#";
-string MultiSettings::OptimizeParamDelimiter = ",";
+string MultiSettings::OptimizeDelimiter = "@";
+
+string MultiSettings::DateOpenDelimiter = "+";
+string MultiSettings::DateCloseDelimiter = "-";
+string MultiSettings::DateSegmentDelimiter = " ";
+string MultiSettings::DateDayDelimiter = ".";
+string MultiSettings::DateTimeDelimiter = ":";
 
 // https://docs.mql4.com/convert/chartostr
 
@@ -301,5 +379,64 @@ double MultiSettings::GetLocationOperand(string location, CalcOperation operatio
             
         default:
             return 0;
+    }
+}
+
+//+------------------------------------------------------------------+
+
+bool MultiSettings::ParseScheduleList(string schedule, ScheduleUnit* &scheduleList[]) {
+    string unitList[];
+    int unitListCount = StringSplit(schedule, StringGetCharacter(PairDelimiter, 0), unitList);
+    
+    if(unitListCount > 0) {
+        Common::SafeDeletePointerArray(scheduleList);
+        ArrayFree(scheduleList);
+    }
+    
+    for(int i = 0; i < unitListCount; i++) {
+        string unitStr = Common::StringTrim(unitList[i]);
+        string cmd = StringSubstr(unitStr, 0, 1);
+        
+        if(cmd != DateOpenDelimiter && cmd != DateCloseDelimiter) { continue; }
+        
+        datetime dt = -1; ScheduleType type = ScheduleExactDatetime; int dayOfWeek = -1;
+        if(!ParseDatetime(StringSubstr(unitStr, 1), dt, type, dayOfWeek)) { continue; }
+        
+        ScheduleUnit *unit = new ScheduleUnit();
+        unit.type = type;
+        unit.dayOfWeek = dayOfWeek;
+        
+        unit.definedAsClose = (cmd == DateCloseDelimiter);
+        unit.value = dt;
+        //if(cmd == DateCloseDelimiter) { unit.close = dt; }
+        //else { unit.open = dt; }
+        Common::ArrayPush(scheduleList, unit);
+    }
+    
+    return true;
+}
+
+bool MultiSettings::ParseDatetime(string datetimeStr, datetime &datetimeOut, ScheduleType &typeOut, int &dayOfWeekOut) {
+    if(StringFind(datetimeStr, DateSegmentDelimiter) < 0) { // is daily
+        datetimeOut = Common::StripDateFromDatetime(StringToTime(datetimeStr));
+        typeOut = ScheduleDaily;
+        dayOfWeekOut = -1;
+        return true; // no way to tell if parse succeeded; it returns 00:00 of the current day
+    } else {
+        string datetimeSegment[];
+        int segCount = StringSplit(datetimeStr, DateSegmentDelimiter, datetimeSegment);
+        if(segCount != 2) { return false; }
+        
+        if(StringLen(datetimeSegment[0]) == 1 && Common::GetStringType(datetimeSegment[0]) == Type_Numeric && datetimeSegment[0] >= SUNDAY && datetimeSegment[0] <= SATURDAY) { // is weekday
+            datetimeOut = Common::StripDateFromDatetime(StringToTime(datetimeSegment[1]));
+            typeOut = ScheduleDayOfWeek;
+            dayOfWeekOut = datetimeSegment[0];
+        } else if(StringLen(datetimeSegment[0]) > 0) { // is exact date
+            datetimeOut = StringToTime(datetimeStr); // partial dates follow MQL rules: yyyy.mm.dd OR dd.mm OR dd.mm.yyyy (NOT mm.dd)
+            typeOut = ScheduleExactDatetime;
+            dayOfWeekOut = -1;
+        } else { return false; }
+        
+        return true;
     }
 }

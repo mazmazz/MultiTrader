@@ -125,17 +125,18 @@ int OrderManager::prepareSingleOrder(int symIdx, SignalType signal, bool isPendi
     int posSlippage = 0;
     if(!getValuePoints(posSlippage, maxSlippageLoc, symIdx)) { return -1; }
     
-    double posStoploss = 0, posTakeprofit = 0;
-    if((StopLossEnabled || TakeProfitEnabled) && (!isPending || SetStopsOnPendings)) {
-        if(!getInitialStopLevels(isLong, symIdx, posStoploss, posTakeprofit)) { return -1; }
-    }
-        
-    offsetStopLevels(!isLong, posSymName, posStoploss, posTakeprofit);
+    double posStoploss = 0, posTakeprofit = 0; bool doDrop = false;
+    getInitialStopLevels(isLong, symIdx
+        , (!isPending || SetStopsOnPendings) && StopLossEnabled, (!isPending || SetStopsOnPendings) && TakeProfitEnabled
+        , posStoploss, posTakeprofit
+        , doDrop
+        );
     
-    string posComment = OrderComment_;
-    int posMagic = MagicNumber;
-    datetime posExpiration = 0;
-    int result = sendOpen(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
-    
-    return result;
+    if(!doDrop) {
+        string posComment = OrderComment_;
+        int posMagic = MagicNumber;
+        datetime posExpiration = 0;
+        int result = sendOpen(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
+        return result;
+    } else { return 0; }
 }

@@ -176,7 +176,7 @@ class OrderManager {
     bool gridExitByOpposite[];
     
     int prepareGrid(int symIdx, SignalType signal);
-    int prepareGridOrder(SignalType signal, bool isHedge, bool isDual, bool isMarket, int gridIndex, string posSymName, double posVolume, double posPriceDist, int posSlippage, double stoplossOffset, double takeprofitOffset, string posComment = "", int posMagic = 0, datetime posExpiration = 0);
+    int prepareGridOrder(SignalType signal, bool isHedge, bool isDual, bool isMarket, int gridIndex, int symIdx, string posSymName, double posVolume, double posPriceDist, int posSlippage, string posComment = "", int posMagic = 0, datetime posExpiration = 0);
     void fillGridExitFlags(int symbolIdx);
     bool isGridOpen(int symIdx, bool checkPendingsOnly);
     bool isGridOpen(int symIdx, bool isLong, bool checkPendingsOnly);
@@ -184,6 +184,10 @@ class OrderManager {
     
     //+------------------------------------------------------------------+
     // Schedule
+    
+    ScheduleUnit *customScheduleUnits[]; 
+    int customSchedulePrevIdx;
+    int customScheduleNextIdx;
     
     bool checkDoExitSchedule(int symIdx, int ticket, bool isPosition);
     bool getCloseByMarketSchedule(int symIdx, int ticket = -1, bool isPosition = false);
@@ -197,6 +201,9 @@ class OrderManager {
     int getCurrentSessionIdx(int symIdx, datetime dt = 0, int weekday = -1);
     int getCurrentSessionIdx(int symIdx, datetime &fromOut, datetime &toOut, datetime dt = 0, int weekday = -1);
     int getSessionCountByWeekday(int symIdx, int weekday);
+    
+    void initCustomSchedule();
+    bool getCloseCustom(int symIdx);
     
     //+------------------------------------------------------------------+
     // Basket
@@ -214,7 +221,7 @@ class OrderManager {
     //+------------------------------------------------------------------+
     // Stop Levels
     
-    bool getInitialStopLevels(bool isLong, int symIdx, double &stoplossOut, double &takeprofitOut);
+    bool getInitialStopLevels(bool isLong, int symIdx, bool doStoploss, bool doTakeprofit, double &stoplossOut, double &takeprofitOut, bool &doDropOut);
     bool checkDoExitStopLevels(int ticket, int symIdx, bool isPosition);
     
     bool getModifiedStopLevel(int ticket, int symIdx, double &stopLevelOut, bool isPosition);
@@ -227,7 +234,6 @@ class OrderManager {
     bool unOffsetStopLevelsFromOrder(int ticket, string symName, double &stoplossOut, double &takeprofitOut, bool isPosition);
     bool unOffsetStopLossFromOrder(int ticket, string symName, double &stoplossOut, bool isPosition);
     bool unOffsetTakeProfitFromOrder(int ticket, string symName, double &takeprofitOut, bool isPosition);
-    void offsetStopLevels(bool isShort, string symName, double &stoploss, double &takeprofit);
-    void offsetStopLoss(bool isShort, string symName, double &stoploss);
-    void offsetTakeProfit(bool isShort,string symName,double &takeprofit);
+    void getStopLevelOffset(string symName, bool checkMinimum, double &stoplossOffset, double &takeprofitOffset, bool &doDrop);
+    void getStopLossOffset(string symName, bool checkMinimum, double &stoplossOffset, bool &doDrop);
 };

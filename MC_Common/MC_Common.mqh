@@ -105,6 +105,7 @@ class Common {
     static bool OrderIsMarket(int opType);
     
     static datetime StripDateFromDatetime(datetime target);
+    static datetime StripTimeFromDatetime(datetime target);
     
 #ifdef __MQL5__
     static double GetSingleValueFromBuffer(int indiHandle, int shift=0, int bufferNum=0);
@@ -586,6 +587,15 @@ datetime Common::StripDateFromDatetime(datetime target) {
     if(target >= 86400) {
         return target - (86400*MathFloor(target/86400));
     } else { return target; }
+}
+
+datetime Common::StripTimeFromDatetime(datetime target) {
+    if(target < 86400) {
+        // return today's date?
+        return 0; // jan 1 1970
+    } else {
+        return target*MathFloor(target/86400);
+    }
 }
 
 #ifdef __MQL5__

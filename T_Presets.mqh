@@ -182,6 +182,7 @@ void LoadFilters() {
         , Stoch_Exit_TimeFrame, Stoch_Exit_KPeriod, Stoch_Exit_DPeriod
         , Stoch_Exit_Slowing, Stoch_Exit_Method, Stoch_Exit_PriceField
         , Stoch_Exit_Shift, Stoch_Exit_BuySellZone
+        , true
         );
         
     //FilterCss* css = new FilterCss();
@@ -192,6 +193,7 @@ void LoadFilters() {
     //css.addSubfilter(CSS_Exit_Modes, CSS_Exit_Names, NULL, SubfilterExit
     //    , CSS_Exit_TimeFrame, CSS_Exit_Shift, CSS_Exit_MaPeriod
     //    , CSS_Exit_AtrPeriod, CSS_Exit_CalcMethod
+    //    , true
     //    );
     
     Main.addFilter(atr);
@@ -210,6 +212,7 @@ void LoadFilters() {
     //    , Hgi_Exit_TimeFrame, Hgi_Exit_Shift, Hgi_Exit_OnTrend
     //    , Hgi_Exit_OnRange, Hgi_Exit_OnRad, Hgi_Exit_OnSignal
     //    , Hgi_Exit_OnSlope
+    //    , true
     //    );
     
     //Main.addFilter(hgi);

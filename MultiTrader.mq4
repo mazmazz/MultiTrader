@@ -28,6 +28,7 @@
 
 #include "T_Settings.mqh"
 #include "T_Presets.mqh"
+#include "T_Optimization.mqh"
 #include "M_Main.mqh"
 //#include "depends/OrderReliable.mqh"
 

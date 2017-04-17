@@ -150,6 +150,7 @@ bool SymbolManager::isSymbolTradable(string symName) {
     return (
         SymbolInfoInteger(symName, SYMBOL_TRADE_CALC_MODE) == 0 // forex type
         && SymbolInfoInteger(symName, SYMBOL_TRADE_MODE) > 0 // not disabled for trading
+        && SymbolSelect(symName, true) // attempt add or select in Market Watch
         );
 }
 

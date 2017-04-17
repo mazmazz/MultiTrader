@@ -119,13 +119,21 @@ class MultiSettings {
     static CalcOperation GetLocationOperation(string location);
     static double GetLocationOperand(string location, CalcOperation operation);
     
+    static void PrepareRedirects(int size);
+    static void LoadRedirect(int index, double value);
+    static double ParseValueRedirect(string value);
+    static bool ParseValueRedirect(string value, double &valueOut);
+    
     static bool ParseScheduleList(string schedule, ScheduleUnit* &scheduleList[]);
     static bool ParseDatetime(string datetimeStr, datetime &datetimeOut, ScheduleType &typeOut, int &dayOfWeekOut);
 
     private:
+    static double Redirects[];
+    
     static string KeyValDelimiter;
     static string PairDelimiter;
-    static string OptimizeDelimiter;
+    
+    static string RedirectDelimiter;
     static string OptimizeParamDelimiter;
     
     static string DateOpenDelimiter;
@@ -135,9 +143,13 @@ class MultiSettings {
     static string DateTimeDelimiter;
 };
 
+double MultiSettings::Redirects[];
+
 string MultiSettings::KeyValDelimiter = "=";
 string MultiSettings::PairDelimiter = "|";
-string MultiSettings::OptimizeDelimiter = "@";
+
+string MultiSettings::RedirectDelimiter = "@";
+string MultiSettings::OptimizeParamDelimiter = ",";
 
 string MultiSettings::DateOpenDelimiter = "+";
 string MultiSettings::DateCloseDelimiter = "-";
@@ -155,7 +167,7 @@ string MultiSettings::DateTimeDelimiter = ":";
 
 template<typename T>
 void MultiSettings::Parse(string options, T &destArray[], int expectedCount=-1, bool addToArray = true) {
-    MultiSettings::Parse(options, destArray, IntZeroArray, expectedCount, addToArray);
+    Parse(options, destArray, IntZeroArray, expectedCount, addToArray);
 }
 
 template<typename T>
@@ -163,7 +175,7 @@ void MultiSettings::Parse(string options, T &destArray[], int &idArray[], int ex
     string pairList[];
     int pairListCount = StringSplit(options, StringGetCharacter(PairDelimiter, 0), pairList);
 
-    int pairValidCount = MultiSettings::CountPairs(pairList);
+    int pairValidCount = CountPairs(pairList);
     
     if(pairValidCount < 1 || (expectedCount > -1 ? pairValidCount != expectedCount : false)) {
         Error::ThrowFatalError(ErrorFatal
@@ -188,11 +200,13 @@ void MultiSettings::Parse(string options, T &destArray[], int &idArray[], int ex
     destArraySize = ArrayResize(destArray, oldArraySize+pairValidCount);
     
     for(int i = 0; i < pairValidCount; i++) {
-        string key = NULL, value = NULL; int keyAddrInt = 0;
+        string key = NULL, value = NULL; int keyAddrInt = 0; double valueNum = 0; bool valueNumResult = false;
         
-        if(MultiSettings::IsPairValid(pairList[i])) {
-            key = MultiSettings::GetPairKey(pairList[i], i);
-            value = MultiSettings::GetPairValue(pairList[i]);
+        if(IsPairValid(pairList[i])) {
+            key = GetPairKey(pairList[i], i);
+            value = GetPairValue(pairList[i]);
+            valueNumResult = ParseValueRedirect(value, valueNum);
+            
             keyAddrInt = StringLen(key) <= 0 ? i : Common::AddrAbcToInt(key);
             if(addToArray) { keyAddrInt += oldArraySize; }
 
@@ -200,9 +214,9 @@ void MultiSettings::Parse(string options, T &destArray[], int &idArray[], int ex
                 Error::ThrowFatalError(ErrorFatal, "key=" + key + " keyAddrInt=" + keyAddrInt + " is not within destArraySize=" + destArraySize, FunctionTrace, pairList[i]);
                 return;
             } else {
-                if(typename(T) == "bool") { destArray[keyAddrInt] = Common::StrToBool(value); }
-                else if(typename(T) == "int") { destArray[keyAddrInt] = StringToInteger(value); }
-                else if(typename(T) == "double") { destArray[keyAddrInt] = StringToDouble(value); }
+                if(typename(T) == "bool") { destArray[keyAddrInt] = valueNumResult ? valueNum : Common::StrToBool(value); }
+                else if(typename(T) == "int") { destArray[keyAddrInt] = valueNumResult ? valueNum : StringToInteger(value); }
+                else if(typename(T) == "double") { destArray[keyAddrInt] = valueNumResult ? valueNum : StringToDouble(value); }
                 else { destArray[keyAddrInt] = value; }
                 
                 Common::ArrayPush(idArray, keyAddrInt);
@@ -217,7 +231,7 @@ int MultiSettings::CountPairs(string optionPairs) {
     string pairList[];
     int pairListCount = StringSplit(optionPairs, StringGetCharacter(PairDelimiter, 0), pairList);
     
-    return MultiSettings::CountPairs(pairList);
+    return CountPairs(pairList);
 }
 
 int MultiSettings::CountPairs(string &optionPairList[]) {
@@ -227,7 +241,7 @@ int MultiSettings::CountPairs(string &optionPairList[]) {
     bool groupHasEquals = false;
     int numPairsWithoutEquals = 0;
     for(int i = 0; i < optionPairListCount; i++) {
-        if(MultiSettings::IsPairValid(optionPairList[i])) { optionPairCount++; }
+        if(IsPairValid(optionPairList[i])) { optionPairCount++; }
         if(StringFind(optionPairList[i], KeyValDelimiter) > -1) { groupHasEquals = true; }
         else { numPairsWithoutEquals++; }
     }
@@ -327,7 +341,7 @@ double MultiSettings::GetLocationValue(string location) {
     
     if(delimPos >= 0) { location = StringSubstr(location, 0, delimPos); }
     
-    if(Common::GetStringType(location) == Type_Numeric) { return StringToDouble(location); }
+    if(Common::GetStringType(location) == Type_Numeric) { return ParseValueRedirect(location); }
     else { return 0; }
 }
 
@@ -365,7 +379,7 @@ double MultiSettings::GetLocationOperand(string location, CalcOperation operatio
     
     if(unitListCount >= 2) {
         string compare = Common::StringTrim(unitList[2]);
-        if(Common::GetStringType(compare) == Type_Numeric) { return StringToDouble(compare); }
+        if(Common::GetStringType(compare) == Type_Numeric) { return ParseValueRedirect(compare); }
     }
     
     switch(operation) {
@@ -380,6 +394,71 @@ double MultiSettings::GetLocationOperand(string location, CalcOperation operatio
         default:
             return 0;
     }
+}
+
+//+------------------------------------------------------------------+
+
+void MultiSettings::PrepareRedirects(int size) {
+    if(ArraySize(Redirects) <= size) { Common::ArrayReserve(Redirects, size); }
+}
+
+void MultiSettings::LoadRedirect(int index, double value) {
+    if(ArraySize(Redirects) <= index) { ArrayResize(Redirects, index+1); }
+    
+    Redirects[index] = value;
+}
+
+double MultiSettings::ParseValueRedirect(string value) {
+    double result = 0;
+    ParseValueRedirect(value, result);
+    
+    return result;
+}
+
+bool MultiSettings::ParseValueRedirect(string value, double &valueOut) {
+    value = Common::StringTrim(value);
+    if(StringFind(value, RedirectDelimiter) < 0) { 
+        valueOut = StringToDouble(value); 
+        return true;
+    }
+    
+    string valRed[];
+    if(StringSplit(value, RedirectDelimiter, valRed) < 2) { 
+        valueOut = StringToDouble(value); 
+        return true;
+    }
+    
+    valRed[0] = Common::StringTrim(valRed[0]);
+    if(!IsOptimization() && StringLen(valRed[0]) > 0) { 
+        valueOut = StringToDouble(valRed[0]); 
+        return true;
+    }
+    
+    // if there's redirect notation ([value]@[redirectIndex])
+    valRed[1] = Common::StringTrim(valRed[1]);
+    if(StringLen(valRed[1]) > 0) {
+        string indexStr = NULL;
+        
+        if(StringFind(valRed[1], OptimizeParamDelimiter) < 0) {
+            indexStr = valRed[1];
+        } else {
+            string optParams[];
+            StringSplit(value, OptimizeParamDelimiter, optParams);
+            indexStr = Common::StringTrim(optParams[0]);
+        }
+        
+        int index = StringToInteger(indexStr);
+        
+        if(ArraySize(Redirects) > index) { 
+            valueOut = Redirects[index]; 
+            return true;
+        } else if(StringLen(valRed[0]) > 0) { 
+            valueOut = StringToDouble(valRed[0]); 
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 //+------------------------------------------------------------------+

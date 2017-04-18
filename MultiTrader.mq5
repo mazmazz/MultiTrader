@@ -11,6 +11,9 @@
 #define _ProjectShortName "MMO"
 #define _ProjectVersion "v0.1 04/2017"
 
+datetime ProjectExpiration = D'2017.06.04';
+
+#define _NoExpiration
 //#define _Benchmark
 
 //+------------------------------------------------------------------+
@@ -19,7 +22,7 @@
 
 #ifdef __MQL5__
 #include "MC_Common/Mql4Shim.mqh"
-//#define _X64 IsX64()
+//#define _X64 true
 #else
 #ifdef __MQL4__
 //#define _X64 false
@@ -29,7 +32,9 @@
 #include "T_Settings.mqh"
 #include "T_Presets.mqh"
 #include "T_Optimization.mqh"
+#include "T_Validation.mqh"
 #include "M_Main.mqh"
+
 //#include "depends/OrderReliable.mqh"
 
 TimePoint LastTickTime;
@@ -40,6 +45,8 @@ int OnInit() {
     Error::FileLevel = ::ErrorFileLevel;
     Error::AlertLevel = ::ErrorAlertLevel;
     Error::FilePath = ::ErrorLogFileName;
+    
+    if(!ValidateSession(true)) { return INIT_FAILED; }
     
     if(!ValidateSettings()) { return INIT_PARAMETERS_INCORRECT; }
     
@@ -161,10 +168,14 @@ bool SetCycle() {
 }
 
 void OnTimer() {
+    if(!ValidateSession()) { return; }
+
     Main.onTimer();
 }
 
 void OnTick() {
+    if(!ValidateSession()) { return; }
+
 #ifdef __MQL4__
     if(CycleMode == CycleRealTicks) { 
         Main.onTick(); 

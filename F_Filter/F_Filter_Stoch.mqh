@@ -73,6 +73,9 @@ void FilterStoch::init() {
     isInit = true;
 }
 
+#ifdef __MQL4__
+void FilterStoch::deInit() { }
+#else
 #ifdef __MQL5__
 void FilterStoch::deInit() {
     unloadIndicatorHandles(iStochHandle);
@@ -91,6 +94,7 @@ int FilterStoch::getNewIndicatorHandle(int symIdx, int subIdx) {
         , (ENUM_STO_PRICE)priceField[subIdx]
         );
 }
+#endif
 #endif
 
 //+------------------------------------------------------------------+

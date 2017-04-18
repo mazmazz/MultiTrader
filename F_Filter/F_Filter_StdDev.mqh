@@ -68,6 +68,9 @@ void FilterStdDev::init() {
     isInit = true;
 }
 
+#ifdef __MQL4__
+void FilterStdDev::deInit() { }
+#else
 #ifdef __MQL5__
 void FilterStdDev::deInit() {
     unloadIndicatorHandles(iStdDevHandle);
@@ -85,6 +88,7 @@ int FilterStdDev::getNewIndicatorHandle(int symIdx, int subIdx) {
         , appliedPrice[subIdx]
         );
 }
+#endif
 #endif
 
 //+------------------------------------------------------------------+

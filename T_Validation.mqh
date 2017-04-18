@@ -1,0 +1,154 @@
+//+------------------------------------------------------------------+
+//|                                                 T_Validation.mqh |
+//|                                          Copyright 2017, Marco Z |
+//|                                       https://github.com/mazmazz |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2017, Marco Z"
+#property link      "https://github.com/mazmazz"
+#property strict
+
+#include "depends/mql4-http.mqh"
+#include "depends/mql4-systemdatetime.mqh"
+
+//#define _ApiLocal
+
+//+------------------------------------------------------------------+
+
+// api subkey: current version + string, see mc-rest-validate
+int ApiVersion = 1;
+#ifdef _ApiLocal
+string ApiBasePath = "http://localhost:8080/";
+#else
+string ApiBasePath = "https://mc-validation.appspot.com/";
+#endif
+string ApiSubkeyRequest = "815476971d3fb14be87f39336c2cef9ef7c923ccf22c790bb5470fa923223409";
+string ApiSubkeyResult = "d6636dcbccc186882aef68f6594ff78b8fd809a69632d4f3b846cdccce5c8ab4";
+int ApiTimeout = 5;
+// api key: unix time, most recent minute, + "|" + apiSubkey
+
+int GetApiDatetime() {
+    return TimeSystemGMT()-MathMod(TimeSystemGMT(), 60);
+}
+
+string MakeApiKey(int apiDatetime, bool isRequest) {
+    uchar apiKeyBase[], apiKeyResult[], apiKeyKey[];
+    
+    // python hashlib takes a utf-8 string not null-terminated
+    // also make sure apiDatetime is stringed as an int, not a double/float
+    StringToCharArray(IntegerToString(apiDatetime) + "|" + (isRequest ? ApiSubkeyRequest : ApiSubkeyResult), apiKeyBase, 0, WHOLE_ARRAY, CP_UTF8);
+    ArrayResize(apiKeyBase, ArraySize(apiKeyBase)-1); // drop null byte
+    
+    CryptEncode(CRYPT_HASH_SHA256, apiKeyBase, apiKeyKey, apiKeyResult);
+    
+    string apiKey = NULL;
+    int apiKeyHashSize = ArraySize(apiKeyResult);
+    for(int i = 0; i < apiKeyHashSize; i++) {
+        apiKey += StringFormat("%.2x", apiKeyResult[i]); // lowercase
+    }
+    
+    return apiKey;
+}
+
+bool ValidateKey(string testKey, bool isRequest) {
+    int apiDatetimeBase = GetApiDatetime();
+    for(int i = ApiTimeout * -1; i < ApiTimeout+1; i++) {
+        int apiDatetime = apiDatetimeBase+(i*60);
+        string apiKey = MakeApiKey(apiDatetime, isRequest);
+        if(apiKey == testKey) { return true; }
+    }
+
+    return false;
+}
+
+//+------------------------------------------------------------------+
+
+int GetServerDatetime() {
+    string result = NULL;
+    if(httpGet(ApiBasePath + "date", "mc-validate-key: " + MakeApiKey(GetApiDatetime(), true) + "\r\nmc-api-version: " + ApiVersion, result) 
+        && Common::GetStringType(result) == Type_Numeric
+    ) {
+        return StringToInteger(result);
+    } else {
+        Error::PrintNormal("GetServerDatetime error: " + result);
+        return -1;
+    }
+}
+
+//+------------------------------------------------------------------+
+
+int ValidateRetryCounter = 0;
+int ValidateRetryLimit = 3;
+datetime LastValidateDate = 0;
+bool SessionValidated = false;
+
+#ifdef _NoExpiration
+bool ValidateSession(bool firstRun = false) { return true; }
+#else
+bool ValidateSession(bool firstRun = false) {
+    if(!firstRun && (IsTesting() || IsOptimization())) { return SessionValidated; }
+
+    if(Common::StripTimeFromDatetime(TimeGMT()) <= LastValidateDate || Common::StripTimeFromDatetime(TimeSystemGMT()) <= LastValidateDate) {
+        return SessionValidated;
+    }
+    
+    if(TimeGMT() >= ProjectExpiration) { 
+        Error::ThrowFatal("EA expired on " + ProjectExpiration + " and current time is " + TimeGMT());
+        SessionValidated = false;
+        return false; 
+    } else if(!IsTesting() && !IsOptimization()) {
+        // As long as it's not testing, broker time may be good enough
+        // This doesn't preclude an unscrupulous entity from ghosting their own server
+        // and feeding a fake time
+        // But chances of that happening are slim.
+        LastValidateDate = Common::StripTimeFromDatetime(TimeGMT());
+        ValidateRetryCounter = 0;
+        SessionValidated = true;
+        return true;
+    } 
+    
+    
+    if(TimeSystemGMT() >= ProjectExpiration) { 
+        // System time is not trustworthy because it can be faked
+        // Just use as a quick falsifier.
+        Error::ThrowFatal("EA expired on " + ProjectExpiration + " and current time is " + TimeSystemGMT());
+        SessionValidated = false;
+        return false; 
+    }
+    
+    if(!IsConnected()) { // if this is false, checking server time will likely fail too
+        if(firstRun) {
+            Error::ThrowFatal("Cannot validate expiration date due to connection error: " + ProjectExpiration);
+            SessionValidated = false;
+            return false;
+        } else {
+            Error::PrintNormal("Cannot validate expiration date due to connection error: " + ProjectExpiration);
+            SessionValidated = false;
+            return false;
+        }
+    }
+    
+    int serverTime = GetServerDatetime();
+    if(serverTime <= 0) {
+        if(firstRun || ValidateRetryCounter == ValidateRetryLimit-1) {
+            Error::ThrowFatal("Cannot validate expiration date due to connection error: " + ProjectExpiration);
+            SessionValidated = false;
+            return false;
+        } else {
+            Error::PrintNormal("Cannot validate expiration date due to connection error: " + ProjectExpiration);
+            ValidateRetryCounter++;
+            SessionValidated = false;
+            return false;
+            // todo: throttling
+        }
+    } else if(serverTime >= ProjectExpiration) { 
+        Error::ThrowFatal("EA has expired on " + ProjectExpiration + " and current time is " + ((datetime)serverTime));
+        SessionValidated = false;
+        return false; 
+    } 
+    
+    LastValidateDate = Common::StripTimeFromDatetime((datetime)serverTime);
+    ValidateRetryCounter = 0;
+    SessionValidated = true;
+    return true;
+}
+#endif

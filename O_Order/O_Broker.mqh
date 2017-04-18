@@ -309,6 +309,7 @@ datetime OrderManager::getOrderExpiration(bool isPosition) { return OrderExpirat
 bool OrderManager::getOrderSelect(int index, int select, int pool, bool isPosition) { return OrderSelect(index, select, pool); }
 double OrderManager::getOrderProfit(bool isPosition) { return OrderProfit(); }
 int OrderManager::getOrdersTotal(bool isPosition) { return OrdersTotal(); }
+datetime OrderManager::getOrderOpenTime(bool isPosition) { return OrderOpenTime(); }
 #else
 #ifdef __MQL5__
 long OrderManager::getOrderType(bool isPosition) {
@@ -399,6 +400,14 @@ int OrderManager::getOrdersTotal(bool isPosition) {
         return OrdersTotal();
     } else {
         return PositionsTotal();
+    }
+}
+
+datetime OrderManager::getOrderOpenTime(bool isPosition) {
+    if(!isPosition) {
+        return OrderGetInteger(ORDER_TIME_SETUP);
+    } else {
+        return PositionGetInteger(POSITION_TIME); // if netting, this may need POSITION_TIME_UPDATE, as lots are decreased
     }
 }
 #endif

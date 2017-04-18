@@ -26,6 +26,7 @@ class FilterHgi : public Filter {
     
     public:
     void init();
+    void deInit();
     
     void addSubfilter(int mode, string name, bool hidden, SubfilterType type
         , int timeFrameIn
@@ -59,6 +60,8 @@ void FilterHgi::init() {
     
     isInit = true;
 }
+
+void FilterHgi::deInit() { }
 
 //+------------------------------------------------------------------+
 

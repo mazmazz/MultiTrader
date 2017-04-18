@@ -156,38 +156,26 @@ void DataSymbol::addSignalUnit(SignalType signal, bool isEntry) {
             if(!Common::IsInvalidPointer(secondCompareUnit) && !Common::IsInvalidPointer(compareUnit)) {
                 bool retraceGuard = false;
                 
-                if(SignalRetraceOpen) {
+                // check if opposite exit signal was fulfilled (i.e., was old trade already closed?)
+                // this should negate a retrace and not set the fulfilled flag
+                int exitUnitCount = ArraySize(exitSignal);
+                for(int i = 0; i < 1 /*exitUnitCount*/; i++) { // todo: should we be looking more than 1 back?
+                   if(
+                       !Common::IsInvalidPointer(exitSignal[i])
+                       && ((newUnit.type == SignalLong && exitSignal[i].type == SignalShort)
+                           || (newUnit.type == SignalShort && exitSignal[i].type == SignalLong)
+                       )
+                       && exitSignal[i].fulfilled
+                       && getSignalDuration(TimeSettingUnit, exitSignal[i]) >= SignalRetraceTime
+                   ) {
+                       retraceGuard = false;
+                       break;
+                   } else { retraceGuard = true; }
+                }
+                
+                if(SignalRetraceOpen && retraceGuard) { // attempt to falsify
                     // todo: more sophisticated rule? should extra lots be allowed to open, after a time?
                     retraceGuard = getSignalDuration(TimeSettingUnit, compareUnit) < SignalRetraceTime;
-                } else {
-                    // check if opposite exit signal was fulfilled (i.e., was old trade already closed?)
-                    // this should negate a retrace and not set the fulfilled flag
-                    
-                    //int exitUnitCount = ArraySize(exitSignal);
-                    //for(int i = 0; i < exitUnitCount; i++) {
-                    //    if(
-                    //        !Common::IsInvalidPointer(exitSignal[i])
-                    //        && ((newUnit.type == SignalLong && exitSignal[i].type == SignalShort)
-                    //            || (newUnit.type == SignalShort && exitSignal[i].type == SignalLong)
-                    //        )
-                    //        && exitSignal[i].fulfilled
-                    //        && getSignalDuration(TimeSettingUnit, exitSignal[i]) >= SignalRetraceDelay
-                    //    ) {
-                    //        retraceGuard = false;
-                    //        break;
-                    //    } else { retraceGuard = true; }
-                    //}
-                    
-                    SignalUnit *exitCompareUnit = getSignalUnit(false); // todo: loop through retracements
-                    if(!Common::IsInvalidPointer(exitCompareUnit)) {
-                        if(
-                            ((newUnit.type == SignalLong && exitCompareUnit.type == SignalShort)
-                                || (newUnit.type == SignalShort && exitCompareUnit.type == SignalLong)
-                            )
-                            && exitCompareUnit.fulfilled
-                        ) { retraceGuard = false; }
-                        else { retraceGuard = true; }
-                    } else { retraceGuard = true; }
                 }
                 
                 if(signal == secondCompareUnit.type 

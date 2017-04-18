@@ -139,6 +139,7 @@ class OrderManager {
     bool getOrderSelect(int index, int select, int pool, bool isPosition);
     double getOrderProfit(bool isPosition);
     int getOrdersTotal(bool isPosition);
+    datetime getOrderOpenTime(bool isPosition);
 #else
 #ifdef __MQL5__
     ulong sendOpen(string posSymName, int posCmd, double posVolume, double posPrice, double posSlippage, double posStoploss, double posTakeprofit, string posComment = "", int posMagic = 0, datetime posExpiration = 0);
@@ -158,6 +159,7 @@ class OrderManager {
     bool getOrderSelect(int index, int select, int pool, bool isPosition);
     double getOrderProfit(bool isPosition);
     int getOrdersTotal(bool isPosition);
+    datetime getOrderOpenTime(bool isPosition);
 #endif
 #endif
     

@@ -594,7 +594,7 @@ datetime Common::StripTimeFromDatetime(datetime target) {
         // return today's date?
         return 0; // jan 1 1970
     } else {
-        return target*MathFloor(target/86400);
+        return 86400*MathFloor(target/86400);
     }
 }
 

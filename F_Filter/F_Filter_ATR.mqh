@@ -59,6 +59,9 @@ void FilterAtr::init() {
     isInit = true;
 }
 
+#ifdef __MQL4__
+void FilterAtr::deInit() { }
+#else
 #ifdef __MQL5__
 void FilterAtr::deInit() {
     unloadIndicatorHandles(iAtrHandle);
@@ -69,6 +72,7 @@ void FilterAtr::deInit() {
 int FilterAtr::getNewIndicatorHandle(int symIdx, int subIdx) {
     return iATR(MainSymbolMan.symbols[symIdx].name, GetMql5TimeFrame(timeFrame[subIdx]), period[subIdx]);
 }
+#endif
 #endif
 
 //+------------------------------------------------------------------+

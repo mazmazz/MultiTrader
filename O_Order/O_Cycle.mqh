@@ -95,10 +95,16 @@ void OrderManager::evaluateFulfilledFromOrder(int ticket, int symbolIdx, bool is
     int orderAct = getOrderType(isPosition);
     SignalUnit *checkEntrySignal = MainDataMan.symbol[symbolIdx].getSignalUnit(true);
     if(!Common::IsInvalidPointer(checkEntrySignal)) {
+        if(checkEntrySignal.fulfilled) { return; }
+       
         if(!isTradeModeGrid()) {
             if(
-                (Common::OrderIsLong(orderAct) && checkEntrySignal.type == SignalLong)
-                || (Common::OrderIsShort(orderAct) && checkEntrySignal.type == SignalShort)
+                ((Common::OrderIsLong(orderAct) && checkEntrySignal.type == SignalLong)
+                    || (Common::OrderIsShort(orderAct) && checkEntrySignal.type == SignalShort)
+                    )
+                && (!SignalRetraceOpen
+                    || TimeCurrent()-getOrderOpenTime(isPosition) <= SignalRetraceTime
+                    )
             ) { 
                 checkEntrySignal.fulfilled = true; 
             }

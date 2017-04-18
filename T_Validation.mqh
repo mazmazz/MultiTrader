@@ -76,8 +76,10 @@ int GetServerDatetime() {
 
 //+------------------------------------------------------------------+
 
-int ValidateRetryCounter = 0;
 int ValidateRetryLimit = 3;
+int ValidateRetryLimitDelay = 60;
+datetime ValidateRetryDelayDatetime = 0;
+int ValidateRetryCounter = 0;
 datetime LastValidateDate = 0;
 bool SessionValidated = false;
 
@@ -85,32 +87,50 @@ bool SessionValidated = false;
 bool ValidateSession(bool firstRun = false) { return true; }
 #else
 bool ValidateSession(bool firstRun = false) {
-    if(!firstRun && (IsTesting() || IsOptimization())) { return SessionValidated; }
+    return ValidateExpirationDate(firstRun);
+}
 
-    if(Common::StripTimeFromDatetime(TimeGMT()) <= LastValidateDate || Common::StripTimeFromDatetime(TimeSystemGMT()) <= LastValidateDate) {
+bool ValidateExpirationDate(bool firstRun = false) {
+    if(!firstRun && SessionValidated && (IsTesting() || IsOptimization())) { return SessionValidated; }
+    
+    if(ValidateRetryCounter == ValidateRetryLimit-1) { // throttling
+        if(TimeLocal() - ValidateRetryDelayDatetime < 60) { return SessionValidated; }
+        else { 
+            ValidateRetryDelayDatetime = 0;
+            ValidateRetryCounter = 0;
+        }
+    }
+
+    if(Common::StripTimeFromDatetime(TimeCurrent()) <= LastValidateDate && Common::StripTimeFromDatetime(TimeSystemGMT()) <= LastValidateDate) {
         return SessionValidated;
     }
     
-    if(TimeGMT() >= ProjectExpiration) { 
-        Error::ThrowFatal("EA expired on " + ProjectExpiration + " and current time is " + TimeGMT());
-        SessionValidated = false;
-        return false; 
-    } else if(!IsTesting() && !IsOptimization()) {
-        // As long as it's not testing, broker time may be good enough
-        // This doesn't preclude an unscrupulous entity from ghosting their own server
-        // and feeding a fake time
-        // But chances of that happening are slim.
-        LastValidateDate = Common::StripTimeFromDatetime(TimeGMT());
-        ValidateRetryCounter = 0;
-        SessionValidated = true;
-        return true;
-    } 
-    
+    if(!IsTesting() && !IsOptimization()) {
+        if(TimeCurrent() >= ProjectExpiration) { 
+            Error::ThrowFatal("EA expired on " + ProjectExpiration + " and broker time is " + TimeCurrent());
+            LastValidateDate = 0;
+            SessionValidated = false;
+            return false; 
+        } else { // if(TimeCurrent() >= TimeSystemGMT()-(3*86400) && TimeCurrent() <= TimeSystemGMT()+(3*86400)) {
+            // Controlling for requote delay (weekends) would be nice, but because of said delay,
+            // it's not easy to figure broker timezone offset.
+            // Just set expiration date on Mondays.
+            
+            // As long as it's not testing, broker time may be good enough
+            // This doesn't preclude an unscrupulous entity from ghosting their own server and feeding a fake time
+            // But chances of that happening are slim.
+            ValidateRetryCounter = 0;
+            LastValidateDate = Common::StripTimeFromDatetime(TimeCurrent());
+            SessionValidated = true;
+            return true;
+        }
+    }
     
     if(TimeSystemGMT() >= ProjectExpiration) { 
         // System time is not trustworthy because it can be faked
         // Just use as a quick falsifier.
-        Error::ThrowFatal("EA expired on " + ProjectExpiration + " and current time is " + TimeSystemGMT());
+        Error::ThrowFatal("EA expired on " + ProjectExpiration + " and system time is " + TimeSystemGMT());
+        LastValidateDate = 0;
         SessionValidated = false;
         return false; 
     }
@@ -118,10 +138,16 @@ bool ValidateSession(bool firstRun = false) {
     if(!IsConnected()) { // if this is false, checking server time will likely fail too
         if(firstRun) {
             Error::ThrowFatal("Cannot validate expiration date due to connection error: " + ProjectExpiration);
+            LastValidateDate = 0;
             SessionValidated = false;
             return false;
         } else {
             Error::PrintNormal("Cannot validate expiration date due to connection error: " + ProjectExpiration);
+            if(ValidateRetryCounter++ == ValidateRetryLimit-1) { 
+                Error::PrintNormal("Trying again in " + ValidateRetryLimitDelay + " seconds"); 
+                ValidateRetryDelayDatetime = TimeLocal();
+            }
+            LastValidateDate = 0;
             SessionValidated = false;
             return false;
         }
@@ -129,25 +155,30 @@ bool ValidateSession(bool firstRun = false) {
     
     int serverTime = GetServerDatetime();
     if(serverTime <= 0) {
-        if(firstRun || ValidateRetryCounter == ValidateRetryLimit-1) {
+        if(firstRun) {
             Error::ThrowFatal("Cannot validate expiration date due to connection error: " + ProjectExpiration);
+            LastValidateDate = 0;
             SessionValidated = false;
             return false;
         } else {
             Error::PrintNormal("Cannot validate expiration date due to connection error: " + ProjectExpiration);
-            ValidateRetryCounter++;
+            if(ValidateRetryCounter++ == ValidateRetryLimit-1) { 
+                Error::PrintNormal("Trying again in " + ValidateRetryLimitDelay + " seconds"); 
+                ValidateRetryDelayDatetime = TimeLocal();
+            }
+            LastValidateDate = 0;
             SessionValidated = false;
             return false;
-            // todo: throttling
         }
     } else if(serverTime >= ProjectExpiration) { 
-        Error::ThrowFatal("EA has expired on " + ProjectExpiration + " and current time is " + ((datetime)serverTime));
+        Error::ThrowFatal("EA has expired on " + ProjectExpiration + " and internet time is " + ((datetime)serverTime));
+        LastValidateDate = 0;
         SessionValidated = false;
         return false; 
     } 
     
-    LastValidateDate = Common::StripTimeFromDatetime((datetime)serverTime);
     ValidateRetryCounter = 0;
+    LastValidateDate = Common::StripTimeFromDatetime((datetime)serverTime);
     SessionValidated = true;
     return true;
 }

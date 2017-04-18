@@ -11,7 +11,7 @@
 #define _ProjectShortName "MMO"
 #define _ProjectVersion "v0.1 04/2017"
 
-datetime ProjectExpiration = D'2017.06.04';
+datetime ProjectExpiration = D'2017.06.05';
 
 #define _NoExpiration
 //#define _Benchmark

@@ -80,7 +80,8 @@ int ValidateRetryLimit = 3;
 int ValidateRetryLimitDelay = 60;
 datetime ValidateRetryDelayDatetime = 0;
 int ValidateRetryCounter = 0;
-datetime LastValidateDate = 0;
+datetime LastValidateCurrentDate = 0;
+datetime LastValidateSystemDate = 0;
 bool SessionValidated = false;
 
 #ifdef _NoExpiration
@@ -101,14 +102,15 @@ bool ValidateExpirationDate(bool firstRun = false) {
         }
     }
 
-    if(Common::StripTimeFromDatetime(TimeCurrent()) <= LastValidateDate && Common::StripTimeFromDatetime(TimeSystemGMT()) <= LastValidateDate) {
+    if(Common::StripTimeFromDatetime(TimeCurrent()) <= LastValidateCurrentDate && Common::StripTimeFromDatetime(TimeSystemGMT()) <= LastValidateSystemDate) {
         return SessionValidated;
     }
     
-    if(!IsTesting() && !IsOptimization()) {
+    if(true || !IsTesting() && !IsOptimization()) {
         if(TimeCurrent() >= ProjectExpiration) { 
             Error::ThrowFatal("EA expired on " + ProjectExpiration + " and broker time is " + TimeCurrent());
-            LastValidateDate = 0;
+            LastValidateCurrentDate = 0;
+            LastValidateSystemDate = 0;
             SessionValidated = false;
             return false; 
         } else { // if(TimeCurrent() >= TimeSystemGMT()-(3*86400) && TimeCurrent() <= TimeSystemGMT()+(3*86400)) {
@@ -120,7 +122,8 @@ bool ValidateExpirationDate(bool firstRun = false) {
             // This doesn't preclude an unscrupulous entity from ghosting their own server and feeding a fake time
             // But chances of that happening are slim.
             ValidateRetryCounter = 0;
-            LastValidateDate = Common::StripTimeFromDatetime(TimeCurrent());
+            LastValidateCurrentDate = Common::StripTimeFromDatetime(TimeCurrent());
+            LastValidateSystemDate = Common::StripTimeFromDatetime(TimeSystemGMT());
             SessionValidated = true;
             return true;
         }
@@ -130,7 +133,8 @@ bool ValidateExpirationDate(bool firstRun = false) {
         // System time is not trustworthy because it can be faked
         // Just use as a quick falsifier.
         Error::ThrowFatal("EA expired on " + ProjectExpiration + " and system time is " + TimeSystemGMT());
-        LastValidateDate = 0;
+        LastValidateCurrentDate = 0;
+        LastValidateSystemDate = 0;
         SessionValidated = false;
         return false; 
     }
@@ -138,7 +142,8 @@ bool ValidateExpirationDate(bool firstRun = false) {
     if(!IsConnected()) { // if this is false, checking server time will likely fail too
         if(firstRun) {
             Error::ThrowFatal("Cannot validate expiration date due to connection error: " + ProjectExpiration);
-            LastValidateDate = 0;
+            LastValidateCurrentDate = 0;
+            LastValidateSystemDate = 0;
             SessionValidated = false;
             return false;
         } else {
@@ -147,7 +152,8 @@ bool ValidateExpirationDate(bool firstRun = false) {
                 Error::PrintNormal("Trying again in " + ValidateRetryLimitDelay + " seconds"); 
                 ValidateRetryDelayDatetime = TimeLocal();
             }
-            LastValidateDate = 0;
+            LastValidateCurrentDate = 0;
+            LastValidateSystemDate = 0;
             SessionValidated = false;
             return false;
         }
@@ -157,7 +163,8 @@ bool ValidateExpirationDate(bool firstRun = false) {
     if(serverTime <= 0) {
         if(firstRun) {
             Error::ThrowFatal("Cannot validate expiration date due to connection error: " + ProjectExpiration);
-            LastValidateDate = 0;
+            LastValidateCurrentDate = 0;
+            LastValidateSystemDate = 0;
             SessionValidated = false;
             return false;
         } else {
@@ -166,19 +173,22 @@ bool ValidateExpirationDate(bool firstRun = false) {
                 Error::PrintNormal("Trying again in " + ValidateRetryLimitDelay + " seconds"); 
                 ValidateRetryDelayDatetime = TimeLocal();
             }
-            LastValidateDate = 0;
+            LastValidateCurrentDate = 0;
+            LastValidateSystemDate = 0;
             SessionValidated = false;
             return false;
         }
     } else if(serverTime >= ProjectExpiration) { 
         Error::ThrowFatal("EA has expired on " + ProjectExpiration + " and internet time is " + ((datetime)serverTime));
-        LastValidateDate = 0;
+        LastValidateCurrentDate = 0;
+        LastValidateSystemDate = 0;
         SessionValidated = false;
         return false; 
     } 
     
     ValidateRetryCounter = 0;
-    LastValidateDate = Common::StripTimeFromDatetime((datetime)serverTime);
+    LastValidateCurrentDate = Common::StripTimeFromDatetime(TimeCurrent());
+    LastValidateSystemDate = Common::StripTimeFromDatetime(TimeSystemGMT());
     SessionValidated = true;
     return true;
 }

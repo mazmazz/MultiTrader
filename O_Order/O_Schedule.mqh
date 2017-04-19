@@ -36,7 +36,7 @@ bool OrderManager::getCloseByMarketSchedule(int symIdx, int ticket = -1, bool is
 }
 
 bool OrderManager::getCloseByMarketSchedule(int symIdx, int ticket, bool isLong, bool isPosition) {
-    if(!SchedCloseDaily && !SchedCloseSession && !SchedClose3DaySwap && !SchedCloseWeekend) { return false;}
+    if(!SchedCloseCustom && !SchedCloseDaily && !SchedCloseSession && !SchedClose3DaySwap && !SchedCloseWeekend) { return false;}
 
     if(ticket > 0) {
         if(!checkDoSelect(ticket, isPosition)) { return false; }
@@ -57,19 +57,19 @@ bool OrderManager::getCloseByMarketSchedule(int symIdx, int ticket, bool isLong,
     else if(SchedClose3DaySwap && getClose3DaySwap(symIdx)) {
         if(ticket > 0) { 
             if(SchedCloseBySwap3DaySwap && !isSwapThresholdBroken(isLong, symIdx, true)) { return false; }
+            Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Schedule 3-day swap", true); 
         } else {
             if(SchedCloseBySwap3DaySwap) { return false; } // allow checkDoEntrySignals to call isSwapThresholdBroken separately
         }
-        Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Schedule 3-day swap", true); 
         return true; 
     }
     else if(SchedCloseDaily && getCloseDaily(symIdx)) {
         if(ticket > 0) { 
             if(SchedCloseBySwapDaily && !isSwapThresholdBroken(isLong, symIdx, false)) { return false; }
+            Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Schedule daily", true); 
         } else {
             if(SchedCloseBySwapDaily) { return false; } // allow checkDoEntrySignals to call isSwapThresholdBroken separately
         }
-        Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Schedule daily", true); 
         return true; 
     }
     else if(SchedCloseWeekend && getCloseWeekend(symIdx)) {
@@ -264,22 +264,24 @@ bool OrderManager::getCloseCustom(int symIdx) {
         if(!recalc) {
             if(customScheduleUnits[customSchedulePrevIdx].getTime() > currentTime) { recalc = true; }
         }
-    }
+    } else { recalc = true; }
     
-    if(!recalc && customScheduleNextIdx >= 0) {
-        switch(customScheduleUnits[customScheduleNextIdx].type) {
-            case ScheduleDayOfWeek:
-                if(customScheduleUnits[customScheduleNextIdx].dayOfWeek != currentDayOfWeek) { recalc = true; }
-                break;
-                
-            case ScheduleExactDatetime:
-                if(customScheduleUnits[customScheduleNextIdx].getDate() != currentDate) { recalc = true; }
-                break;
-        }
-        
-        if(!recalc) {
-            if(customScheduleUnits[customScheduleNextIdx].getTime() <= currentTime) { recalc = true; }
-        }
+    if(!recalc) {
+        if(customScheduleNextIdx >= 0) {
+            switch(customScheduleUnits[customScheduleNextIdx].type) {
+                case ScheduleDayOfWeek:
+                    if(customScheduleUnits[customScheduleNextIdx].dayOfWeek != currentDayOfWeek) { recalc = true; }
+                    break;
+                    
+                case ScheduleExactDatetime:
+                    if(customScheduleUnits[customScheduleNextIdx].getDate() != currentDate) { recalc = true; }
+                    break;
+            }
+            
+            if(!recalc) {
+                if(customScheduleUnits[customScheduleNextIdx].getTime() <= currentTime) { recalc = true; }
+            }
+        } else { recalc = true; }
     }
     
     //+------------------------------------------------------------------+
@@ -373,8 +375,8 @@ bool OrderManager::isSwapThresholdBroken(bool isLong, int symIdx, bool isThreeDa
 
 bool OrderManager::isSwapThresholdBroken(double swap, int symIdx, bool isThreeDay = false) {
     double threshold = 0;
-    if(!getValue(threshold, swapThresholdLoc, symIdx) || threshold == 0) { return false; }
+    if(!getValue(threshold, swapThresholdLoc, symIdx)) { return false; }
 
-    if(threshold < 0) { return (isThreeDay ? swap*3 : swap) <= threshold; }
+    if(threshold <= 0) { return (isThreeDay ? swap*3 : swap) <= threshold; }
     else { return (isThreeDay ? swap*3 : swap) >= threshold; }
 }

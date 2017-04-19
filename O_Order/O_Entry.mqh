@@ -12,11 +12,14 @@
 #include "O_Defines.mqh"
 
 bool OrderManager::isEntrySafe(int symIdx) {
+    if(!TradeEntryEnabled) { return false; }
     if(!IsTradeAllowed()) { return false; }
-    if(SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_TRADE_MODE) != SYMBOL_TRADE_MODE_FULL) { return false; }
+    if(SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_TRADE_MODE) != SYMBOL_TRADE_MODE_FULL) { 
+        Error::PrintMinor(MainSymbolMan.symbols[symIdx].name + ": Not entry safe because trade mode: " + EnumToString((ENUM_SYMBOL_TRADE_MODE)SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_TRADE_MODE)), true);
+        return false; 
+    }
         // MT5: LONGONLY and SHORTONLY
         // MT4: CLOSEONLY, FULL, or DISABLED
-    if(!TradeEntryEnabled) { return false; }
     if(!checkBasketSafe()) { return false; }
     
     if(getCurrentSessionIdx(symIdx) >= 0) {
@@ -80,7 +83,6 @@ int OrderManager::checkDoEntrySignals(int symIdx) {
             if(SchedClose3DaySwap && getClose3DaySwap(symIdx)) { break; }
             else if(SchedCloseDaily && getCloseDaily(symIdx)) { break; }
 
-            Error::PrintInfo("Open " + MainSymbolMan.symbols[symIdx].name + ": Entry signal - " + EnumToString(checkUnit.type));
             result = prepareGrid(symIdx, checkUnit.type);
             break;
             
@@ -97,7 +99,6 @@ int OrderManager::checkDoEntrySignals(int symIdx) {
                 if(isSwapThresholdBroken(isLong, symIdx, false)) { break; }
             }
 
-            Error::PrintInfo("Open " + MainSymbolMan.symbols[symIdx].name + ": Entry signal - " + EnumToString(checkUnit.type));
             result = prepareSingleOrder(symIdx, checkUnit.type, TradeModeType == TradeLimitOrders);
             break;
     }
@@ -107,6 +108,7 @@ int OrderManager::checkDoEntrySignals(int symIdx) {
             && ((checkUnit.type == SignalLong && gridSetLong[symIdx]) || (checkUnit.type == SignalShort && gridSetShort[symIdx]))
             )
     ) {
+        Error::PrintInfo("Open " + MainSymbolMan.symbols[symIdx].name + ": Entry signal - " + EnumToString(checkUnit.type));
         checkUnit.fulfilled = true;
         setLastTimePoint(symIdx, true);
     }

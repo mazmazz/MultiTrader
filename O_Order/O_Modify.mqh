@@ -28,12 +28,18 @@ void OrderManager::doModifyPosition(int ticket, int symIdx, bool isPosition) {
         && (profitLevel == 0 || (Common::OrderIsLong(getOrderType(isPosition)) ? stopLevel < profitLevel : stopLevel > profitLevel))
     ) { 
         sendModify(ticket, getOrderOpenPrice(isPosition), stopLevel, getOrderTakeProfit(isPosition), getOrderExpiration(isPosition), isPosition);
-    } else if(getOrderStopLoss(isPosition) == 0 && getOrderTakeProfit(isPosition) == 0 && !Common::OrderIsPending(getOrderType(isPosition))
-        && getInitialStopLevels(Common::OrderIsLong(getOrderType(isPosition)), symIdx, true, true, stopLevel, profitLevel, doCancel)
-        && !doCancel
-        && (stopLevel != 0 || profitLevel != 0)
-    ) { // initial SLTP
-        sendModify(ticket, getOrderOpenPrice(isPosition), stopLevel, profitLevel, getOrderExpiration(isPosition), isPosition);
+    } else {
+        double oldSl = getOrderStopLoss(isPosition), oldTp = getOrderTakeProfit(isPosition);
+        bool attemptSl = oldSl == 0;
+        bool attemptTp = oldTp == 0;
+        if((attemptSl || attemptTp) 
+            && !Common::OrderIsPending(getOrderType(isPosition))
+            && getInitialStopLevels(Common::OrderIsLong(getOrderType(isPosition)), symIdx, true, true, stopLevel, profitLevel, doCancel)
+            && !doCancel
+            && ((attemptSl && (stopLevel != oldSl && stopLevel != 0)) || (attemptTp && (profitLevel != oldTp && profitLevel != 0)))
+        ) { // initial SLTP
+            sendModify(ticket, getOrderOpenPrice(isPosition), attemptSl ? stopLevel : oldSl, attemptTp ? profitLevel : oldTp, getOrderExpiration(isPosition), isPosition);
+        }
     }
     
     setLastTimePoint(symIdx, false);

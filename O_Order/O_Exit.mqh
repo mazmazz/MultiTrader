@@ -88,10 +88,10 @@ bool OrderManager::checkDoExitSignals(int ticket, int symIdx, bool isPosition) {
     
     // todo: retracement protection?
     
-    Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": " + (exitIsTrigger ? "Exit signal - " + EnumToString(exitCheckUnit.type) : entryIsTrigger ? "Entry signal - " + EnumToString(entryCheckUnit.type) : "No trigger"), true);
-    
     bool result = sendClose(ticket, symIdx, isPosition);
     if(result) {
+        Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": " + (exitIsTrigger ? "Exit signal - " + EnumToString(exitCheckUnit.type) : entryIsTrigger ? "Entry signal - " + EnumToString(entryCheckUnit.type) : "No trigger"), true);
+
         if(!isTradeModeGrid()) { 
             if(exitIsTrigger) { exitCheckUnit.fulfilled = true; } // do not set opposite entry fulfilled; that's set by entry action
         } else {

@@ -153,7 +153,7 @@ string MultiSettings::OptimizeParamDelimiter = ",";
 
 string MultiSettings::DateOpenDelimiter = "+";
 string MultiSettings::DateCloseDelimiter = "-";
-string MultiSettings::DateSegmentDelimiter = " ";
+string MultiSettings::DateSegmentDelimiter = " "; // space
 string MultiSettings::DateDayDelimiter = ".";
 string MultiSettings::DateTimeDelimiter = ":";
 
@@ -503,7 +503,7 @@ bool MultiSettings::ParseDatetime(string datetimeStr, datetime &datetimeOut, Sch
         return true; // no way to tell if parse succeeded; it returns 00:00 of the current day
     } else {
         string datetimeSegment[];
-        int segCount = StringSplit(datetimeStr, DateSegmentDelimiter, datetimeSegment);
+        int segCount = StringSplit(datetimeStr, StringGetCharacter(DateSegmentDelimiter, 0), datetimeSegment);
         if(segCount != 2) { return false; }
         
         if(StringLen(datetimeSegment[0]) == 1 && Common::GetStringType(datetimeSegment[0]) == Type_Numeric && datetimeSegment[0] >= SUNDAY && datetimeSegment[0] <= SATURDAY) { // is weekday

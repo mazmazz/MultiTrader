@@ -258,14 +258,14 @@ bool OrderManager::unOffsetTakeProfitFromOrder(int ticket, string symName, doubl
 void OrderManager::getStopLevelOffset(string symName, bool checkMinimum, double &stoplossOffset, double &takeprofitOffset, bool &doDrop) {
     // if called from prepare[...]Order, offsets will already be filled with initial offsets.
     stoplossOffset += StopLossBrokerOffset; takeprofitOffset += TakeProfitBrokerOffset;
-    double minStop = PointsToPips(SymbolInfoInteger(symName, SYMBOL_TRADE_STOPS_LEVEL));
+    double minStop = PointsToPrice(symName, SymbolInfoInteger(symName, SYMBOL_TRADE_STOPS_LEVEL));
     
     if(StopLossMinimumAdd) { stoplossOffset -= minStop; }
     if(TakeProfitMinimumAdd) { takeprofitOffset += minStop; }
     
     if(!checkMinimum) { return; }
     
-    if(stoplossOffset > minStop) {
+    if(stoplossOffset > MathAbs(minStop)*-1) {
         switch(StopLossBelowMinimumAction) {
             case MinAdjustDrop: doDrop = true; return;
             case MinAdjustDoNotSet: stoplossOffset = 0; break;

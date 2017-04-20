@@ -32,9 +32,11 @@ bool OrderManager::getInitialStopLevels(bool isLong, int symIdx, bool doStoploss
     double stoplossOffset = 0, takeprofitOffset = 0;
     if(!getValuePrice(stoplossOffset, stopLossLoc, symIdx)) { return false; }
     if(!getValuePrice(takeprofitOffset, takeProfitLoc, symIdx)) { return false; }
-    getStopLevelOffset(MainSymbolMan.symbols[symIdx].name, true, stoplossOffset, takeprofitOffset, doDropOut);
+    bool dropSl = false, dropTp = false;
+    getStopLevelDrop(MainSymbolMan.symbols[symIdx].name, stoplossOffset, takeprofitOffset, dropSl, dropTp);
+    getStopLevelOffset(MainSymbolMan.symbols[symIdx].name, true, stoplossOffset, takeprofitOffset);
     
-    if(doDropOut) { return false; }
+    doDropOut = (StopLossEnabled && StopLossBelowMinimumAction == MinAdjustDrop && dropSl) || (TakeProfitEnabled && TakeProfitBelowMinimumAction == MinAdjustDrop && dropTp);
     
     if(doStoploss) {
         stoplossOut = stoplossOffset == 0 ? 0
@@ -109,11 +111,10 @@ bool OrderManager::getTrailingStopLevel(int ticket, int symIdx, double &stopLeve
         
     if(TrailAfterBreakEvenOnly && BreakEvenEnabled && !isBreakEvenPassed(ticket, symIdx, isPosition)) { return false; }
         
-    double stopOffsetPips = 0; bool doDrop = false;
+    double stopOffsetPips = 0;
     if(!getValue(stopOffsetPips, trailingStopLoc, symIdx) || stopOffsetPips == 0) { return false; }
-    getStopLossOffset(MainSymbolMan.symbols[symIdx].name, true, stopOffsetPips, doDrop);
-    
-    if(doDrop) { return false; }
+    if(StopLossBelowMinimumAction == MinAdjustDrop && dropOrderByStopLoss(MainSymbolMan.symbols[symIdx].name, stopOffsetPips)) { return false; }
+    getStopLossOffset(MainSymbolMan.symbols[symIdx].name, true, stopOffsetPips);
     
     double stopOffsetPrice = PipsToPrice(MainSymbolMan.symbols[symIdx].name, stopOffsetPips);
     
@@ -144,10 +145,8 @@ bool OrderManager::getJumpingStopLevel(int ticket, int symIdx, double &stopLevel
     double jumpingDistancePips = 0;
     if(!getValue(jumpingDistancePips, jumpingStopLoc, symIdx) || jumpingDistancePips == 0) { return false; }
     double jumpStopOffsetPips = jumpingDistancePips*(MathFloor(priceDiffPips/jumpingDistancePips)-1);
-    bool doDrop = false;
-    getStopLossOffset(MainSymbolMan.symbols[symIdx].name, true, jumpStopOffsetPips, doDrop);
-    
-    if(doDrop) { return false; }
+    if(StopLossBelowMinimumAction == MinAdjustDrop && dropOrderByStopLoss(MainSymbolMan.symbols[symIdx].name, jumpStopOffsetPips)) { return false; }
+    getStopLossOffset(MainSymbolMan.symbols[symIdx].name, true, jumpStopOffsetPips);
     
     double jumpStopOffsetPrice = PipsToPrice(MainSymbolMan.symbols[symIdx].name, jumpStopOffsetPips);
     
@@ -168,10 +167,9 @@ bool OrderManager::getBreakEvenStopLevel(int ticket, int symIdx, double &stopLev
         : SymbolInfoDouble(MainSymbolMan.symbols[symIdx].name, SYMBOL_ASK)
         ;
         
-    double stopOffsetPips = BreakEvenProfit; bool doDrop = false;
-    getStopLossOffset(MainSymbolMan.symbols[symIdx].name, true, stopOffsetPips, doDrop);
-    
-    if(doDrop) { return false; }
+    double stopOffsetPips = BreakEvenProfit;
+    if(StopLossBelowMinimumAction == MinAdjustDrop && dropOrderByStopLoss(MainSymbolMan.symbols[symIdx].name, stopOffsetPips)) { return false; }
+    getStopLossOffset(MainSymbolMan.symbols[symIdx].name, true, stopOffsetPips);
         
     double breakEvenProfitPrice = PipsToPrice(MainSymbolMan.symbols[symIdx].name, stopOffsetPips);
     
@@ -226,8 +224,8 @@ bool OrderManager::unOffsetStopLevelsFromOrder(int ticket, string symName, doubl
     stoplossOut = getOrderStopLoss(isPosition);
     takeprofitOut = getOrderTakeProfit(isPosition);
     
-    double slOffset = 0, tpOffset = 0; bool doDrop = false; // doDrop is ignored
-    getStopLevelOffset(symName, false, slOffset, tpOffset, doDrop);
+    double slOffset = 0, tpOffset = 0;
+    getStopLevelOffset(symName, false, slOffset, tpOffset);
     
     if(Common::OrderIsShort(getOrderType(isPosition))) {
         slOffset = slOffset*-1;
@@ -235,11 +233,11 @@ bool OrderManager::unOffsetStopLevelsFromOrder(int ticket, string symName, doubl
     }
     
     if(stoplossOut != 0 && slOffset != 0 && StopLossInternal) { 
-        stoplossOut = unOffsetValue(getOrderStopLoss(isPosition), slOffset, symName); 
+        stoplossOut = unOffsetValue(getOrderStopLoss(isPosition), slOffset, symName, false); 
     }
     
     if(takeprofitOut != 0 && tpOffset != 0 && TakeProfitInternal) {
-        takeprofitOut = unOffsetValue(getOrderTakeProfit(isPosition), tpOffset, symName); 
+        takeprofitOut = unOffsetValue(getOrderTakeProfit(isPosition), tpOffset, symName, false); 
     }
     
     return true;
@@ -255,9 +253,34 @@ bool OrderManager::unOffsetTakeProfitFromOrder(int ticket, string symName, doubl
     return unOffsetStopLevelsFromOrder(ticket, symName, stopLoss, takeprofitOut, isPosition);
 }
 
-void OrderManager::getStopLevelOffset(string symName, bool checkMinimum, double &stoplossOffset, double &takeprofitOffset, bool &doDrop) {
+//+------------------------------------------------------------------+
+
+void OrderManager::getStopLevelDrop(string symName, double stoplossOffset, double takeprofitOffset, bool &dropSlOut, bool &dropTpOut) {
+    stoplossOffset += PipsToPrice(symName, StopLossBrokerOffset); takeprofitOffset += PipsToPrice(symName, TakeProfitBrokerOffset);
+    double minStop = PointsToPrice(symName, SymbolInfoInteger(symName, SYMBOL_TRADE_STOPS_LEVEL));
+    
+    if(StopLossMinimumAdd) { stoplossOffset -= minStop; }
+    if(TakeProfitMinimumAdd) { takeprofitOffset += minStop; }
+    
+    dropSlOut = (stoplossOffset > MathAbs(minStop)*-1);
+    dropTpOut = (takeprofitOffset < minStop);
+}
+
+bool OrderManager::dropOrderByStopLoss(string symName, double stoplossOffset) {
+    bool dropSlOut = false, dropTpOut = false;
+    getStopLevelDrop(symName, stoplossOffset, 0, dropSlOut, dropTpOut);
+    return dropSlOut;
+}
+
+bool OrderManager::dropOrderByTakeProfit(string symName, double takeprofitOffset) {
+    bool dropSlOut = false, dropTpOut = false;
+    getStopLevelDrop(symName, 0, takeprofitOffset, dropSlOut, dropTpOut);
+    return dropTpOut;
+}
+
+void OrderManager::getStopLevelOffset(string symName, bool checkMinimum, double &stoplossOffset, double &takeprofitOffset) {
     // if called from prepare[...]Order, offsets will already be filled with initial offsets.
-    stoplossOffset += StopLossBrokerOffset; takeprofitOffset += TakeProfitBrokerOffset;
+    stoplossOffset += PipsToPrice(symName, StopLossBrokerOffset); takeprofitOffset += PipsToPrice(symName, TakeProfitBrokerOffset);
     double minStop = PointsToPrice(symName, SymbolInfoInteger(symName, SYMBOL_TRADE_STOPS_LEVEL));
     
     if(StopLossMinimumAdd) { stoplossOffset -= minStop; }
@@ -267,7 +290,7 @@ void OrderManager::getStopLevelOffset(string symName, bool checkMinimum, double 
     
     if(stoplossOffset > MathAbs(minStop)*-1) {
         switch(StopLossBelowMinimumAction) {
-            case MinAdjustDrop: doDrop = true; return;
+            case MinAdjustDrop:
             case MinAdjustDoNotSet: stoplossOffset = 0; break;
             case MinAdjustSetEqual: stoplossOffset = minStop; break;
         }
@@ -275,14 +298,14 @@ void OrderManager::getStopLevelOffset(string symName, bool checkMinimum, double 
     
     if(takeprofitOffset < minStop) {
         switch(TakeProfitBelowMinimumAction) {
-            case MinAdjustDrop: doDrop = true; return;
+            case MinAdjustDrop:
             case MinAdjustDoNotSet: takeprofitOffset = 0; break;
             case MinAdjustSetEqual: takeprofitOffset = minStop; break;
         }
     }
 }
 
-void OrderManager::getStopLossOffset(string symName, bool checkMinimum, double &stoplossOffset, bool &doDrop) {
+void OrderManager::getStopLossOffset(string symName, bool checkMinimum, double &stoplossOffset) {
     double tpOffset = 0;
-    getStopLevelOffset(symName, checkMinimum, stoplossOffset, tpOffset, doDrop);
+    getStopLevelOffset(symName, checkMinimum, stoplossOffset, tpOffset);
 }

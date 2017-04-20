@@ -263,6 +263,10 @@ class OrderManager {
     bool unOffsetStopLevelsFromOrder(int ticket, string symName, double &stoplossOut, double &takeprofitOut, bool isPosition);
     bool unOffsetStopLossFromOrder(int ticket, string symName, double &stoplossOut, bool isPosition);
     bool unOffsetTakeProfitFromOrder(int ticket, string symName, double &takeprofitOut, bool isPosition);
-    void getStopLevelOffset(string symName, bool checkMinimum, double &stoplossOffset, double &takeprofitOffset, bool &doDrop);
-    void getStopLossOffset(string symName, bool checkMinimum, double &stoplossOffset, bool &doDrop);
+    
+    void getStopLevelDrop(string symName, double stoplossOffset, double takeprofitOffset, bool &dropSlOut, bool &dropTpOut);
+    bool dropOrderByStopLoss(string symName, double stoplossOffset);
+    bool dropOrderByTakeProfit(string symName, double takeprofitOffset);
+    void getStopLevelOffset(string symName, bool checkMinimum, double &stoplossOffset, double &takeprofitOffset);
+    void getStopLossOffset(string symName, bool checkMinimum, double &stoplossOffset);
 };

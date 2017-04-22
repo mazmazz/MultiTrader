@@ -20,6 +20,7 @@
 #ifdef __MQL4__
 int OrderManager::sendOpen(string posSymName, int posCmd, double posVolume, double posPrice, double posSlippage, double posStoploss, double posTakeprofit, string posComment = "", int posMagic = 0, datetime posExpiration = 0) {
     int result = 0;
+    bool printSltp = false;
     
 #ifdef _OrderReliable
     result = OrderSendReliable(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
@@ -27,6 +28,7 @@ int OrderManager::sendOpen(string posSymName, int posCmd, double posVolume, doub
     if(BrokerTwoStep && (posStoploss > 0 || posTakeprofit > 0)) { //  && !Common::OrderIsPending(posCmd)
         result = OrderSend(posSymName, posCmd, posVolume, posPrice, posSlippage, 0, 0, posComment, posMagic, posExpiration);
         if(result > 0) {
+            Error::PrintInfo(posSymName + " #" + result + ": Initial stop from two-step"); 
             if(!OrderModify(result, posPrice, posStoploss, posTakeprofit, posExpiration)) {
                 Error::PrintError(ErrorNormal, "Could not set stop loss/take profit for order " + result, FunctionTrace, NULL, true);
             }
@@ -36,14 +38,17 @@ int OrderManager::sendOpen(string posSymName, int posCmd, double posVolume, doub
     }
 #endif
 
-    if(result > 0) { addOrderToOpenCount(result, -1, false, false); }
+    if(result > 0) { 
+        addOrderToOpenCount(result, -1, false, false); 
+        logInternalStopLevels(result, posStoploss, posTakeprofit, false);
+    }
     
     return result;
 }
 #else
 #ifdef __MQL5__
 ulong OrderManager::sendOpen(string posSymName, int posCmd, double posVolume, double posPrice, double posSlippage, double posStoploss, double posTakeprofit, string posComment = "", int posMagic = 0, datetime posExpiration = 0) {
-    ulong finalResult = 0;
+    ulong finalResult = 0; bool printSltp = false;
     bool callResult = false, isPending = false;
     MqlTradeRequest request={0};
     MqlTradeResult result={0};
@@ -100,6 +105,7 @@ ulong OrderManager::sendOpen(string posSymName, int posCmd, double posVolume, do
         if(callResult && Common::IsOrderRetcodeSuccess(result.retcode, false)) {
             ulong targetTicket = result.order; //isPending ? result.order : HistoryDealGetInteger(result.deal, DEAL_POSITION_ID);
             double targetPrice = isPending ? posPrice : result.price;
+            Error::PrintInfo(posSymName + " #" + targetTicket + ": Initial stop from two-step"); 
             if(!sendModify(targetTicket, targetPrice, posStoploss, posTakeprofit, posExpiration, !isPending)) {
                 Error::PrintError(ErrorNormal, "Could not set immediate SLTP for order " + targetTicket, NULL, NULL, true);
             }
@@ -108,6 +114,8 @@ ulong OrderManager::sendOpen(string posSymName, int posCmd, double posVolume, do
         request.sl = posStoploss;
         request.tp = posTakeprofit;
         callResult = OrderSend(request, result);
+        
+        if(callResult > 0) { logInternalStopLevels(callResult, posStoploss, posTakeprofit, false); }
     }
 
     if(callResult && Common::IsOrderRetcodeSuccess(result.retcode, false)) {
@@ -132,6 +140,8 @@ bool OrderManager::sendModify(int ticket, double price, double stoploss, double 
 #else
     result = OrderModify(ticket, price, stoploss, takeprofit, expiration);
 #endif
+
+    if(result) { logInternalStopLevels(ticket, stoploss, takeprofit, isPosition); }
 
     return result;
 }
@@ -166,7 +176,10 @@ bool OrderManager::sendModify(ulong ticket, double price, double stoploss, doubl
         || !Common::IsOrderRetcodeSuccess(modResult.retcode, true) 
     ) {
         return false;
-    } else { return true; }
+    } else { 
+        logInternalStopLevels(ticket, stoploss, takeprofit, isPosition);
+        return true; 
+    }
 }
 #endif
 #endif

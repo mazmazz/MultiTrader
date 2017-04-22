@@ -260,13 +260,19 @@ class OrderManager {
     bool isBreakEvenPassed(int ticket, int symIdx, bool isPosition);
     bool isStopLossProgressed(int ticket, double newStopLoss, bool isPosition);
     
+    void unOffsetStopLevels(string symName, bool isLong, double &stoplossOut, double &takeprofitOut);
+    double unOffsetStopLoss(string symName, bool isLong, double stoploss);
+    double unOffsetTakeProfit(string symName, bool isLong, double takeprofit);
     bool unOffsetStopLevelsFromOrder(int ticket, string symName, double &stoplossOut, double &takeprofitOut, bool isPosition);
     bool unOffsetStopLossFromOrder(int ticket, string symName, double &stoplossOut, bool isPosition);
     bool unOffsetTakeProfitFromOrder(int ticket, string symName, double &takeprofitOut, bool isPosition);
     
+    void getStopLevelOffset(string symName, bool checkMinimum, double &stoplossOffset, double &takeprofitOffset);
+    void getStopLossOffset(string symName, bool checkMinimum, double &stoplossOffset);
+    
     void getStopLevelDrop(string symName, double stoplossOffset, double takeprofitOffset, bool &dropSlOut, bool &dropTpOut);
     bool dropOrderByStopLoss(string symName, double stoplossOffset);
     bool dropOrderByTakeProfit(string symName, double takeprofitOffset);
-    void getStopLevelOffset(string symName, bool checkMinimum, double &stoplossOffset, double &takeprofitOffset);
-    void getStopLossOffset(string symName, bool checkMinimum, double &stoplossOffset);
+    
+    void logInternalStopLevels(long ticket, double stoploss, double takeprofit, bool isPosition);
 };

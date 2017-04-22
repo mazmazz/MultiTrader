@@ -17,6 +17,7 @@ void OrderManager::doModifyPosition(int ticket, int symIdx, bool isPosition) {
     if(!getLastTimeElapsed(symIdx, false, TimeSettingUnit, ValueBetweenDelay)) { return; }
     if(!checkDoSelect(ticket, isPosition)) { return; }
     
+    double oldSl = getOrderStopLoss(isPosition), oldTp = getOrderTakeProfit(isPosition);
     double stopLevel = 0;
     double profitLevel = 0;
     unOffsetTakeProfitFromOrder(ticket, getOrderSymbol(isPosition), profitLevel, isPosition);
@@ -24,21 +25,23 @@ void OrderManager::doModifyPosition(int ticket, int symIdx, bool isPosition) {
     // both getModifiedStopLevel and getInitialStopLevel give price levels
     bool doCancel = false;
     if(getModifiedStopLevel(ticket, symIdx, stopLevel, isPosition) 
-        && stopLevel != 0 
+        && stopLevel != oldSl
         && (profitLevel == 0 || (Common::OrderIsLong(getOrderType(isPosition)) ? stopLevel < profitLevel : stopLevel > profitLevel))
     ) { 
         sendModify(ticket, getOrderOpenPrice(isPosition), stopLevel, getOrderTakeProfit(isPosition), getOrderExpiration(isPosition), isPosition);
+        //Error::PrintInfo("+------------------------------------------------------------------+");
     } else {
-        double oldSl = getOrderStopLoss(isPosition), oldTp = getOrderTakeProfit(isPosition);
         bool attemptSl = oldSl == 0;
         bool attemptTp = oldTp == 0;
         if((attemptSl || attemptTp) 
             && !Common::OrderIsPending(getOrderType(isPosition))
-            && getInitialStopLevels(Common::OrderIsLong(getOrderType(isPosition)), symIdx, true, true, stopLevel, profitLevel, doCancel)
+            && getInitialStopLevels(Common::OrderIsLong(getOrderType(isPosition)), symIdx, attemptSl && StopLossInitialEnabled, attemptTp && TakeProfitInitialEnabled, stopLevel, profitLevel, doCancel)
             && !doCancel
             && ((attemptSl && (stopLevel != oldSl && stopLevel != 0)) || (attemptTp && (profitLevel != oldTp && profitLevel != 0)))
         ) { // initial SLTP
+            Error::PrintInfo(getOrderSymbol(isPosition) + " #" + ticket + " Initial stop from modify post-open"); 
             sendModify(ticket, getOrderOpenPrice(isPosition), attemptSl ? stopLevel : oldSl, attemptTp ? profitLevel : oldTp, getOrderExpiration(isPosition), isPosition);
+            //Error::PrintInfo("+------------------------------------------------------------------+");
         }
     }
     

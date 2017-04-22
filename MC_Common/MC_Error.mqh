@@ -76,7 +76,7 @@ class Error {
     static void PrintInfo_v02(int level, string message = "", string funcTrace = "", string extraInfo = "", bool printCurrentTime = false, int location = ErrorDefault); // kept for back compat
     static void CloseErrorFile();
     
-    static bool HasLevel(int level, int location = ErrorTerminal);
+    static bool HasLevel(int level, int location = ErrorDefault);
     
     private:
     static int FileHandle;
@@ -225,11 +225,12 @@ void Error::OutputErrorToAlert(string message="") {
     Alert(message);
 }
 
-bool Error::HasLevel(int level, int location = ErrorTerminal) {
+bool Error::HasLevel(int level, int location = ErrorDefault) {
     switch(location) {
         case ErrorTerminal: return (TerminalLevel & level) == level;
         case ErrorAlert: return (AlertLevel & level) == level;
         case ErrorFile: return (FileLevel & level) == level;
+        case ErrorDefault: return (((TerminalLevel & level) == level) || ((AlertLevel & level) == level) || ((FileLevel & level) == level));
         default: return false;
     }
 }

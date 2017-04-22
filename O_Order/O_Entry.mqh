@@ -146,7 +146,7 @@ int OrderManager::prepareSingleOrder(int symIdx, SignalType signal, bool isPendi
     
     double posStoploss = 0, posTakeprofit = 0; bool doDrop = false;
     getInitialStopLevels(isLong, symIdx
-        , (!isPending || SetStopsOnPendings) && StopLossEnabled, (!isPending || SetStopsOnPendings) && TakeProfitEnabled
+        , (!isPending || SetStopsOnPendings) && StopLossInitialEnabled, (!isPending || SetStopsOnPendings) && TakeProfitInitialEnabled
         , posStoploss, posTakeprofit
         , doDrop
         );
@@ -156,6 +156,7 @@ int OrderManager::prepareSingleOrder(int symIdx, SignalType signal, bool isPendi
         int posMagic = MagicNumber;
         datetime posExpiration = 0;
         int result = sendOpen(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
+
         return result;
     } else { return 0; }
 }

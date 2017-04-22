@@ -50,6 +50,12 @@ enum StopLevelMinAdjust {
     , MinAdjustSetEqual    // Set stop level equal to minimum
 };
 
+enum TrailStopMode {
+    TrailAlways            // Always trail
+    , TrailBeforeBreakEven // Trail only before break even
+    , TrailAfterBreakEven  // Trail only after break even
+};
+
 input string LblRuntime="********** Runtime Settings **********"; // :
 input int MagicNumber=5001;
 input string ConfigComment=""; // ConfigComment: Comment to display on dashboard
@@ -159,7 +165,7 @@ input int BasketMaxWinningPerDay=1;
 input bool BasketClosePendings=true;
 
 input string Lbl_StopLoss="---- Stop Loss Settings ----"; // :
-input bool StopLossEnabled=false;
+input bool StopLossInitialEnabled=false;
 input bool StopLossInternal=true; // StopLossInternal: Track and fire SL using EA
 input bool StopLossMinimumAdd=true; // StopLossMinimumAdd: Add broker's minimum to all SL
 input StopLevelMinAdjust StopLossBelowMinimumAction=false;
@@ -167,7 +173,7 @@ input double StopLossBrokerOffset=0.0; // StopLossBrokerOffset: Offset broker SL
 input string StopLossCalc = "-30.0";
 
 input string Lbl_TakeProfit="---- Take Profit Settings ----"; // :
-input bool TakeProfitEnabled=false;
+input bool TakeProfitInitialEnabled=false;
 input bool TakeProfitInternal=true; // TakeProfitInternal: Track and fire TP using EA
 input bool TakeProfitMinimumAdd=true; // TakeProfitMinimumAdd: Add broker's minimum to all TP
 input StopLevelMinAdjust TakeProfitBelowMinimumAction=false;
@@ -175,18 +181,17 @@ input double TakeProfitBrokerOffset=0.0; // TakeProfitBrokerOffset: Offset broke
 input string TakeProfitCalc = "30.0";
 
 input string Lbl_BreakEven="---- Break Even Settings ----"; // :
-input bool BreakEvenEnabled=false;
-input double BreakEvenProfit=1.5; // BreakEvenProfit: Offset from breakeven to allow a certain profit.
-input string BreakEvenJumpDistanceCalc = "10.0";
+input bool BreakEvenStopEnabled=false;
+input double BreakEvenProfit=1.5; // BreakEvenProfit: Offset from opening price
+input string BreakEvenJumpDistanceCalc = "10.0"; // BreakEvenJumpDistanceCalc: Pip distance from opening to trigger
 
 input string Lbl_ITSL="---- Trailing Stop Loss Settings ----"; // :
 input bool TrailingStopEnabled=false;
-input bool TrailAfterBreakEvenOnly=false;
+input TrailStopMode TrailByBreakEven=TrailAlways;
 input string TrailingStopCalc = "10.0";
 
 input string Lbl_JSL="---- Jumping stop loss settings ----"; // :
 input bool JumpingStopEnabled=false;
-input bool JumpAfterBreakEvenOnly=true;
 input string JumpingStopCalc = "10.0";
 
 input string Lbl_Schedule="********** Schedule Settings **********"; // :

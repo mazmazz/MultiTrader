@@ -123,7 +123,7 @@ int OrderManager::prepareGridOrder(SignalType signal, bool isHedge, bool isDual,
     
     double posStoploss = 0, posTakeprofit = 0; bool doDrop = false;
     getInitialStopLevels(Common::OrderIsLong(cmd), symIdx
-        , (isMarket || SetStopsOnPendings) && StopLossEnabled, (isMarket || SetStopsOnPendings) && TakeProfitEnabled
+        , (isMarket || SetStopsOnPendings) && StopLossInitialEnabled, (isMarket || SetStopsOnPendings) && TakeProfitInitialEnabled
         , posStoploss, posTakeprofit
         , doDrop
         );

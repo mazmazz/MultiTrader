@@ -14,6 +14,7 @@
 datetime ProjectExpiration = D'2017.06.04';
 
 #define _NoExpiration
+//#define _EmulatedTicks
 //#define _Benchmark
 
 //+------------------------------------------------------------------+
@@ -127,10 +128,12 @@ bool SetCycle() {
             break;
 
 #ifdef __MQL4__
+#ifdef _EmulatedTicks
         case CycleTimerTicks: // emulated average ticks, still on timer interval
             result = Main.setAverageTickTimer((IsTesting() || IsOptimization()));
             if(IsTesting() || IsOptimization()) { LastTickTime.update(); }
             break;
+#endif
             
         case CycleTimerMilliseconds:
             if(IsTesting() || IsOptimization()) { result = true; LastTickTime.update(); } // go by ticks
@@ -144,9 +147,11 @@ bool SetCycle() {
             break;
 #else
 #ifdef __MQL5__
+#ifdef _EmulatedTicks
         case CycleTimerTicks: // emulated average ticks, still on timer interval
             result = Main.setAverageTickTimer((IsTesting() || IsOptimization()));
             break;
+#endif
             
         case CycleTimerMilliseconds:
             result = Common::EventSetMillisecondTimerReliable(CycleLength);

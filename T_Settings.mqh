@@ -22,7 +22,9 @@ enum TimeUnits {
 enum CycleType {
     CycleTimerSeconds           // Seconds: Run on a second-based interval
     , CycleTimerMilliseconds    // Milliseconds: Run on a millisecond-based interval
+#ifdef _EmulatedTicks
     , CycleTimerTicks           // Average ticks: Run on an average tick interval
+#endif
     , CycleRealTicks            // Real ticks: Run on every tick; applies only in Single Symbol Mode
 };
 
@@ -92,11 +94,13 @@ input int DisplayScale=1; // DisplayScale: 0 = Small, 1+ = Large
 input string Lbl_CycleSettings="---- Cycle Settings ----"; // :
 input CycleType CycleMode=CycleTimerSeconds;
 input int CycleLength=1; // CycleLength: Length between cycles (seconds or milliseconds)
+#ifdef _EmulatedTicks
 input int AverageTickStartMil = 500;
 input int AverageTickLowestMil = 250;
 input int AverageTickHighestMil = 1000;
+#endif
 
-input string Lbl_Symbols="********** Symbols & Currencies Settings **********"; // :
+input string Lbl_Symbols="********** Instrument Settings **********"; // :
 input bool SingleSymbolMode=false; // SingleSymbolMode: Use only the current chart symbol
 input string IncludeSymbols="AUDCAD,AUDJPY,AUDNZD,AUDUSD,CADJPY,EURAUD,EURCAD,EURJPY,EURNZD,EURUSD,EURGBP,GBPAUD,GBPCAD,GBPJPY,GBPNZD,GBPUSD,NZDCAD,NZDJPY,NZDUSD,USDCAD,USDJPY";
 input string ExcludeSymbols="";
@@ -167,16 +171,16 @@ input bool BasketClosePendings=true;
 input string Lbl_StopLoss="---- Stop Loss Settings ----"; // :
 input bool StopLossInitialEnabled=false;
 input bool StopLossInternal=true; // StopLossInternal: Track and fire SL using EA
-input bool StopLossMinimumAdd=true; // StopLossMinimumAdd: Add broker's minimum to all SL
-input StopLevelMinAdjust StopLossBelowMinimumAction=false;
+input bool StopLossMinimumAdd=false; // StopLossMinimumAdd: Add broker's minimum to all SL
+input StopLevelMinAdjust StopLossBelowMinimumAction=MinAdjustDrop;
 input double StopLossBrokerOffset=0.0; // StopLossBrokerOffset: Offset broker SL if Internal enabled
 input string StopLossCalc = "-30.0";
 
 input string Lbl_TakeProfit="---- Take Profit Settings ----"; // :
 input bool TakeProfitInitialEnabled=false;
 input bool TakeProfitInternal=true; // TakeProfitInternal: Track and fire TP using EA
-input bool TakeProfitMinimumAdd=true; // TakeProfitMinimumAdd: Add broker's minimum to all TP
-input StopLevelMinAdjust TakeProfitBelowMinimumAction=false;
+input bool TakeProfitMinimumAdd=false; // TakeProfitMinimumAdd: Add broker's minimum to all TP
+input StopLevelMinAdjust TakeProfitBelowMinimumAction=MinAdjustDrop;
 input double TakeProfitBrokerOffset=0.0; // TakeProfitBrokerOffset: Offset broker TP if Internal enabled
 input string TakeProfitCalc = "30.0";
 

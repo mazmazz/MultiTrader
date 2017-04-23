@@ -25,7 +25,9 @@ class MainMultiTrader {
     
     void addFilter(Filter *inputFilter);
     
+#ifdef _EmulatedTicks
     bool setAverageTickTimer(bool setValueOnly = false);
+#endif
     
     private:
     int averageTickLength;
@@ -33,7 +35,9 @@ class MainMultiTrader {
 
 void MainMultiTrader::MainMultiTrader() {
     firstRunComplete = false;
+#ifdef _EmulatedTicks
     averageTickLength = AverageTickStartMil;
+#endif
     
     MainSymbolMan = new SymbolManager(IncludeSymbols, ExcludeSymbols, ExcludeCurrencies);
     MainFilterMan = new FilterManager();
@@ -96,6 +100,7 @@ void MainMultiTrader::~MainMultiTrader() {
     Common::SafeDelete(MainFilterMan);
 }
 
+#ifdef _EmulatedTicks
 bool MainMultiTrader::setAverageTickTimer(bool setValueOnly = false) {
     //Start at 500 milliseconds
     //Compare total symbol changes (track volume?)
@@ -110,6 +115,7 @@ bool MainMultiTrader::setAverageTickTimer(bool setValueOnly = false) {
     if(setValueOnly) { return true; }
     else { return Common::EventSetMillisecondTimerReliable(averageTickLength); }
 }
+#endif
 
 void MainMultiTrader::doFirstRun() {
     firstRunComplete = false;

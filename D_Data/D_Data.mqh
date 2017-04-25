@@ -143,55 +143,81 @@ void DataSymbol::addSignalUnit(SignalType signal, bool isEntry) {
     if(Common::IsInvalidPointer(compareUnit)) { force = true; }
     else { compareSignal = compareUnit.type; }
     
-    if (force || (signal != compareSignal)) {
+    if (force || (signal != compareSignal)/* || (!Common::IsInvalidPointer(compareUnit) ? compareUnit.retry : false)*/) { // note: allowing a retry upends the "every consecutive signal is different" assumption. Plus, when retrying, should we be modifying the existing signal, or no?
         SignalUnit *newUnit = new SignalUnit();
         newUnit.timeMilliseconds = GetTickCount();
         newUnit.timeDatetime = TimeCurrent();
         newUnit.timeCycles = 0;
         newUnit.type = signal;
         
-        if(isEntry) { 
+        if(isEntry && signal != SignalHold && !Common::IsInvalidPointer(compareUnit)) {  // may need to change this if exit signals become more complex or SignalHold fulfilled/blocked becomes significant
             // retracement avoidance: for entry, check last entrySignal[1] if signal type is equal and was fulfilled, then also set fulfilled flag on new unit
-            SignalUnit *secondCompareUnit = getSignalUnit(isEntry, 1); // todo: loop through entire buffer to see if current signal exists then check for stability
-            if(!Common::IsInvalidPointer(secondCompareUnit) && !Common::IsInvalidPointer(compareUnit)) {
-                bool retraceGuard = false;
+            for(int h = 1; h < ArraySize(entrySignal); h++) { // this assumes that newUnit and entry[0] are not the same. We check if entry[1] is different.
+                SignalUnit *secondCompareUnit = getSignalUnit(true, h);
+                if(Common::IsInvalidPointer(secondCompareUnit)) { continue; }
                 
-                // check if opposite exit signal was fulfilled (i.e., was old trade already closed?)
-                // this should negate a retrace and not set the fulfilled flag
-                int exitUnitCount = ArraySize(exitSignal);
-                for(int i = 0; i < 1 /*exitUnitCount*/; i++) { // todo: should we be looking more than 1 back?
-                   if(
-                       !Common::IsInvalidPointer(exitSignal[i])
-                       && ((newUnit.type == SignalLong && exitSignal[i].type == SignalShort)
-                           || (newUnit.type == SignalShort && exitSignal[i].type == SignalLong)
-                       )
-                       && exitSignal[i].fulfilled
-                       && getSignalDuration(TimeSettingUnit, exitSignal[i]) >= SignalRetraceTime
-                   ) {
-                       retraceGuard = false;
-                       break;
-                   } else { retraceGuard = true; }
-                }
+                if(signal != secondCompareUnit.type) { break; } // == secondCompareUnit.getOppositeType()
+                else { newUnit.blocked = true; }
+                // if signal == secondCompareUnit.type, throw dodge 
                 
-                if(SignalRetraceOpen && retraceGuard) { // attempt to falsify
+                // falsify block if SignalRetraceOpen and time has elapsed
+                if(SignalRetraceOpenAfterDelay && newUnit.blocked) { // attempt to falsify
                     // todo: more sophisticated rule? should extra lots be allowed to open, after a time?
-                    retraceGuard = getSignalDuration(TimeSettingUnit, compareUnit) < SignalRetraceTime;
+                    // should we be tracking signal type? Maybe not, signal retrace delays should be agnostic of type
+                    int duration = getSignalDuration(TimeSettingUnit, compareUnit);
+                    if(duration < SignalRetraceDelay) {
+                        newUnit.blocked = true;
+                        // newUnit.retry = true; // retry on next cycle, if signal persists beyond SignalRetraceTime
+                    } else { newUnit.blocked = false; }
                 }
                 
-                if(signal == secondCompareUnit.type 
-                    && secondCompareUnit.fulfilled
-                    && retraceGuard
-                ) {
-                    newUnit.fulfilled = true;
-                    // newUnit.blockFulfillment = true; // if we want to track this avoidance
+                if(!newUnit.blocked 
+                    || !SignalRetraceOpenAfterExit
+                    //|| (SignalRetraceOpenAfterDelay && SignalRetraceOpenAfterExit && newUnit.blocked) // AND -- fail if delay did not elapse
+                ) { break; }
+                
+                // falsify if exitSignal.type == signal and it was fulfilled (i.e., was old trade already closed?)
+                    // AND is not superceded by a more recent entry signal ==
+                int exitUnitCount = ArraySize(exitSignal);
+                for(int i = 0; i < ArraySize(exitSignal) /*exitUnitCount*/; i++) { // todo: should we be looking more than 1 back?
+                    if(
+                       !Common::IsInvalidPointer(exitSignal[i])
+                       && signal == exitSignal[i].getOppositeType() // need to refer opposite: an exit SignalShort means open Short, close Long
+                       && exitSignal[i].fulfilled
+                       //&& getSignalDuration(TimeSettingUnit, exitSignal[i]) < SignalRetraceTime 
+                            // todo: retracement blocked - ??? do we want to be tracking exit signals for any length of time? do we want to work entirely on order count?
+                    ) {
+                        // todo: check if exit signal was superceded by later entry signal
+                        bool dodgeSupercede = false;
+                        for(int j = 0; j < ArraySize(entrySignal); j++) {
+                            if(Common::IsInvalidPointer(entrySignal[j])) { continue; }
+                            int duration = getSignalDuration(TimeSettingUnit, exitSignal[i], entrySignal[j]);
+                            if(duration > 0
+                                && signal == entrySignal[j].type // ???
+                            ) {
+                                dodgeSupercede = true;
+                                break;
+                            }
+                        }
+                       newUnit.blocked = dodgeSupercede;
+                       break;
+                    }
                 }
+                
+                break;
+                
+                //if(newUnit.blocked) { break; }
+                
+                // order count checked in ordermanager
             }
-            
-            Common::ArrayPush(entrySignal, newUnit, signalHistoryCount); 
         }
+        
+        if(isEntry) { Common::ArrayPush(entrySignal, newUnit, signalHistoryCount); }
         else { Common::ArrayPush(exitSignal, newUnit, signalHistoryCount); }
     } else {
         if(isEntry) {
+            // todo: retracement blocked - should we be re-evaluating after SignalRetraceTime is elapsed?
+        
             if(ArraySize(entrySignal) > 0 && !Common::IsInvalidPointer(entrySignal[0])) { 
                 entrySignal[0].timeCycles++;
             }

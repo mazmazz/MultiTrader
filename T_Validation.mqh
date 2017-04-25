@@ -106,7 +106,7 @@ bool ValidateExpirationDate(bool firstRun = false) {
         return SessionValidated;
     }
     
-    if(true || !IsTesting() && !IsOptimization()) {
+    if(!IsTesting() && !IsOptimization()) {
         if(TimeCurrent() >= ProjectExpiration) { 
             Error::ThrowFatal("EA expired on " + ProjectExpiration + " and broker time is " + TimeCurrent());
             LastValidateCurrentDate = 0;

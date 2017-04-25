@@ -360,7 +360,7 @@ template<typename T>
 int Common::GetTimeDuration(T cur, T prev) {
     // todo: long and ulong handling?
     if(typename(T) == "int" || typename(T) == "datetime") {
-        return (cur >= prev) ? cur-prev : INT_MAX-prev+cur+1;
+        return (cur >= prev) || cur >=0 && prev >= 0 ? cur-prev : INT_MAX-prev+cur+1;
     } else if(typename(T) == "uint") {
         return (cur >= prev) ? cur-prev : UINT_MAX-prev+cur+1;
     } else {

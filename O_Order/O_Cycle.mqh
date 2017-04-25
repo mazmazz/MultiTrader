@@ -102,8 +102,8 @@ void OrderManager::evaluateFulfilledFromOrder(int ticket, int symbolIdx, bool is
                 ((Common::OrderIsLong(orderAct) && checkEntrySignal.type == SignalLong)
                     || (Common::OrderIsShort(orderAct) && checkEntrySignal.type == SignalShort)
                     )
-                && (!SignalRetraceOpen
-                    || TimeCurrent()-getOrderOpenTime(isPosition) <= SignalRetraceTime
+                && (!SignalRetraceOpenAfterDelay
+                    || TimeCurrent()-getOrderOpenTime(isPosition) <= SignalRetraceDelay
                     )
             ) { 
                 checkEntrySignal.fulfilled = true; 

@@ -81,6 +81,7 @@ input string LblDisplay="---- Display Settings ----"; // :
 input bool DisplayShow=true;
 input bool DisplayShowTable=true;
 input bool DisplayShowBasketSymbolLongShort=false;
+input bool DisplaySignalInternal=false;
 input bool DisplayColor=true;
 //input bool DisplayShowOrders=true;
 //input string DisplayFont="Lucida Console";
@@ -117,8 +118,8 @@ input bool SetStopsOnPendings=true; // SetStopsOnPendings: Set SLTP on pending o
 input bool BrokerTwoStep=true; // IsTwoStep: Broker is ECN and needs two-step order sending for SL/TP
 input int BrokerPipDecimal = 1; // BrokerPoints: # of pip decimals, e.g. 0 if 4-point broker, 1 if 5-point.
 input string OrderComment_=""; // OrderComment: Comment to attach to orders
-input bool CloseOrderOnOppositeSignal=true; // CloseOrderOnOppositeSignal: Close when entry signal is opposite
-input bool SignalRetraceOpen=true; // SignalRetraceOpen: Enter additional positions on a retrace
+
+input string Lbl_TradeParams="---- Trade Parameters ----"; // :
 input int MaxTradesPerSymbol=0;
 // input int MaxTradesTimeframe=60;
 input double TradeMinMarginLevel=200; // MinTradeMarginLevel (percent)
@@ -126,11 +127,16 @@ input string MaxSpreadCalc = "4.0";
 input string MaxSlippageCalc = "4.0";
 input string LotSizeCalc = "0.01";
 
+input string Lbl_TradeSignal="---- Trade Signal Settings ----"; // :
+input bool CloseOrderOnOppositeSignal=true; // CloseOrderOnOppositeSignal: Close when entry signal is opposite
+input bool SignalRetraceOpenAfterExit=true; // SignalRetraceOpenAfterExit: Enter on retrace after exit or SL/TP
+input bool SignalRetraceOpenAfterDelay=false; // SignalRetraceOpenAfterDelay: Enter on retrace after delay
+input int SignalRetraceDelay=1800; // SignalRetraceDelay: Open position 
+
 input string Lbl_TradeDelays="---- Trade Delay Settings ----"; // :
 input TimeUnits TimeSettingUnit=UnitSeconds; // TimeSettingUnit: Unit for values below
 input int EntryStableTime=5;
 input int ExitStableTime=5;
-input int SignalRetraceTime=3600; // SignalRetraceTime: Repeating signal change is seen as retrace
 input int TradeBetweenDelay=0; // TradeBetweenDelay: Wait between trades
 input int ValueBetweenDelay=0; // ValueBetweenDelay: Wait between value changes
 
@@ -147,11 +153,13 @@ input bool GridSetHedgeStopOrders = false;
 input bool GridSetLimitOrders = false;
 input bool GridSetHedgeLimitOrders = true;
 input bool GridOpenMarketInitial=false; // GridOpenMarketInitial: Place market order immediately on signal
-input bool GridClosePendingOnSignal = false; // GridClosePendingOnSignal: Close pending orders upon signal
-input bool GridCloseMarketOnSignal = true; // GridCloseMarketOnSignal: Close market orders upon signal
-input bool GridOpenIfMarketExists = false; // GridOpenIfMarketExists: Open if market order exists, no pendings
 input int GridCount=5; // GridCount: # of pendings per direction
 input string GridDistanceCalc = "10.0";
+input string Lbl_GridReset="-- Grid Reset Settings --";
+input bool GridClosePendingOnSignal = false; // GridClosePendingOnSignal: Close pending orders upon signal
+input bool GridCloseMarketOnSignal = true; // GridCloseMarketOnSignal: Close market orders upon signal
+input int GridStopThreshold = 2; // GridStopThreshold: # of stops to trigger reset per direction
+input int GridMarketThreshold = 0; // GridMarketThreshold: # of market pos to trigger reset per direction
 
 input string LbL_Exit_Basket="---- Basket Exit Settings ----"; // :
 //input bool BasketTotalPerDay = false; // BasketTotalPerDay: Add total of all profits during day, not just open orders

@@ -42,8 +42,22 @@ int OrderManager::checkDoEntrySignals(int symIdx) {
 
     SignalUnit *checkUnit = MainDataMan.symbol[symIdx].getSignalUnit(true);
     if(Common::IsInvalidPointer(checkUnit)) { return 0; }
-    else if(checkUnit.fulfilled) { 
-        //Error::ThrowError(ErrorNormal, "checkUnit fulfilled " + checkUnit.type);
+
+    // if signal blocked, then falsify it by seeing if there are no open positions
+    if(SignalRetraceOpenAfterExit
+        && checkUnit.blocked
+        && (!SignalRetraceOpenAfterDelay || MainDataMan.symbol[symIdx].getSignalDuration(TimeSettingUnit, checkUnit) >= SignalRetraceDelay) // don't falsify if reason is due to retrace time
+    ) {
+        // should we check only for the same direction as signal? maybe not, would result in multiple open positions
+        // if(checkUnit.type == SignalLong) {
+        //     checkUnit.blocked = openPendingLongCount[symIdx] > 0 || openMarketLongCount[symIdx] > 0;
+        // } else {
+        //     checkUnit.blocked = openPendingShortCount[symIdx] > 0 || openMarketShortCount[symIdx] > 0;
+        // }
+        checkUnit.blocked = openPendingLongCount[symIdx] > 0 || openMarketLongCount[symIdx] > 0 || openPendingShortCount[symIdx] > 0 || openMarketShortCount[symIdx] > 0;
+    }
+
+    if(checkUnit.fulfilled || checkUnit.blocked) {
         return 0; 
     }
     

@@ -391,10 +391,20 @@ void DashboardManager::updateData(int symbolId, int filterId, int subfilterId, b
         
         if(data == NULL) { dataResult = "-"; }
         else {
+            SignalType signal = data.signal;
+            bool isExit = MainFilterMan.filters[filterId].subfilterType[subfilterId] == SubfilterExit;
+            // negate signal for display purposes since this is an exit
+            if(!DisplaySignalInternal) {
+                switch(signal) {
+                    case SignalBuy: signal = isExit ? SignalShort : SignalLong; break;
+                    case SignalSell: signal = isExit ? SignalLong : SignalShort; break;
+                }
+            }
+        
             dataResult = 
                 data.getStringValue(MainSymbolMan.symbols[symbolId].digits) 
                 + " " 
-                + signalToString(data.signal, history.getSignalDuration(TimeSettingUnit), MainFilterMan.filters[filterId].subfilterType[subfilterId], true, MainFilterMan.filters[filterId].alwaysStable);
+                + signalToString(signal, history.getSignalDuration(TimeSettingUnit), MainFilterMan.filters[filterId].subfilterType[subfilterId], true, MainFilterMan.filters[filterId].alwaysStable);
                 ;
             
             switch(data.signal) {
@@ -431,9 +441,11 @@ void DashboardManager::updateSymbolSignal(int symbolId,SubfilterType subType, bo
             case SubfilterExit:  
                 fontColor = fontColorCounterAction;
                 // negate signal for display purposes since this is an exit
-                switch(signal) {
-                    case SignalLong: signal = SignalShort; break;
-                    case SignalShort: signal = SignalLong; break;
+                if(!DisplaySignalInternal) {
+                    switch(signal) {
+                        case SignalLong: signal = SignalShort; break;
+                        case SignalShort: signal = SignalLong; break;
+                    }
                 }
                 break;
             default: return;

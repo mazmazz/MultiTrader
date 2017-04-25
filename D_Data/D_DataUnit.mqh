@@ -30,6 +30,8 @@ class SignalUnit { // ordinarily this would be a struct, but you can't get point
     uint timeCycles;
     
     bool fulfilled;
+    bool blocked;
+    bool retry;
     
     SignalUnit() {
         type = SignalNone;
@@ -38,7 +40,22 @@ class SignalUnit { // ordinarily this would be a struct, but you can't get point
         timeDatetime = 0;
         timeCycles = 0;
         fulfilled = false;
+        blocked = false;
+        retry = false;
     }
+    
+    SignalType getOppositeType() {
+        switch(type) {
+            case SignalBuy: return SignalSell;
+            case SignalSell: return SignalBuy;
+            case SignalLong: return SignalShort;
+            case SignalShort: return SignalLong;
+            case SignalOpen: return SignalClose;
+            case SignalClose: return SignalOpen;
+            case SignalHold:
+            default: return SignalNone;
+        }
+    };
 };
 
 //+------------------------------------------------------------------+

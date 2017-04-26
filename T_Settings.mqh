@@ -155,11 +155,17 @@ input bool GridSetHedgeLimitOrders = true;
 input bool GridOpenMarketInitial=false; // GridOpenMarketInitial: Place market order immediately on signal
 input int GridCount=5; // GridCount: # of pendings per direction
 input string GridDistanceCalc = "10.0";
+
 input string Lbl_GridReset="-- Grid Reset Settings --";
 input bool GridClosePendingOnSignal = false; // GridClosePendingOnSignal: Close pending orders upon signal
-input bool GridCloseMarketOnSignal = true; // GridCloseMarketOnSignal: Close market orders upon signal
+input bool GridCloseMarketOnSignal = false; // GridCloseMarketOnSignal: Close market orders upon signal
+input bool GridClosePendingByDistance = false;
+input string GridCloseDistanceCalc = "-40.0";
+input bool GridOpenIfPendingsOpen = false; // GridOpenIfPendingsOpen: Open new grids even if pendings exist
 input int GridStopThreshold = 2; // GridStopThreshold: # of stops to trigger reset per direction
+input bool GridOpenIfPositionsOpen = false; // GridOpenIfPositionsOpen: Open new grids even if market orders exist
 input int GridMarketThreshold = 0; // GridMarketThreshold: # of market pos to trigger reset per direction
+input bool GridResetHedgeOnOpenSignal = false; // GridResetHedgeOnOpenSignal: Force reset hedge if opening new direction
 
 input string LbL_Exit_Basket="---- Basket Exit Settings ----"; // :
 //input bool BasketTotalPerDay = false; // BasketTotalPerDay: Add total of all profits during day, not just open orders
@@ -216,7 +222,7 @@ input bool SchedCloseWeekend = true; // SchedCloseWeekend: Exit trades before we
 input bool SchedCloseSession = false; // SchedCloseSession: Exit trades before current day session is closed
 input int SchedGapIgnoreMinutes = 15; // SchedGapIgnoreMinutes: Ignore session gaps of X mins
 
-input string Lbl_Schedule_Closing="---- Order closing settings ----"; // :
+input string Lbl_Schedule_Closing="-- Schedule order closing settings --"; // :
 input OrderProfitType SchedCloseOrderProfit = OrderBothProfitLoss; // SchedCloseOrderProfit: Close only profitable or losing trades
 input OrderOpType SchedCloseOrderOp = OrderBothLongShort; // SchedCloseOrderOp: Close only longs or shorts
 input bool SchedClosePendings = true;
@@ -224,7 +230,7 @@ input bool SchedCloseBySwapDaily = false; // SchedCloseBySwapDaily: Only close i
 input bool SchedCloseBySwap3DaySwap = false; // SchedCloseBySwap3DaySwap: Only close if swap exceeds threshold
 input string SchedSwapThresholdCalc = "-0.5"; // SchedSwapThresholdCalc: Swap threshold to close trades
 
-input string Lbl_Schedule_Delay="---- Delay settings ----"; // :
+input string Lbl_Schedule_Delay="-- Schedule delay settings --"; // :
 input int SchedCloseMinutes = 5; // SchedCloseMinutes: Exit X mins before session close
 //input int SchedOpenLastMinutes = 60; // SchedOpenLastMinutes: Open up to X mins before session close
 input int SchedOpenMinutesDaily = 0; 

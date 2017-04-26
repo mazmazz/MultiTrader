@@ -96,6 +96,7 @@ class OrderManager {
     ValueLocation *trailingStopLoc;
     ValueLocation *jumpingStopLoc;
     ValueLocation *swapThresholdLoc;
+    ValueLocation *gridCloseDistanceLoc;
     
     TimePoint *lastTradeBetween[]; // keyed by symbolId
     TimePoint *lastValueBetween[];
@@ -171,12 +172,15 @@ class OrderManager {
     void resetOpenCount();
     void addOrderToOpenCount(int ticket, int symIdx, bool isPosition, bool subtract);
     void addOrderToOpenCount(int symIdx, int orderType, bool subtract);
+    void addOrderToProfitCount(int symbolIdx, int type, double profit, bool doBooked, bool subtract);
     
     //+------------------------------------------------------------------+
     // Exit
     
     bool isExitSafe(int symIdx);
     bool checkDoExitSignals(int ticket, int symIdx, bool isPosition);
+    bool checkDoExitByDistance(int ticket, int symIdx, double distancePips, bool byGrid, bool isPosition);
+    bool getDistanceFromOpen(int ticket, int symIdx, double &distanceOut, bool byGrid, bool isPosition);
     
     //+------------------------------------------------------------------+
     // Modify
@@ -201,10 +205,17 @@ class OrderManager {
     
     int prepareGrid(int symIdx, SignalType signal);
     int prepareGridOrder(SignalType signal, bool isHedge, bool isDual, bool isMarket, int gridIndex, int symIdx, string posSymName, double posVolume, double posPriceDist, int posSlippage, string posComment = "", int posMagic = 0, datetime posExpiration = 0);
+    void getGridOrderType(SignalType signal, bool isHedge, bool isDual, bool isMarket, int &cmdOut, int &gridIndexOut);
+    int getGridOrderType(SignalType signal, bool isHedge, bool isDual, bool isMarket);
+    SignalType getGridOrderDirection(int orderType);
+    bool isGridOrderTypeLong(int orderType);
+    bool isGridOrderTypeShort(int orderType);
     void fillGridExitFlags(int symbolIdx);
     bool isGridOpen(int symIdx, bool checkPendingsOnly);
     bool isGridOpen(int symIdx, bool isLong, bool checkPendingsOnly);
+    int getGridCount(int symIdx, bool isLong, bool checkPendings, bool checkPositions, bool checkLimitOrders);
     bool isTradeModeGrid();
+    void checkDoExitGrid(int symIdx, bool closeLong, bool force);
     
     //+------------------------------------------------------------------+
     // Schedule

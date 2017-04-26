@@ -34,10 +34,6 @@ void OrderManager::doPositions(bool firstRun) {
 }
 
 void OrderManager::doCurrentPositions(bool firstRun, bool isPosition) {
-//#ifdef __MQL5__
-//    cycleIsPosition = isPosition;
-//#endif
-
     for(int i = 0; i < getOrdersTotal(isPosition); i++) {
         getOrderSelect(i, SELECT_BY_POS, MODE_TRADES, isPosition);
 
@@ -59,26 +55,22 @@ void OrderManager::doCurrentPositions(bool firstRun, bool isPosition) {
         if(!exitResult) { exitResult = checkDoExitSignals(ticket, symbolIdx, isPosition); }
         if(!exitResult) { exitResult = checkDoExitStopLevels(ticket, symbolIdx, isPosition); }
         
-        if(!exitResult) {
-            if(Common::OrderIsMarket(type)) {
-                basketProfit += profit;
-                basketProfitSymbol[symbolIdx] += profit;
-                if(Common::OrderIsLong(type)) { 
-                    basketLongProfit += profit; 
-                    basketLongProfitSymbol[symbolIdx] += profit; 
-                }
-                else if(Common::OrderIsShort(type)) { 
-                    basketShortProfit += profit; 
-                    basketShortProfitSymbol[symbolIdx] += profit; 
+        if(!exitResult && TradeModeType == TradeGrid && GridClosePendingByDistance && Common::OrderIsPending(type)) {
+            double distancePips = 0;
+            if(getValue(distancePips, gridCloseDistanceLoc, symbolIdx)) {
+                if(distancePips != 0) {
+                    exitResult = checkDoExitByDistance(ticket, symbolIdx, distancePips, true, isPosition);
                 }
             }
-            
+        }
+        
+        if(!exitResult) {
+            addOrderToProfitCount(symbolIdx, type, profit, false, false);
             addOrderToOpenCount(ticket, symbolIdx, isPosition, false);
             doModifyPosition(ticket, symbolIdx, isPosition);
         } else {
             if(Common::OrderIsMarket(type)) {
-                basketBookedProfit += profit;
-                basketBookedProfitSymbol[symbolIdx] += profit;
+                addOrderToProfitCount(symbolIdx, type, profit, true, false);
             }
             i--; // deleting a position mid-loop changes the index, attempt same index as orders shift
         }
@@ -143,34 +135,41 @@ void OrderManager::addOrderToOpenCount(int ticket, int symIdx, bool isPosition, 
 void OrderManager::addOrderToOpenCount(int symIdx, int orderType, bool subtract) {
     if(symIdx < 0) { return; }
     
+    int unit = subtract ? -1 : 1;
     if(Common::OrderIsPending(orderType)) { 
         if(Common::OrderIsLong(orderType)) { 
-            if(subtract) { openPendingLongCount[symIdx]--; }
-            else { openPendingLongCount[symIdx]++; }
-            
-            if(orderType == OrderTypeBuyLimit) {
-                if(subtract) { openPendingLongLimitCount[symIdx]--; }
-                else { openPendingLongLimitCount[symIdx]++; }
-            }
+            openPendingLongCount[symIdx] += unit;
+            if(orderType == OrderTypeBuyLimit) { openPendingLongLimitCount[symIdx] += unit; }
         }
         else { 
-            if(subtract) { openPendingShortCount[symIdx]--; }
-            else { openPendingShortCount[symIdx]++; }
-            
-            if(orderType == OrderTypeSellLimit) {
-                if(subtract) { openPendingShortLimitCount[symIdx]--; }
-                else { openPendingShortLimitCount[symIdx]++; }
-            }
+            openPendingShortCount[symIdx] += unit;
+            if(orderType == OrderTypeSellLimit) { openPendingShortLimitCount[symIdx] += unit; }
         }
     }
     else { 
-        if(Common::OrderIsLong(orderType)) { 
-            if(subtract) { openMarketLongCount[symIdx]--; }
-            else { openMarketLongCount[symIdx]++; }
-        }
-        else { 
-            if(subtract) { openMarketShortCount[symIdx]--; }
-            else { openMarketShortCount[symIdx]++; }
+        if(Common::OrderIsLong(orderType)) { openMarketLongCount[symIdx] += unit; }
+        else { openMarketShortCount[symIdx] += unit; }
+    }
+}
+
+void OrderManager::addOrderToProfitCount(int symbolIdx, int type, double profit, bool doBooked, bool subtract) {
+    if(subtract) { profit *= -1; }
+    
+    if(Common::OrderIsMarket(type)) {
+        if(!doBooked) {
+            basketProfit += profit;
+            basketProfitSymbol[symbolIdx] += profit;
+            if(Common::OrderIsLong(type)) { 
+                basketLongProfit += profit; 
+                basketLongProfitSymbol[symbolIdx] += profit; 
+            }
+            else if(Common::OrderIsShort(type)) { 
+                basketShortProfit += profit; 
+                basketShortProfitSymbol[symbolIdx] += profit; 
+            }
+        } else {
+            basketBookedProfit += profit;
+            basketBookedProfitSymbol[symbolIdx] += profit;
         }
     }
 }

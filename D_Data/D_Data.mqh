@@ -152,7 +152,8 @@ void DataSymbol::addSignalUnit(SignalType signal, bool isEntry) {
         
         if(isEntry && signal != SignalHold && !Common::IsInvalidPointer(compareUnit)) {  // may need to change this if exit signals become more complex or SignalHold fulfilled/blocked becomes significant
             // retracement avoidance: for entry, check last entrySignal[1] if signal type is equal and was fulfilled, then also set fulfilled flag on new unit
-            for(int h = 1; h < ArraySize(entrySignal); h++) { // this assumes that newUnit and entry[0] are not the same. We check if entry[1] is different.
+            int entryUnitCount = ArraySize(entrySignal);
+            for(int h = 1; h < entryUnitCount; h++) { // this assumes that newUnit and entry[0] are not the same. We check if entry[1] is different.
                 SignalUnit *secondCompareUnit = getSignalUnit(true, h);
                 if(Common::IsInvalidPointer(secondCompareUnit)) { continue; }
                 
@@ -179,7 +180,7 @@ void DataSymbol::addSignalUnit(SignalType signal, bool isEntry) {
                 // falsify if exitSignal.type == signal and it was fulfilled (i.e., was old trade already closed?)
                     // AND is not superceded by a more recent entry signal ==
                 int exitUnitCount = ArraySize(exitSignal);
-                for(int i = 0; i < ArraySize(exitSignal) /*exitUnitCount*/; i++) { // todo: should we be looking more than 1 back?
+                for(int i = 0; i < exitUnitCount /*exitUnitCount*/; i++) { // todo: should we be looking more than 1 back?
                     if(
                        !Common::IsInvalidPointer(exitSignal[i])
                        && signal == exitSignal[i].getOppositeType() // need to refer opposite: an exit SignalShort means open Short, close Long
@@ -189,7 +190,7 @@ void DataSymbol::addSignalUnit(SignalType signal, bool isEntry) {
                     ) {
                         // todo: check if exit signal was superceded by later entry signal
                         bool dodgeSupercede = false;
-                        for(int j = 0; j < ArraySize(entrySignal); j++) {
+                        for(int j = 0; j < entryUnitCount; j++) {
                             if(Common::IsInvalidPointer(entrySignal[j])) { continue; }
                             int duration = getSignalDuration(TimeSettingUnit, exitSignal[i], entrySignal[j]);
                             if(duration > 0

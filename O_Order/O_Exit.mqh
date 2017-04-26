@@ -101,3 +101,45 @@ bool OrderManager::checkDoExitSignals(int ticket, int symIdx, bool isPosition) {
     }
     return result;
 }
+
+bool OrderManager::checkDoExitByDistance(int ticket, int symIdx, double distancePips, bool byGrid, bool isPosition) {
+    if(distancePips == 0) { return false; }
+    if(!isExitSafe(symIdx)) { return false; }
+    if(!checkDoSelect(ticket, isPosition)) { return false; }
+    
+    double currentDistance = 0;
+    if(!getDistanceFromOpen(ticket, symIdx, currentDistance, byGrid, isPosition)) { return false; }
+    
+    bool isLong = byGrid ? isGridOrderTypeLong(getOrderType(isPosition)) : Common::OrderIsLong(getOrderType(isPosition));
+    
+    bool distanceCrossed = distancePips < 0 ? currentDistance <= distancePips : currentDistance >= distancePips;
+    
+    bool result = false;
+    if(distanceCrossed) {
+        bool result = sendClose(ticket, symIdx, isPosition);
+        if(result) {
+            int digits = SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_DIGITS);
+            Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Distance " + DoubleToString(currentDistance, BrokerPipDecimal) + "/" + DoubleToString(distancePips, BrokerPipDecimal), true);
+        }
+    }
+    
+    return result;
+}
+
+bool OrderManager::getDistanceFromOpen(int ticket, int symIdx, double &distanceOut, bool byGrid, bool isPosition) {
+    if(!checkDoSelect(ticket, isPosition)) { return false; }
+    
+    bool isLong = byGrid ? isGridOrderTypeLong(getOrderType(isPosition)) : Common::OrderIsLong(getOrderType(isPosition));
+    
+    double currentPrice =
+        isLong ? 
+            SymbolInfoDouble(MainSymbolMan.symbols[symIdx].name, SYMBOL_BID)
+            : SymbolInfoDouble(MainSymbolMan.symbols[symIdx].name, SYMBOL_ASK)
+        ;
+        
+    distanceOut = PriceToPips(MainSymbolMan.symbols[symIdx].name
+        , isLong ? currentPrice - getOrderOpenPrice(isPosition) : getOrderOpenPrice(isPosition) - currentPrice
+        );
+        
+    return true;
+}

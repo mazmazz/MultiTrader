@@ -67,6 +67,7 @@ void OrderManager::~OrderManager() {
     Common::SafeDeletePointerArray(lastTradeBetween);
     Common::SafeDeletePointerArray(lastValueBetween);
 
+    Common::SafeDelete(gridCloseDistanceLoc);
     Common::SafeDelete(swapThresholdLoc);
     Common::SafeDelete(lotSizeLoc);
     Common::SafeDelete(breakEvenJumpDistanceLoc);
@@ -90,6 +91,7 @@ void OrderManager::initValueLocations() {
     trailingStopLoc = fillValueLocation(TrailingStopCalc);
     jumpingStopLoc = fillValueLocation(JumpingStopCalc);
     swapThresholdLoc = fillValueLocation(SchedSwapThresholdCalc);
+    gridCloseDistanceLoc = fillValueLocation(GridCloseDistanceCalc);
 }
 
 ValueLocation *OrderManager::fillValueLocation(string location) {

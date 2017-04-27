@@ -35,6 +35,8 @@ void OrderManager::OrderManager() {
     basketLongProfit = 0;
     basketShortProfit = 0;
     basketBookedProfit = 0;
+    basketMasterStopLoss = 0;
+    basketMasterTakeProfit = 0;
 
     int symCount = ArraySize(MainSymbolMan.symbols);
     ArrayResize(openPendingLongCount, symCount); ArrayInitialize(openPendingLongCount, 0);
@@ -48,6 +50,14 @@ void OrderManager::OrderManager() {
     ArrayResize(basketLongProfitSymbol, symCount); ArrayInitialize(basketLongProfitSymbol, 0);
     ArrayResize(basketShortProfitSymbol, symCount); ArrayInitialize(basketShortProfitSymbol, 0);
     ArrayResize(basketBookedProfitSymbol, symCount); ArrayInitialize(basketBookedProfitSymbol, 0);
+    
+    ArrayResize(basketSymbolStopLoss, symCount); ArrayInitialize(basketSymbolStopLoss, 0);
+    ArrayResize(basketSymbolTakeProfit, symCount); ArrayInitialize(basketSymbolTakeProfit, 0);
+    
+    ArrayResize(basketSymbolClose, symCount); ArrayInitialize(basketSymbolClose, false);
+    ArrayResize(basketSymbolLosses, symCount); ArrayInitialize(basketSymbolLosses, 0);
+    ArrayResize(basketSymbolWins, symCount); ArrayInitialize(basketSymbolWins, 0);
+    
     if(isTradeModeGrid()) { 
         ArrayResize(gridSetLong, symCount); ArrayInitialize(gridSetLong, false);
         ArrayResize(gridSetShort, symCount); ArrayInitialize(gridSetShort, false);
@@ -67,6 +77,8 @@ void OrderManager::~OrderManager() {
     Common::SafeDeletePointerArray(lastTradeBetween);
     Common::SafeDeletePointerArray(lastValueBetween);
 
+    Common::SafeDelete(basketSymbolTakeProfitLoc);
+    Common::SafeDelete(basketSymbolStopLossLoc);
     Common::SafeDelete(gridCloseDistanceLoc);
     Common::SafeDelete(swapThresholdLoc);
     Common::SafeDelete(lotSizeLoc);
@@ -92,6 +104,8 @@ void OrderManager::initValueLocations() {
     jumpingStopLoc = fillValueLocation(JumpingStopCalc);
     swapThresholdLoc = fillValueLocation(SchedSwapThresholdCalc);
     gridCloseDistanceLoc = fillValueLocation(GridCloseDistanceCalc);
+    basketSymbolStopLossLoc = fillValueLocation(BasketSymbolStopLossCalc);
+    basketSymbolTakeProfitLoc = fillValueLocation(BasketSymbolTakeProfitCalc);
 }
 
 ValueLocation *OrderManager::fillValueLocation(string location) {

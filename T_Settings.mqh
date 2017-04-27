@@ -10,22 +10,11 @@
 #include "MC_Common/MC_Error.mqh"
 #include "MC_Common/MC_MultiSettings.mqh"
 
-#define _FontColorDefault C'145,145,145'
-
 enum TimeUnits {
     UnitSeconds // Seconds
     , UnitMilliseconds // Milliseconds
     //, UnitMicroseconds // Microseconds
     , UnitTicks // Ticks: Applies only in tick mode
-};
-
-enum CycleType {
-    CycleTimerSeconds           // Seconds: Run on a second-based interval
-    , CycleTimerMilliseconds    // Milliseconds: Run on a millisecond-based interval
-#ifdef _EmulatedTicks
-    , CycleTimerTicks           // Average ticks: Run on an average tick interval
-#endif
-    , CycleRealTicks            // Real ticks: Run on every tick; applies only in Single Symbol Mode
 };
 
 enum TradeMode {
@@ -58,48 +47,15 @@ enum TrailStopMode {
     , TrailAfterBreakEven  // Trail only after break even
 };
 
-input string LblRuntime="********** Runtime Settings **********"; // :
+enum BasketStopMode {
+    BasketStopDisable      // Disabled
+    , BasketStopExactValue // Use exact value below
+    , BasketStopSumActiveSymbols // Sum stop levels from open symbols
+    , BasketStopSumAllSymbols // Sum stop levels from all symbols
+};
+
 input int MagicNumber=5001;
 input string ConfigComment=""; // ConfigComment: Comment to display on dashboard
-
-input string Lbl_ErrorSettings="---- Error Settings ----"; // :
-input ErrorLevelConfig ErrorTerminalLevel=ErrorConfigFatalNormal; // ErrorTerminalLevel: Errors to show in terminal
-input ErrorLevelConfig ErrorFileLevel=ErrorConfigNone; // ErrorFileLevel: Errors to write to log file (Hide=Disable)
-input ErrorLevelConfig ErrorAlertLevel=ErrorConfigFatal; // ErrorAlertLevel: Errors to trigger an alert
-input string ErrorLogFileName=""; // ErrorLogFileName: Leave blank to generate a filename    
-//input int HistoryLevel=1; // HistoryLevel: Number of filter values to keep in memory
-int DataHistoryLevel=1; // not convinced this should be a user setting
-int SignalHistoryLevel=3;
-
-//
-//input string Lbl_Notification="---- Notification Settings ----";
-//input bool PopupAlert=false;
-//input bool EmailAlert=false;
-//input bool PushAlert=false;
-
-input string LblDisplay="---- Display Settings ----"; // :
-input bool DisplayShow=true;
-input bool DisplayShowTable=true;
-input bool DisplayShowBasketSymbolLongShort=false;
-input bool DisplaySignalInternal=false;
-input bool DisplayColor=true;
-//input bool DisplayShowOrders=true;
-//input string DisplayFont="Lucida Console";
-input color DisplayFontColorDefault = _FontColorDefault;
-string DisplayFont="Lucida Console"; // Integral font to monospace layout and scaling, should not be user setting
-input int DisplayScale=1; // DisplayScale: 0 = Small, 1+ = Large
-//input int DisplayFontSize=11;
-//input int DisplaySpacing=13;
-//input DisplayStyleEnum DisplayStyle=ValueAndSignal;
-
-input string Lbl_CycleSettings="---- Cycle Settings ----"; // :
-input CycleType CycleMode=CycleTimerSeconds;
-input int CycleLength=1; // CycleLength: Length between cycles (seconds or milliseconds)
-#ifdef _EmulatedTicks
-input int AverageTickStartMil = 500;
-input int AverageTickLowestMil = 250;
-input int AverageTickHighestMil = 1000;
-#endif
 
 input string Lbl_Symbols="********** Instrument Settings **********"; // :
 input bool SingleSymbolMode=false; // SingleSymbolMode: Use only the current chart symbol
@@ -131,7 +87,7 @@ input string Lbl_TradeSignal="---- Trade Signal Settings ----"; // :
 input bool CloseOrderOnOppositeSignal=true; // CloseOrderOnOppositeSignal: Close when entry signal is opposite
 input bool SignalRetraceOpenAfterExit=true; // SignalRetraceOpenAfterExit: Enter on retrace after exit or SL/TP
 input bool SignalRetraceOpenAfterDelay=false; // SignalRetraceOpenAfterDelay: Enter on retrace after delay
-input int SignalRetraceDelay=1800; // SignalRetraceDelay: Open position 
+input int SignalRetraceDelay=1800; // SignalRetraceDelay: Open position, stated in TimeSettingUnits below
 
 input string Lbl_TradeDelays="---- Trade Delay Settings ----"; // :
 input TimeUnits TimeSettingUnit=UnitSeconds; // TimeSettingUnit: Unit for values below
@@ -145,8 +101,9 @@ input int ValueBetweenDelay=0; // ValueBetweenDelay: Wait between value changes
 //input bool ExpireTrades=false;
 //input int Exit_expirySeconds=900;
 //
+input string Lbl_Trade_Grid="********** Grid Settings **********"; // :
 
-input string LbL_Grid="---- Grid Settings ----";
+//input string LbL_Grid="---- Grid Settings ----";
 input string GridNote = "Set TradeModeType above to enable grids."; // :
 input bool GridSetStopOrders = true;
 input bool GridSetHedgeStopOrders = false;
@@ -167,20 +124,7 @@ input bool GridOpenIfPositionsOpen = false; // GridOpenIfPositionsOpen: Open new
 input int GridMarketThreshold = 0; // GridMarketThreshold: # of market pos to trigger reset per direction
 input bool GridResetHedgeOnOpenSignal = false; // GridResetHedgeOnOpenSignal: Force reset hedge if opening new direction
 
-input string LbL_Exit_Basket="---- Basket Exit Settings ----"; // :
-//input bool BasketTotalPerDay = false; // BasketTotalPerDay: Add total of all profits during day, not just open orders
-bool BasketTotalPerDay = false; // dummied out for now
-// input int BasketPeriodLengthMinutes = 1440; // BasketPeriodLengthMinutes: Time to limit baskets
-// input bool BasketPeriodStartType = From execution, From start time; // ???
-// input datetime BasketPeriodStartTime = Monday 12:00am; // ???
-input bool BasketEnableStopLoss=false;
-input double BasketStopLossValue=-200.0;
-input int BasketMaxLosingPerDay=2;
-// todo: basket filter values. Complicated because we may need to aggregate filters across symbols for a proper basket sltp
-input bool BasketEnableTakeProfit=false;
-input double BasketTakeProfitValue=400.0;
-input int BasketMaxWinningPerDay=1;
-input bool BasketClosePendings=true;
+input string Lbl_Trade_StopLevels="********** Stop Level Settings **********"; // :
 
 input string Lbl_StopLoss="---- Stop Loss Settings ----"; // :
 input bool StopLossInitialEnabled=false;
@@ -211,6 +155,43 @@ input string TrailingStopCalc = "10.0";
 input string Lbl_JSL="---- Jumping stop loss settings ----"; // :
 input bool JumpingStopEnabled=false;
 input string JumpingStopCalc = "10.0";
+
+input string Lbl_Trade_Basket="********** Basket Settings **********"; // :
+
+//input bool BasketTotalPerDay = false; // BasketTotalPerDay: Add total of all profits during day, not just open orders
+bool BasketTotalPerDay = false; // dummied out for now
+// input int BasketPeriodLengthMinutes = 1440; // BasketPeriodLengthMinutes: Time to limit baskets
+// input bool BasketPeriodStartType = From execution, From start time; // ???
+// input datetime BasketPeriodStartTime = Monday 12:00am; // ???
+
+input bool BasketClosePendings=true;
+
+input string Lbl_Basket_Master_Stop="---- Master Basket Stop Levels ----"; // :
+
+input BasketStopMode BasketMasterStopLossMode=BasketStopDisable;
+input double BasketStopLossValue=-200.0;
+input double BasketStopLossFactor=1;
+input int BasketMaxLosingPerDay=2;
+
+input string Lbl_Basket_Master_Stop_Gap=""; // :
+
+input BasketStopMode BasketMasterTakeProfitMode=BasketStopDisable;
+input double BasketTakeProfitValue=400.0;
+input double BasketTakeProfitFactor=1;
+input int BasketMaxWinningPerDay=1;
+
+input string Lbl_Basket_Symbol_Stop="---- Symbol Basket Stop Levels ----"; // :
+input bool BasketSymbolEnableStopLoss = false;
+input string BasketSymbolStopLossCalc="-50.0";
+//input bool BasketSymbolStopLossReUpdate = false;
+input int BasketSymbolMaxLosingPerDay=2;
+
+input string Lbl_Basket_Symbol_Stop_Gap=""; // :
+
+input bool BasketSymbolEnableTakeProfit = false;
+input string BasketSymbolTakeProfitCalc="75.0";
+//input bool BasketSymbolTakeProfitReUpdate = false;
+input int BasketSymbolMaxWinningPerDay=2;
 
 input string Lbl_Schedule="********** Schedule Settings **********"; // :
 input string SchedCustom = "-23:00|-00:00|+01:00"; // SchedCustom: Specify times daily, weekday, or exact date

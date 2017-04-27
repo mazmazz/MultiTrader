@@ -34,6 +34,7 @@ datetime ProjectExpiration = D'2017.06.04';
 #include "T_Presets.mqh"
 #include "T_Optimization.mqh"
 #include "T_Validation.mqh"
+#include "T_PostSettings.mqh"
 #include "M_Main.mqh"
 
 //#include "depends/OrderReliable.mqh"

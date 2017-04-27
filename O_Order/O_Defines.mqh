@@ -66,6 +66,15 @@ class OrderManager {
     double basketShortProfitSymbol[];
     double basketBookedProfitSymbol[];
     
+    double basketSymbolStopLoss[];
+    double basketSymbolTakeProfit[];
+    double basketMasterStopLoss;
+    double basketMasterTakeProfit;
+    
+    bool basketSymbolClose[];
+    int basketSymbolLosses[];
+    int basketSymbolWins[];
+    
     int openPendingLongCount[];
     int openMarketLongCount[];
     int openPendingShortCount[];
@@ -97,6 +106,8 @@ class OrderManager {
     ValueLocation *jumpingStopLoc;
     ValueLocation *swapThresholdLoc;
     ValueLocation *gridCloseDistanceLoc;
+    ValueLocation *basketSymbolStopLossLoc;
+    ValueLocation *basketSymbolTakeProfitLoc;
     
     TimePoint *lastTradeBetween[]; // keyed by symbolId
     TimePoint *lastValueBetween[];
@@ -250,13 +261,24 @@ class OrderManager {
     
     bool checkBasketSafe();
     void checkDoBasketExit();
+    void checkDoBasketMasterExit();
+    void checkDoBasketSymbolExit();
+    void checkDoBasketSymbolExit(int symIdx);
     void sendBasketClose(bool isPosition);
+    void sendBasketClose(int symIdx, bool isPosition);
 
     void fillBasketFlags();
     
     double getProfitPips(int ticket, bool isPosition);
     bool getProfitPips(int ticket, bool isPosition, double &profitOut);
     double getProfitPips(double openPrice, int opType, string symName);
+    
+    void updateBasketStopLevels();
+    void updateBasketMasterStopLevels();
+    void updateBasketMasterStopLevel(bool isStopLoss);
+    void updateBasketSymbolStopLevels();
+    void updateBasketSymbolStopLevel(int symIdx, bool isStopLoss);
+    bool getBasketSymbolInitialStopLevel(int symIdx, bool isStopLoss, double &stopLevelOut);
     
     //+------------------------------------------------------------------+
     // Stop Levels

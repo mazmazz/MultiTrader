@@ -24,6 +24,7 @@ void OrderManager::doPositions(bool firstRun) {
 #endif
 #endif
 
+    updateBasketStopLevels();
     checkDoBasketExit();
     
     int symbolCount = MainSymbolMan.getSymbolCount();
@@ -168,8 +169,9 @@ void OrderManager::addOrderToProfitCount(int symbolIdx, int type, double profit,
                 basketShortProfitSymbol[symbolIdx] += profit; 
             }
         } else {
-            basketBookedProfit += profit;
-            basketBookedProfitSymbol[symbolIdx] += profit;
+            // todo: booked properly
+            //basketBookedProfit += profit;
+            //basketBookedProfitSymbol[symbolIdx] += profit;
         }
     }
 }

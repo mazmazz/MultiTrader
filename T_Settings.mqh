@@ -50,8 +50,8 @@ enum TrailStopMode {
 enum BasketStopMode {
     BasketStopDisable      // Disabled
     , BasketStopExactValue // Use exact value below
-    , BasketStopSumActiveSymbols // Sum stop levels from open symbols
-    , BasketStopSumAllSymbols // Sum stop levels from all symbols
+    //, BasketStopSumActiveSymbols // Sum stop levels from open symbols
+    //, BasketStopSumAllSymbols // Sum stop levels from all symbols
 };
 
 input int MagicNumber=5001;
@@ -113,7 +113,7 @@ input bool GridOpenMarketInitial=false; // GridOpenMarketInitial: Place market o
 input int GridCount=5; // GridCount: # of pendings per direction
 input string GridDistanceCalc = "10.0";
 
-input string Lbl_GridReset="-- Grid Reset Settings --";
+input string Lbl_GridReset="---- Grid Reset Settings ----";
 input bool GridClosePendingOnSignal = false; // GridClosePendingOnSignal: Close pending orders upon signal
 input bool GridCloseMarketOnSignal = false; // GridCloseMarketOnSignal: Close market orders upon signal
 input bool GridClosePendingByDistance = false;
@@ -166,32 +166,60 @@ bool BasketTotalPerDay = false; // dummied out for now
 
 input bool BasketClosePendings=true;
 
-input string Lbl_Basket_Master_Stop="---- Master Basket Stop Levels ----"; // :
+input string Lbl_Basket_Master_Stop="________ Master Basket Stop Levels ________"; // :
 
-input BasketStopMode BasketMasterStopLossMode=BasketStopDisable;
+input BasketStopMode BasketMasterInitialStopLossMode=BasketStopDisable;
 input double BasketStopLossValue=-200.0;
 input double BasketStopLossFactor=1;
 input int BasketMaxLosingPerDay=2;
 
 input string Lbl_Basket_Master_Stop_Gap=""; // :
 
-input BasketStopMode BasketMasterTakeProfitMode=BasketStopDisable;
+input BasketStopMode BasketMasterInitialTakeProfitMode=BasketStopDisable;
 input double BasketTakeProfitValue=400.0;
 input double BasketTakeProfitFactor=1;
 input int BasketMaxWinningPerDay=1;
 
-input string Lbl_Basket_Symbol_Stop="---- Symbol Basket Stop Levels ----"; // :
-input bool BasketSymbolEnableStopLoss = false;
+input string Lbl_Basket_Master_Stop_Breakeven="---- Master Break Even Stop ----"; // :
+input bool BasketMasterBreakEvenStopEnabled=false;
+input double BasketMasterBreakEvenProfit=1.5;
+input double BasketMasterBreakEvenJumpDistance = 10;
+
+input string Lbl_Basket_Master_Stop_Trailing="---- Master Trailing Stop ----"; // :
+input bool BasketMasterTrailingStopEnabled=false;
+input TrailStopMode BasketMasterTrailByBreakEven=TrailAlways;
+input double BasketMasterTrailingStop = 10.0;
+
+input string Lbl_Basket_Master_Stop_Jumping="---- Master Jumping Stop ----"; // :
+input bool BasketMasterJumpingStopEnabled=false;
+input double BasketMasterJumpingStop = 10.0;
+
+input string Lbl_Basket_Symbol_Stop="________ Symbol Basket Stop Levels ________"; // :
+input bool BasketSymbolInitialStopLossEnabled = false;
 input string BasketSymbolStopLossCalc="-50.0";
 //input bool BasketSymbolStopLossReUpdate = false;
 input int BasketSymbolMaxLosingPerDay=2;
 
 input string Lbl_Basket_Symbol_Stop_Gap=""; // :
 
-input bool BasketSymbolEnableTakeProfit = false;
+input bool BasketSymbolInitialTakeProfitEnabled = false;
 input string BasketSymbolTakeProfitCalc="75.0";
 //input bool BasketSymbolTakeProfitReUpdate = false;
 input int BasketSymbolMaxWinningPerDay=2;
+
+input string Lbl_Basket_Symbol_Stop_Breakeven="---- Symbol Break Even Stop ----"; // :
+input bool BasketSymbolBreakEvenStopEnabled=false;
+input double BasketSymbolBreakEvenProfit=1.5;
+input string BasketSymbolBreakEvenJumpDistanceCalc = "10.0";
+
+input string Lbl_Basket_Symbol_Stop_Trailing="---- Symbol Trailing Stop ----"; // :
+input bool BasketSymbolTrailingStopEnabled=false;
+input TrailStopMode BasketSymbolTrailByBreakEven=TrailAlways;
+input string BasketSymbolTrailingStopCalc = "10.0";
+
+input string Lbl_Basket_Symbol_Stop_Jumping="---- Symbol Jumping Stop ----"; // :
+input bool BasketSymbolJumpingStopEnabled=false;
+input string BasketSymbolJumpingStopCalc = "10.0";
 
 input string Lbl_Schedule="********** Schedule Settings **********"; // :
 input string SchedCustom = "-23:00|-00:00|+01:00"; // SchedCustom: Specify times daily, weekday, or exact date
@@ -203,7 +231,7 @@ input bool SchedCloseWeekend = true; // SchedCloseWeekend: Exit trades before we
 input bool SchedCloseSession = false; // SchedCloseSession: Exit trades before current day session is closed
 input int SchedGapIgnoreMinutes = 15; // SchedGapIgnoreMinutes: Ignore session gaps of X mins
 
-input string Lbl_Schedule_Closing="-- Schedule order closing settings --"; // :
+input string Lbl_Schedule_Closing="---- Schedule order closing settings ----"; // :
 input OrderProfitType SchedCloseOrderProfit = OrderBothProfitLoss; // SchedCloseOrderProfit: Close only profitable or losing trades
 input OrderOpType SchedCloseOrderOp = OrderBothLongShort; // SchedCloseOrderOp: Close only longs or shorts
 input bool SchedClosePendings = true;
@@ -211,7 +239,7 @@ input bool SchedCloseBySwapDaily = false; // SchedCloseBySwapDaily: Only close i
 input bool SchedCloseBySwap3DaySwap = false; // SchedCloseBySwap3DaySwap: Only close if swap exceeds threshold
 input string SchedSwapThresholdCalc = "-0.5"; // SchedSwapThresholdCalc: Swap threshold to close trades
 
-input string Lbl_Schedule_Delay="-- Schedule delay settings --"; // :
+input string Lbl_Schedule_Delay="---- Schedule delay settings ----"; // :
 input int SchedCloseMinutes = 5; // SchedCloseMinutes: Exit X mins before session close
 //input int SchedOpenLastMinutes = 60; // SchedOpenLastMinutes: Open up to X mins before session close
 input int SchedOpenMinutesDaily = 0; 

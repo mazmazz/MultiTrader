@@ -106,6 +106,9 @@ void OrderManager::initValueLocations() {
     gridCloseDistanceLoc = fillValueLocation(GridCloseDistanceCalc);
     basketSymbolStopLossLoc = fillValueLocation(BasketSymbolStopLossCalc);
     basketSymbolTakeProfitLoc = fillValueLocation(BasketSymbolTakeProfitCalc);
+    basketSymbolBreakEvenJumpDistanceLoc = fillValueLocation(BasketSymbolBreakEvenJumpDistanceCalc);
+    basketSymbolTrailingStopLoc = fillValueLocation(BasketSymbolTrailingStopCalc);
+    basketSymbolJumpingStopLoc = fillValueLocation(BasketSymbolJumpingStopCalc);
 }
 
 ValueLocation *OrderManager::fillValueLocation(string location) {

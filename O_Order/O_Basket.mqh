@@ -19,10 +19,16 @@
 
 //+------------------------------------------------------------------+
 
-bool OrderManager::checkBasketSafe() {
-    bool masterSafe = (basketLosses < MathMax(1, BasketMaxLosingPerDay) && basketWins < MathMax(1, BasketMaxWinningPerDay));
-    
-    return masterSafe;
+bool OrderManager::checkBasketSafe(int symIdx) {
+    return checkBasketMasterSafe() && checkBasketSymbolSafe(symIdx);
+}
+
+bool OrderManager::checkBasketMasterSafe() {
+    return (basketLosses < MathMax(1, BasketMaxLosingPerDay) && basketWins < MathMax(1, BasketMaxWinningPerDay));
+}
+
+bool OrderManager::checkBasketSymbolSafe(int symIdx) {
+    return (basketSymbolLosses[symIdx] < MathMax(1, BasketSymbolMaxLosingPerDay) && basketSymbolWins[symIdx] < MathMax(1, BasketSymbolMaxWinningPerDay));
 }
 
 void OrderManager::checkDoBasketExit() {
@@ -32,13 +38,13 @@ void OrderManager::checkDoBasketExit() {
 
 void OrderManager::checkDoBasketMasterExit() {
     bool close = false;
-    if(BasketMasterStopLossMode != BasketStopDisable && (basketProfit+basketBookedProfit) <= basketMasterStopLoss) {
+    if(basketMasterStopLoss != 0 && BasketMasterInitialStopLossMode != BasketStopDisable && (basketProfit+basketBookedProfit) <= basketMasterStopLoss) {
         Error::PrintInfo("Close Basket: Stop Loss - " + (basketProfit + basketBookedProfit) + " pips | Setting: " + basketMasterStopLoss, true);
         close = true;
         basketLosses++;
     }
     
-    if(BasketMasterTakeProfitMode != BasketStopDisable && (basketProfit+basketBookedProfit) >= basketMasterTakeProfit) {
+    if(basketMasterTakeProfit != 0 && BasketMasterInitialTakeProfitMode != BasketStopDisable && (basketProfit+basketBookedProfit) >= basketMasterTakeProfit) {
         Error::PrintInfo("Close Basket: Take Profit - " + (basketProfit + basketBookedProfit) + " pips | Setting: " + basketMasterTakeProfit, true);
         close = true;
         basketWins++;
@@ -53,11 +59,13 @@ void OrderManager::checkDoBasketMasterExit() {
         sendBasketClose(false);
 #endif
 #endif
+        basketMasterStopLoss = 0;
+        basketMasterTakeProfit = 0;
     }
 }
 
 void OrderManager::checkDoBasketSymbolExit() {
-    if(!BasketSymbolEnableStopLoss && BasketSymbolEnableTakeProfit) { return; }
+    if(!BasketSymbolInitialStopLossEnabled && BasketSymbolInitialTakeProfitEnabled) { return; }
 
     int symCount = ArraySize(MainSymbolMan.symbols);
     
@@ -68,13 +76,13 @@ void OrderManager::checkDoBasketSymbolExit() {
 
 void OrderManager::checkDoBasketSymbolExit(int symIdx) {
     bool close = false;
-    if(BasketSymbolEnableStopLoss && (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]) <= basketSymbolStopLoss[symIdx]) {
+    if(basketSymbolStopLoss[symIdx] != 0 && BasketSymbolInitialStopLossEnabled && (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]) <= basketSymbolStopLoss[symIdx]) {
         Error::PrintInfo(MainSymbolMan.symbols[symIdx].name + "Close Basket: Stop Loss - " + (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]) + " pips | Setting: " + basketSymbolStopLoss[symIdx], true);
         close = true;
         basketSymbolLosses[symIdx]++;
     }
     
-    if(BasketSymbolEnableTakeProfit && (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]) >= basketSymbolTakeProfit[symIdx]) {
+    if(basketSymbolTakeProfit[symIdx] != 0 && BasketSymbolInitialTakeProfitEnabled && (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]) >= basketSymbolTakeProfit[symIdx]) {
         Error::PrintInfo(MainSymbolMan.symbols[symIdx].name + "Close Basket: Take Profit - " + (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]) + " pips | Setting: " + basketSymbolTakeProfit[symIdx], true);
         close = true;
         basketSymbolWins[symIdx]++;
@@ -89,6 +97,8 @@ void OrderManager::checkDoBasketSymbolExit(int symIdx) {
         sendBasketClose(symIdx, false);
 #endif
 #endif
+        basketSymbolStopLoss[symIdx] = 0;
+        basketSymbolTakeProfit[symIdx] = 0;
     }
 }
 
@@ -106,13 +116,13 @@ void OrderManager::sendBasketClose(int symIdx, bool isPosition) {
         if(symIdx >= 0 && MainSymbolMan.symbols[symIdx].name != getOrderSymbol(isPosition)) { continue; }
         
         long ticket = getOrderTicket(isPosition);
-        int symIdx = MainSymbolMan.getSymbolId(getOrderSymbol(isPosition));
+        int orderSymIdx = MainSymbolMan.getSymbolId(getOrderSymbol(isPosition));
         long orderType = getOrderType(isPosition);
         bool exitResult = false;
         
         if(BasketClosePendings || !Common::OrderIsPending(getOrderType(isPosition))) {
             Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Basket", true);
-            exitResult = sendClose(ticket, symIdx, isPosition);
+            exitResult = sendClose(ticket, orderSymIdx, isPosition);
         }
         
         if(exitResult) {
@@ -132,7 +142,9 @@ void OrderManager::fillBasketFlags() {
     ArrayInitialize(basketLongProfitSymbol, 0);
     ArrayInitialize(basketShortProfitSymbol, 0);
     ArrayInitialize(basketSymbolClose, false);
+    
     if(!BasketTotalPerDay || basketDay != DayOfWeek()) { basketBookedProfit = 0; } // basketDay != DayOfWeek() is done in checkDoBasketExit()
+    
     if(basketDay != DayOfWeek()) { // todo: basket - period length: hours? days? weeks?
         basketLosses = 0;
         basketWins = 0;
@@ -181,33 +193,22 @@ void OrderManager::updateBasketMasterStopLevels() {
 }
 
 void OrderManager::updateBasketMasterStopLevel(bool isStopLoss) {
-    BasketStopMode stopMode = isStopLoss ? BasketMasterStopLossMode : BasketMasterTakeProfitMode;
-    double level = 0;
-    bool sumAllSymbols = false;
-    
-    switch(stopMode) {
-        case BasketStopExactValue: level = isStopLoss ? BasketStopLossValue : BasketTakeProfitValue; break;
-        case BasketStopSumAllSymbols: 
-            sumAllSymbols = true;
-        case BasketStopSumActiveSymbols: {
-            int symCount = ArraySize(MainSymbolMan.symbols);
-    
-            for(int i = 0; i < symCount; i++) { // todo: detect skipping loop when no updates?
-                if(!sumAllSymbols && openMarketLongCount[i] + openMarketShortCount[i] <= 0) { continue; }
-                
-                level += isStopLoss ? basketSymbolStopLoss[i] : basketSymbolTakeProfit[i]; // todo: rules for moving stops?
+    if(isStopLoss) { 
+        if(basketMasterStopLoss == 0 && BasketMasterInitialStopLossMode != BasketStopDisable) {
+            basketMasterStopLoss = getBasketMasterInitialStopLevel(isStopLoss);
+        } 
+        //else {
+            double level = 0;
+            if(getBasketModifiedStopLevel(-1, level)) {
+                basketMasterStopLoss = level;
             }
-            
-            level *= isStopLoss ? BasketStopLossFactor : BasketTakeProfitFactor;
-            break;
-        }
-        case BasketStopDisable: 
-        default: 
-            level = 0; break;
+        //}
     }
-    
-    if(isStopLoss) { basketMasterStopLoss = level; }
-    else { basketMasterTakeProfit = level; }
+    else { 
+        if(basketMasterTakeProfit == 0 && BasketMasterInitialTakeProfitMode != BasketStopDisable) { 
+            basketMasterTakeProfit = getBasketMasterInitialStopLevel(isStopLoss);
+        }
+    }
 }
 
 void OrderManager::updateBasketSymbolStopLevels() {
@@ -223,29 +224,70 @@ void OrderManager::updateBasketSymbolStopLevel(int symIdx, bool isStopLoss) {
     double stopLevel = 0;
     if(isStopLoss) {
         if(openMarketLongCount[symIdx] + openMarketShortCount[symIdx] > 0) {
-            if(basketSymbolStopLoss[symIdx] == 0) {
+            if(basketSymbolStopLoss[symIdx] == 0 && BasketSymbolInitialStopLossEnabled) {
                 if(getBasketSymbolInitialStopLevel(symIdx, isStopLoss, stopLevel)) {
                     basketSymbolStopLoss[symIdx] = stopLevel;
                 }
-            }
+            } 
+            //else {
+                if(getBasketModifiedStopLevel(symIdx, stopLevel)) {
+                    basketSymbolStopLoss[symIdx] = stopLevel;
+                }
+            //}
         } else { basketSymbolStopLoss[symIdx] = 0; }
-        
-        // should default stop level be updated every cycle? (e.g., changing ATR)
     } else {
         if(openMarketLongCount[symIdx] + openMarketShortCount[symIdx] > 0) {
-            if(basketSymbolTakeProfit[symIdx] == 0) {
+            if(basketSymbolTakeProfit[symIdx] == 0 && BasketSymbolInitialTakeProfitEnabled) {
                 if(getBasketSymbolInitialStopLevel(symIdx, isStopLoss, stopLevel)) {
                     basketSymbolTakeProfit[symIdx] = stopLevel;
                 }
             }
         } else { basketSymbolTakeProfit[symIdx] = 0; }
-        
-        // should default stop level be updated every cycle? (e.g., changing ATR)
     }
 }
 
+//+------------------------------------------------------------------+
+
+double OrderManager::getBasketMasterInitialStopLevel(bool isStopLoss) {
+    if((isStopLoss && BasketMasterInitialStopLossMode == BasketStopDisable)
+        || (!isStopLoss && BasketMasterInitialTakeProfitMode == BasketStopDisable)
+    ) { return 0; }
+    
+    double level = 0;
+    //bool sumAllSymbols = false;
+    BasketStopMode stopMode = isStopLoss ? BasketMasterInitialStopLossMode : BasketMasterInitialTakeProfitMode;
+    
+    switch(stopMode) {
+        case BasketStopExactValue: level = isStopLoss ? BasketStopLossValue : BasketTakeProfitValue; break;
+        //case BasketStopSumAllSymbols: 
+        //    sumAllSymbols = true;
+//        case BasketStopSumActiveSymbols: {
+//            int symCount = ArraySize(MainSymbolMan.symbols);
+//    
+//            for(int i = 0; i < symCount; i++) { // todo: detect skipping loop when no updates?
+//                if(!sumAllSymbols && openMarketLongCount[i] + openMarketShortCount[i] <= 0) { continue; }
+//                
+//                level += isStopLoss ? basketSymbolStopLoss[i] : basketSymbolTakeProfit[i]; // todo: rules for moving stops?
+//            }
+//            
+//            level *= isStopLoss ? BasketStopLossFactor : BasketTakeProfitFactor;
+//            break;
+//        }
+        case BasketStopDisable: 
+        default: 
+            level = 0; break;
+    }
+    
+    return level;
+}
+
 bool OrderManager::getBasketSymbolInitialStopLevel(int symIdx, bool isStopLoss, double &stopLevelOut) {
+    if((isStopLoss && !BasketSymbolInitialStopLossEnabled)
+        || (!isStopLoss && !BasketSymbolInitialTakeProfitEnabled)
+    ) { return false; }
+    
     double stopLevel = 0;
+    
     if(isStopLoss) {
         if(getValue(stopLevel, basketSymbolStopLossLoc, symIdx)) {
             stopLevelOut = stopLevel;
@@ -259,4 +301,105 @@ bool OrderManager::getBasketSymbolInitialStopLevel(int symIdx, bool isStopLoss, 
     }
     
     return false;
+}
+
+bool OrderManager::getBasketModifiedStopLevel(int symIdx, double &stopLevelOut) {
+    double level = 0;
+    string logMessage = NULL;
+    
+    if(!getBasketJumpingStopLevel(symIdx, level)) {
+        if(!getBasketTrailingStopLevel(symIdx, level)) {
+            if(!getBasketBreakEvenStopLevel(symIdx, level)) {
+                return false;
+            } else { logMessage = " Basket mod stop: Breakeven - "; }
+        } else { logMessage = " Basket mod stop: Trailing - "; }
+    } else { logMessage = " Basket mod stop: Jump - "; }
+    
+    stopLevelOut = level;
+    
+    Error::PrintInfo(MainSymbolMan.symbols[symIdx].name + logMessage + level, true);
+
+    return true;
+}
+
+bool OrderManager::getBasketBreakEvenStopLevel(int symIdx, double &stopLevelOut) {
+    bool enabled = symIdx < 0 ? BasketMasterBreakEvenStopEnabled : BasketSymbolBreakEvenStopEnabled;
+    if(!enabled) { return false; }
+    
+    if(!isBasketBreakEvenPassed(symIdx)) { return false; }
+    
+    double stopPips = symIdx < 0 ? BasketMasterBreakEvenProfit : BasketSymbolBreakEvenProfit;
+    
+    if(isBasketStopLossProgressed(symIdx, stopPips)) {
+        stopLevelOut = stopPips;
+        return true;
+    } else { return false; }
+}
+
+bool OrderManager::getBasketTrailingStopLevel(int symIdx, double &stopLevelOut) {
+    bool enabled = symIdx < 0 ? BasketMasterTrailingStopEnabled : BasketSymbolTrailingStopEnabled;
+    if(!enabled) { return false; }
+    
+    TrailStopMode mode = symIdx < 0 ? BasketMasterTrailByBreakEven : BasketSymbolTrailByBreakEven;
+    switch(mode) {
+        case TrailBeforeBreakEven: if(isBasketBreakEvenPassed(symIdx)) { return false; } break;
+        case TrailAfterBreakEven:  if(!isBasketBreakEvenPassed(symIdx)) { return false; } break;
+    }
+    
+    double currentPips = symIdx < 0 ? basketProfit : basketProfitSymbol[symIdx];
+    
+    double stopPips = 0;
+    if(symIdx >= 0) {
+        if(!getValue(stopPips, basketSymbolTrailingStopLoc, symIdx)) { return false; }
+    } else { stopPips = BasketMasterTrailingStop; }
+    stopPips = currentPips - stopPips;
+    
+    if(isBasketStopLossProgressed(symIdx, stopPips)) {
+        stopLevelOut = stopPips;
+        return true;
+    } else { return false; }
+}
+
+bool OrderManager::getBasketJumpingStopLevel(int symIdx, double &stopLevelOut) {
+    bool enabled = symIdx < 0 ? BasketMasterJumpingStopEnabled : BasketSymbolJumpingStopEnabled;
+    if(!enabled) { return false; }
+    
+    double currentPips = symIdx < 0 ? basketProfit : basketProfitSymbol[symIdx];
+    
+    if(currentPips < 0) { return false; } // todo: booked profit
+    
+    double jumpPips = 0;
+    if(symIdx >= 0) {
+        if(!getValue(jumpPips, basketSymbolJumpingStopLoc, symIdx) || jumpPips == 0) { return false; }
+    } else { 
+        jumpPips = BasketMasterJumpingStop; 
+        if(jumpPips == 0) { return false; }
+    }
+    
+    double jumpingDistanceFactor = MathFloor(currentPips/jumpPips)-1;
+    if(jumpingDistanceFactor <= 0) { return false; } // first jump is empty so user can enable breakeven explicitly
+    
+    double jumpStopPips = jumpPips*jumpingDistanceFactor;
+    
+    if(isBasketStopLossProgressed(symIdx, jumpStopPips)) {
+        stopLevelOut = jumpStopPips;
+        return true;
+    } else { return false; }
+}
+
+bool OrderManager::isBasketBreakEvenPassed(int symIdx) {
+    double breakEvenJumpPips = 0;
+    if(symIdx >= 0) {
+        if(!getValue(breakEvenJumpPips, basketSymbolBreakEvenJumpDistanceLoc, symIdx)) { return false; }
+    } else { breakEvenJumpPips = BasketMasterBreakEvenJumpDistance; }
+    
+    double currentPips = symIdx < 0 ? basketProfit : basketProfitSymbol[symIdx];
+    
+    return currentPips >= breakEvenJumpPips; // todo: booked profit
+}
+
+bool OrderManager::isBasketStopLossProgressed(int symIdx, double newStopLoss) {
+    double oldStopLoss = symIdx < 0 ? basketMasterStopLoss : basketSymbolStopLoss[symIdx];
+    return newStopLoss != 0 && (oldStopLoss == 0 || newStopLoss > oldStopLoss);
+        // if proposed stop loss = 0, return false because 0 is reserved for uninited (next cycle, initial stop is set)
 }

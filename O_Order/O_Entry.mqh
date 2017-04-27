@@ -20,7 +20,7 @@ bool OrderManager::isEntrySafe(int symIdx) {
     }
         // MT5: LONGONLY and SHORTONLY
         // MT4: CLOSEONLY, FULL, or DISABLED
-    if(!checkBasketSafe()) { return false; }
+    if(!checkBasketSafe(symIdx)) { return false; }
     
     if(getCurrentSessionIdx(symIdx) >= 0) {
         if(!getOpenByMarketSchedule(symIdx)) { return false; }

@@ -106,8 +106,12 @@ class OrderManager {
     ValueLocation *jumpingStopLoc;
     ValueLocation *swapThresholdLoc;
     ValueLocation *gridCloseDistanceLoc;
+    
     ValueLocation *basketSymbolStopLossLoc;
     ValueLocation *basketSymbolTakeProfitLoc;
+    ValueLocation *basketSymbolBreakEvenJumpDistanceLoc;
+    ValueLocation *basketSymbolTrailingStopLoc;
+    ValueLocation *basketSymbolJumpingStopLoc;
     
     TimePoint *lastTradeBetween[]; // keyed by symbolId
     TimePoint *lastValueBetween[];
@@ -259,7 +263,9 @@ class OrderManager {
     //+------------------------------------------------------------------+
     // Basket
     
-    bool checkBasketSafe();
+    bool checkBasketSafe(int symIdx);
+    bool checkBasketMasterSafe();
+    bool checkBasketSymbolSafe(int symIdx);
     void checkDoBasketExit();
     void checkDoBasketMasterExit();
     void checkDoBasketSymbolExit();
@@ -278,7 +284,15 @@ class OrderManager {
     void updateBasketMasterStopLevel(bool isStopLoss);
     void updateBasketSymbolStopLevels();
     void updateBasketSymbolStopLevel(int symIdx, bool isStopLoss);
+    
+    double getBasketMasterInitialStopLevel(bool isStopLoss);
     bool getBasketSymbolInitialStopLevel(int symIdx, bool isStopLoss, double &stopLevelOut);
+    bool getBasketModifiedStopLevel(int symIdx, double &stopLevelOut);
+    bool getBasketBreakEvenStopLevel(int symIdx, double &stopLevelOut);
+    bool getBasketTrailingStopLevel(int symIdx, double &stopLevelOut);
+    bool getBasketJumpingStopLevel(int symIdx, double &stopLevelOut);
+    bool isBasketBreakEvenPassed(int symIdx);
+    bool isBasketStopLossProgressed(int symIdx, double newStopLoss);
     
     //+------------------------------------------------------------------+
     // Stop Levels

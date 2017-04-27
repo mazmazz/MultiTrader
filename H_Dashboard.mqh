@@ -156,12 +156,12 @@ void DashboardManager::drawHeader() {
     pos += drawText(prefixName("results_total_label"), padText("Total", maxTextPos+1));
     pos += drawText(prefixName("results_total"), "       ");
     
-    if(DisplayShowBasketStopLevels && BasketMasterStopLossMode != BasketStopDisable) {
+    if(DisplayShowBasketStopLevels && BasketMasterInitialStopLossMode != BasketStopDisable) {
         pos += drawText(prefixName("results_stoploss_label"), "SL ");
         pos += drawText(prefixName("results_stoploss"), "       ");
     }
     
-    if(DisplayShowBasketStopLevels && BasketMasterTakeProfitMode != BasketStopDisable) {
+    if(DisplayShowBasketStopLevels && BasketMasterInitialTakeProfitMode != BasketStopDisable) {
         pos += drawText(prefixName("results_takeprofit_label"), "TP ");
         pos += drawText(prefixName("results_takeprofit"), "       ");
     }
@@ -189,11 +189,11 @@ void DashboardManager::drawLegend() {
     
     string basketLegendText = " Total";
     
-    if(DisplayShowBasketStopLevels && BasketSymbolEnableStopLoss) {
+    if(DisplayShowBasketStopLevels && BasketSymbolInitialStopLossEnabled) {
         basketLegendText += sepChar+"SL   ";
     }
     
-    if(DisplayShowBasketStopLevels && BasketSymbolEnableTakeProfit) {
+    if(DisplayShowBasketStopLevels && BasketSymbolInitialTakeProfitEnabled) {
         basketLegendText += sepChar+"TP   ";
     }
     
@@ -228,11 +228,11 @@ void DashboardManager::drawSymbols() {
         
         pos += drawText(prefixName(i+"_total"), "     " + (TradeModeType == TradeGrid || DisplayShowBasketSymbolLongShort ? " " : ""));
         
-        if(DisplayShowBasketStopLevels && BasketSymbolEnableStopLoss) {
+        if(DisplayShowBasketStopLevels && BasketSymbolInitialStopLossEnabled) {
             pos += drawText(prefixName(i+"_stoploss"), "      ");
         }
         
-        if(DisplayShowBasketStopLevels && BasketSymbolEnableTakeProfit) {
+        if(DisplayShowBasketStopLevels && BasketSymbolInitialTakeProfitEnabled) {
             pos += drawText(prefixName(i+"_takeprofit"), "      ");
         }
         
@@ -390,11 +390,11 @@ void DashboardManager::updateDashboard() {
         
         ObjectSetText(prefixName(i+"_total"), basketTotal, fontSize, fontFace, fontColorDefault);
         
-        if(DisplayShowBasketStopLevels && BasketSymbolEnableStopLoss) {
+        if(DisplayShowBasketStopLevels && BasketSymbolInitialStopLossEnabled) {
             ObjectSetText(prefixName(i+"_stoploss"), basketStoploss, fontSize, fontFace, fontColorDefault);
         }
         
-        if(DisplayShowBasketStopLevels && BasketSymbolEnableTakeProfit) {
+        if(DisplayShowBasketStopLevels && BasketSymbolInitialTakeProfitEnabled) {
             ObjectSetText(prefixName(i+"_takeprofit"), basketTakeprofit, fontSize, fontFace, fontColorDefault);
         }
         
@@ -410,11 +410,11 @@ void DashboardManager::updateResults() {
     if(!DisplayShow) { return; }
     ObjectSetText(prefixName("results_total"), StringFormat("%.1f", (MainOrderMan.basketProfit+MainOrderMan.basketBookedProfit)), fontSize, fontFace, fontColorDefault);
     
-    if(DisplayShowBasketStopLevels && BasketMasterStopLossMode != BasketStopDisable) {
+    if(DisplayShowBasketStopLevels && BasketMasterInitialStopLossMode != BasketStopDisable) {
         ObjectSetText(prefixName("results_stoploss"), StringFormat("%.1f", MainOrderMan.basketMasterStopLoss, fontSize, fontFace, fontColorDefault));
     }
     
-    if(DisplayShowBasketStopLevels && BasketMasterTakeProfitMode != BasketStopDisable) {
+    if(DisplayShowBasketStopLevels && BasketMasterInitialTakeProfitMode != BasketStopDisable) {
         ObjectSetText(prefixName("results_takeprofit"), StringFormat("%.1f", MainOrderMan.basketMasterTakeProfit, fontSize, fontFace, fontColorDefault));
     }
     

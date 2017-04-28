@@ -25,7 +25,7 @@ bool OrderManager::isExitSafe(int symIdx) {
     return (getCurrentSessionIdx(symIdx) >= 0);
 }
 
-bool OrderManager::checkDoExitSignals(int ticket, int symIdx, bool isPosition) {
+bool OrderManager::checkDoExitSignals(long ticket, int symIdx, bool isPosition) {
     if(!isExitSafe(symIdx)) { return false; }
     if(!checkDoSelect(ticket, isPosition)) { return false; }
     
@@ -102,7 +102,7 @@ bool OrderManager::checkDoExitSignals(int ticket, int symIdx, bool isPosition) {
     return result;
 }
 
-bool OrderManager::checkDoExitByDistance(int ticket, int symIdx, double distancePips, bool byGrid, bool isPosition) {
+bool OrderManager::checkDoExitByDistance(long ticket, int symIdx, double distancePips, bool byGrid, bool isPosition) {
     if(distancePips == 0) { return false; }
     if(!isExitSafe(symIdx)) { return false; }
     if(!checkDoSelect(ticket, isPosition)) { return false; }
@@ -126,7 +126,7 @@ bool OrderManager::checkDoExitByDistance(int ticket, int symIdx, double distance
     return result;
 }
 
-bool OrderManager::getDistanceFromOpen(int ticket, int symIdx, double &distanceOut, bool byGrid, bool isPosition) {
+bool OrderManager::getDistanceFromOpen(long ticket, int symIdx, double &distanceOut, bool byGrid, bool isPosition) {
     if(!checkDoSelect(ticket, isPosition)) { return false; }
     
     bool isLong = byGrid ? isGridOrderTypeLong(getOrderType(isPosition)) : Common::OrderIsLong(getOrderType(isPosition));

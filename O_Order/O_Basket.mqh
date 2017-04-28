@@ -156,13 +156,13 @@ void OrderManager::fillBasketFlags() {
 
 //+------------------------------------------------------------------+
 
-double OrderManager::getProfitPips(int ticket, bool isPosition) {
+double OrderManager::getProfitPips(long ticket, bool isPosition) {
     double profit = 0;
     getProfitPips(ticket, isPosition, profit);
     return profit;
 }
 
-bool OrderManager::getProfitPips(int ticket, bool isPosition, double &profitOut) {
+bool OrderManager::getProfitPips(long ticket, bool isPosition, double &profitOut) {
     if(!checkDoSelect(ticket, isPosition)) { return false; }
     if(Common::OrderIsPending(getOrderType(isPosition))) { return false; }
     

@@ -17,7 +17,7 @@
 
 #include "O_Defines.mqh"
 
-int OrderManager::prepareGrid(int symIdx, SignalType signal) {
+long OrderManager::prepareGrid(int symIdx, SignalType signal) {
     // todo: grid - smarter entry rules on pendings. Only enter when no pendings exist on the symbol? Or no trades at all on the symbol?
     if(!IsTradeAllowed()) { return -1; }
     
@@ -87,37 +87,37 @@ int OrderManager::prepareGrid(int symIdx, SignalType signal) {
     double priceDistPoints = 0; 
     if(!getValuePrice(priceDistPoints, gridDistanceLoc, symIdx)) { return -1; }
 
-    int finalResult = 0;
+    long finalResult = 0;
     
     // how to get grid direction from signal? use it to decide per order which ones to fire
     
     if(GridOpenMarketInitial && gridOpenNormal) {
-        if(prepareGridOrder(signal, false, false, true, 0, symIdx, posSymName, posVolume, priceDistPoints, posSlippage, posComment, posMagic, posExpiration)) { 
+        if(prepareGridOrder(signal, false, false, true, 0, symIdx, posSymName, posVolume, priceDistPoints, posSlippage, posComment, posMagic, posExpiration) > 0) { 
             finalResult++; 
         }
     }
     
     for(int i = 1; i <= GridCount; i++) {
         if(GridSetStopOrders && gridOpenNormal) {
-            if(prepareGridOrder(signal, false, false, false, i, symIdx, posSymName, posVolume, priceDistPoints, posSlippage, posComment, posMagic, posExpiration)) {
+            if(prepareGridOrder(signal, false, false, false, i, symIdx, posSymName, posVolume, priceDistPoints, posSlippage, posComment, posMagic, posExpiration) > 0) {
                 finalResult++;
             }
         }
         
         if(GridSetLimitOrders && gridOpenNormal) {
-            if(prepareGridOrder(signal, false, true, false, i, symIdx, posSymName, posVolume, priceDistPoints, posSlippage, posComment, posMagic, posExpiration)) {
+            if(prepareGridOrder(signal, false, true, false, i, symIdx, posSymName, posVolume, priceDistPoints, posSlippage, posComment, posMagic, posExpiration) > 0) {
                 finalResult++;
             }
         }
         
         if(GridSetHedgeStopOrders && gridOpenHedge) {
-            if(prepareGridOrder(signal, true, false, false, i, symIdx, posSymName, posVolume, priceDistPoints, posSlippage, posComment, posMagic, posExpiration)) {
+            if(prepareGridOrder(signal, true, false, false, i, symIdx, posSymName, posVolume, priceDistPoints, posSlippage, posComment, posMagic, posExpiration) > 0) {
                 finalResult++;
             }
         }
             
         if(GridSetHedgeLimitOrders && gridOpenHedge) {
-            if(prepareGridOrder(signal, true, true, false, i, symIdx, posSymName, posVolume, priceDistPoints, posSlippage, posComment, posMagic, posExpiration)) {
+            if(prepareGridOrder(signal, true, true, false, i, symIdx, posSymName, posVolume, priceDistPoints, posSlippage, posComment, posMagic, posExpiration) > 0) {
                 finalResult++;
             }
         }
@@ -135,7 +135,7 @@ int OrderManager::prepareGrid(int symIdx, SignalType signal) {
     return finalResult;
 }
 
-int OrderManager::prepareGridOrder(SignalType signal, bool isHedge, bool isDual, bool isMarket, int gridIndex, int symIdx, string posSymName, double posVolume, double posPriceDist, int posSlippage, string posComment = "", int posMagic = 0, datetime posExpiration = 0) {
+long OrderManager::prepareGridOrder(SignalType signal, bool isHedge, bool isDual, bool isMarket, int gridIndex, int symIdx, string posSymName, double posVolume, double posPriceDist, int posSlippage, string posComment = "", int posMagic = 0, datetime posExpiration = 0) {
     int cmd = 0, gridIndexPrice = gridIndex;
     getGridOrderType(signal, isHedge, isDual, isMarket, cmd, gridIndexPrice);
     
@@ -155,7 +155,7 @@ int OrderManager::prepareGridOrder(SignalType signal, bool isHedge, bool isDual,
         );
     
     if(!doDrop) {
-        int resultInitial = sendOpen(posSymName, cmd, posVolume, posPriceNormal, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
+        long resultInitial = sendOpen(posSymName, cmd, posVolume, posPriceNormal, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
         return resultInitial;
     } else { return 0; }
 }
@@ -332,7 +332,7 @@ void OrderManager::checkDoExitGrid(int symIdx, bool closeLong, bool force) {
         int orderSymIdx = MainSymbolMan.getSymbolId(symName);
         if(orderSymIdx != symIdx) { continue; }
         
-        int ticket = getOrderTicket(isPosition);
+        long ticket = getOrderTicket(isPosition);
         
         bool result = sendClose(getOrderTicket(isPosition), symIdx, isPosition);
         if(result) {

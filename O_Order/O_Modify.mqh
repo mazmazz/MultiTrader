@@ -11,7 +11,7 @@
 
 #include "O_Defines.mqh"
 
-void OrderManager::doModifyPosition(int ticket, int symIdx, bool isPosition) {
+void OrderManager::doModifyPosition(long ticket, int symIdx, bool isPosition) {
     // For each setting (sltp, etc) retrieve filter value and update if necessary
     if(!TradeValueEnabled) { return; }
     if(!getLastTimeElapsed(symIdx, false, TimeSettingUnit, ValueBetweenDelay)) { return; }

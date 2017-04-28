@@ -52,9 +52,11 @@ bool OrderManager::isEntrySafeByDirection(int symIdx, bool isLong) {
     int testCount = 1;
     if(isTradeModeGrid()) {
         testCount = getGridNewTradeCount(symIdx, isLong);
+        
+        if(testCount <= 0) { return false; } // grid entry will fail, so just fail early
+        if(GridOpenMarketInitial && testCount == 1) { return false; }
+            // would be nice to know which direction the order is going and compare, but most likely it's a repeat
     }
-    
-    if(testCount <= 0) { return false; } // grid entry will fail, so just fail early
     
     if(MaxTradesPerSymbol > 0) {
         int tradeSymbolCount = (openPendingLongCount[symIdx] + openPendingShortCount[symIdx] 
@@ -79,7 +81,7 @@ bool OrderManager::isEntrySafeByDirection(int symIdx, bool isLong) {
     return true;
 }
 
-int OrderManager::checkDoEntrySignals(int symIdx) {
+long OrderManager::checkDoEntrySignals(int symIdx) {
     if(!isEntrySafe(symIdx)) { return 0; }
 
     SignalUnit *checkUnit = MainDataMan.symbol[symIdx].getSignalUnit(true);
@@ -132,7 +134,7 @@ int OrderManager::checkDoEntrySignals(int symIdx) {
     bool isLong = checkUnit.type == SignalLong;
     if(!isEntrySafeByDirection(symIdx, isLong)) { return 0; }
     
-    int result = 0;
+    long result = 0;
     switch(TradeModeType) {
         case TradeGrid:
             // check for swap here: getCloseByMarketSchedule passes daily and 3DS closes as false
@@ -173,7 +175,7 @@ int OrderManager::checkDoEntrySignals(int symIdx) {
     return result;
 }
 
-int OrderManager::prepareSingleOrder(int symIdx, SignalType signal, bool isPending) {
+long OrderManager::prepareSingleOrder(int symIdx, SignalType signal, bool isPending) {
     if(!IsTradeAllowed()) { return -1; }
     
 #ifdef __MQL4__
@@ -213,7 +215,7 @@ int OrderManager::prepareSingleOrder(int symIdx, SignalType signal, bool isPendi
         string posComment = OrderComment_;
         int posMagic = MagicNumber;
         datetime posExpiration = 0;
-        int result = sendOpen(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
+        long result = sendOpen(posSymName, posCmd, posVolume, posPrice, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);
 
         return result;
     } else { return 0; }

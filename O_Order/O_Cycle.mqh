@@ -12,6 +12,14 @@
 #include "O_Defines.mqh"
 
 void OrderManager::doPositions(bool firstRun) {
+    if(firstRun) {
+        switch(TimeSettingUnit) {
+            case UnitSeconds: firstRunStartTime = TimeCurrent(); break;
+            case UnitMilliseconds: firstRunStartTime = GetTickCount(); break;
+            case UnitTicks: firstRunStartTime = 0; break;
+        }
+    }
+
     fillBasketFlags();
     resetOpenCount();
 
@@ -49,7 +57,7 @@ void OrderManager::doCurrentPositions(bool firstRun, bool isPosition) {
         double profit = getProfitPips(ticket, isPosition);
         int type = getOrderType(isPosition);
         
-        if(firstRun) { evaluateFulfilledFromOrder(ticket, symbolIdx, isPosition); }
+        if(firstRun || retryFirstRun[symbolIdx]) { evaluateFulfilledFromOrder(ticket, symbolIdx, isPosition); }
         
         bool exitResult = false;
         exitResult = checkDoExitSchedule(symbolIdx, ticket, isPosition);
@@ -80,31 +88,40 @@ void OrderManager::doCurrentPositions(bool firstRun, bool isPosition) {
     // grid - set symbol exit signal fulfilled and in doPositions loop so we don't loop an extra time
 }
 
-void OrderManager::evaluateFulfilledFromOrder(int ticket, int symbolIdx, bool isPosition) {
+void OrderManager::evaluateFulfilledFromOrder(long ticket, int symbolIdx, bool isPosition) {
+    if(isTradeModeGrid()) { return; } // grid has its own resume scheme
     if(!checkDoSelect(ticket, isPosition)) { return; }
 
     // if signal already exists for open order, raise fulfilled flag so no repeat is opened
 
     int orderAct = getOrderType(isPosition);
     SignalUnit *checkEntrySignal = MainDataMan.symbol[symbolIdx].getSignalUnit(true);
-    if(!Common::IsInvalidPointer(checkEntrySignal)) {
+    if(!Common::IsInvalidPointer(checkEntrySignal)
+        && (checkEntrySignal.type == SignalLong || checkEntrySignal.type == SignalShort)
+    ) {
+        retryFirstRun[symbolIdx] = false;
+        
         if(checkEntrySignal.fulfilled) { return; }
        
-        if(!isTradeModeGrid()) {
-            if(
-                ((Common::OrderIsLong(orderAct) && checkEntrySignal.type == SignalLong)
-                    || (Common::OrderIsShort(orderAct) && checkEntrySignal.type == SignalShort)
-                    )
-                && (!SignalRetraceOpenAfterDelay
-                    || TimeCurrent()-getOrderOpenTime(isPosition) <= SignalRetraceDelay
-                    )
-            ) { 
-                checkEntrySignal.fulfilled = true; 
-            }
-        } else if(checkEntrySignal.type == SignalLong || checkEntrySignal.type == SignalShort) { 
+        if(
+            ((Common::OrderIsLong(orderAct) && checkEntrySignal.type == SignalLong)
+                || (Common::OrderIsShort(orderAct) && checkEntrySignal.type == SignalShort)
+                )
+            && (!SignalRetraceOpenAfterDelay
+                || TimeCurrent()-getOrderOpenTime(isPosition) <= SignalRetraceDelay
+                )
+        ) { 
             checkEntrySignal.fulfilled = true; 
         }
-            // todo: grid - better firstRun rules. set gridDirection by checking if all buy stops are above current price point, etc. ???
+    } else { // retry up to EntryStableTime (plus a factor?)
+        uint checkTime = 0;
+        switch(TimeSettingUnit) {
+            case UnitSeconds: checkTime = TimeCurrent() - firstRunStartTime; break;
+            case UnitMilliseconds: checkTime = GetTickCount() - firstRunStartTime; break;
+            case UnitTicks: checkTime = ++firstRunStartTime; break;
+        }
+        
+        retryFirstRun[symbolIdx] = checkTime <= MathCeil(EntryStableTime*1.5); // factor?
     }
 }
 
@@ -123,7 +140,7 @@ void OrderManager::resetOpenCount() {
     ArrayInitialize(gridSetShort, false);
 }
 
-void OrderManager::addOrderToOpenCount(int ticket, int symIdx, bool isPosition, bool subtract) {
+void OrderManager::addOrderToOpenCount(long ticket, int symIdx, bool isPosition, bool subtract) {
     if(!checkDoSelect(ticket, isPosition)) { return; }
 #ifdef __MQL5__
     if(isPosition && !Common::IsAccountHedging() && ticket != PositionGetInteger(POSITION_IDENTIFIER)) { return; }

@@ -37,6 +37,7 @@ void OrderManager::OrderManager() {
     basketBookedProfit = 0;
     basketMasterStopLoss = 0;
     basketMasterTakeProfit = 0;
+    firstRunStartTime = 0;
 
     int symCount = ArraySize(MainSymbolMan.symbols);
     ArrayResize(openPendingLongCount, symCount); ArrayInitialize(openPendingLongCount, 0);
@@ -57,6 +58,8 @@ void OrderManager::OrderManager() {
     ArrayResize(basketSymbolClose, symCount); ArrayInitialize(basketSymbolClose, false);
     ArrayResize(basketSymbolLosses, symCount); ArrayInitialize(basketSymbolLosses, 0);
     ArrayResize(basketSymbolWins, symCount); ArrayInitialize(basketSymbolWins, 0);
+    
+    ArrayResize(retryFirstRun, symCount); ArrayInitialize(retryFirstRun, false);
     
     if(isTradeModeGrid()) { 
         ArrayResize(gridSetLong, symCount); ArrayInitialize(gridSetLong, false);

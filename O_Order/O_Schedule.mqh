@@ -18,13 +18,13 @@
 
 #include "O_Defines.mqh"
 
-bool OrderManager::checkDoExitSchedule(int symIdx, int ticket, bool isPosition) {
+bool OrderManager::checkDoExitSchedule(int symIdx, long ticket, bool isPosition) {
     if(getCloseByMarketSchedule(symIdx, ticket, isPosition)) {
         return sendClose(ticket, symIdx, isPosition);
     } else { return false; }
 }
 
-bool OrderManager::getCloseByMarketSchedule(int symIdx, int ticket = -1, bool isPosition = false) {
+bool OrderManager::getCloseByMarketSchedule(int symIdx, long ticket = 0, bool isPosition = false) {
     bool isLong = false;
     
     if(ticket > 0) {
@@ -35,7 +35,7 @@ bool OrderManager::getCloseByMarketSchedule(int symIdx, int ticket = -1, bool is
     return getCloseByMarketSchedule(symIdx, ticket, isLong, isPosition);
 }
 
-bool OrderManager::getCloseByMarketSchedule(int symIdx, int ticket, bool isLong, bool isPosition) {
+bool OrderManager::getCloseByMarketSchedule(int symIdx, long ticket, bool isLong, bool isPosition) {
     if(!SchedCloseCustom && !SchedCloseDaily && !SchedCloseSession && !SchedClose3DaySwap && !SchedCloseWeekend) { return false;}
 
     if(ticket > 0) {

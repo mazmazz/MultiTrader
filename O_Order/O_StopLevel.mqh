@@ -55,7 +55,7 @@ bool OrderManager::getInitialStopLevels(bool isLong, int symIdx, bool doStoploss
     return finalResult;
 }
 
-bool OrderManager::checkDoExitStopLevels(int ticket, int symIdx, bool isPosition) {
+bool OrderManager::checkDoExitStopLevels(long ticket, int symIdx, bool isPosition) {
     if(!checkDoSelect(ticket, isPosition)) { return false; }
     if(Common::OrderIsPending(getOrderType(isPosition))) { return false; }
     
@@ -83,7 +83,7 @@ bool OrderManager::checkDoExitStopLevels(int ticket, int symIdx, bool isPosition
 
 //+------------------------------------------------------------------+
 
-bool OrderManager::getModifiedStopLevel(int ticket, int symIdx, double &stopLevelOut, bool isPosition) {
+bool OrderManager::getModifiedStopLevel(long ticket, int symIdx, double &stopLevelOut, bool isPosition) {
     if(!checkDoSelect(ticket, isPosition)) { return false; }
     
     double level = 0;
@@ -104,7 +104,7 @@ bool OrderManager::getModifiedStopLevel(int ticket, int symIdx, double &stopLeve
     return true;
 }
 
-bool OrderManager::getTrailingStopLevel(int ticket, int symIdx, double &stopLevelOut, bool isPosition) {
+bool OrderManager::getTrailingStopLevel(long ticket, int symIdx, double &stopLevelOut, bool isPosition) {
     // level = oppositePrice - stopOffset
     // set only if level > currentStopLoss
     if(!TrailingStopEnabled) { return false; }
@@ -138,7 +138,7 @@ bool OrderManager::getTrailingStopLevel(int ticket, int symIdx, double &stopLeve
     } else { return false; }
 }
 
-bool OrderManager::getJumpingStopLevel(int ticket, int symIdx, double &stopLevelOut, bool isPosition) {
+bool OrderManager::getJumpingStopLevel(long ticket, int symIdx, double &stopLevelOut, bool isPosition) {
     // level = MathFloor(oppositePrice-openingPrice/jumpDistance)
     // check if jumping stop level exceeds breakeven enabled
     if(!JumpingStopEnabled) { return false; }
@@ -191,7 +191,7 @@ bool OrderManager::getJumpingStopLevel(int ticket, int symIdx, double &stopLevel
     } else { return false; }
 }
 
-bool OrderManager::getBreakEvenStopLevel(int ticket, int symIdx, double &stopLevelOut, bool isPosition) {
+bool OrderManager::getBreakEvenStopLevel(long ticket, int symIdx, double &stopLevelOut, bool isPosition) {
     if(!BreakEvenStopEnabled) { return false; }
     if(!isBreakEvenPassed(ticket, symIdx, isPosition)) { return false; }
     if(!checkDoSelect(ticket, isPosition)) { return false; }
@@ -229,7 +229,7 @@ bool OrderManager::getBreakEvenStopLevel(int ticket, int symIdx, double &stopLev
     return false;
 }
 
-bool OrderManager::isBreakEvenPassed(int ticket, int symIdx, bool isPosition) {
+bool OrderManager::isBreakEvenPassed(long ticket, int symIdx, bool isPosition) {
     if(!checkDoSelect(ticket, isPosition)) { return false; }
 
     double openingPrice = getOrderOpenPrice(isPosition);
@@ -244,7 +244,7 @@ bool OrderManager::isBreakEvenPassed(int ticket, int symIdx, bool isPosition) {
     return breakEvenJumpDiff >= breakEvenJumpDistancePrice;
 }
 
-bool OrderManager::isStopLossProgressed(int ticket, double newStopLoss, bool isPosition) {
+bool OrderManager::isStopLossProgressed(long ticket, double newStopLoss, bool isPosition) {
     if(!checkDoSelect(ticket, isPosition)) { return false; }
     if(newStopLoss == 0) { return false; }
     
@@ -297,7 +297,7 @@ double OrderManager::unOffsetTakeProfit(string symName, bool isLong, double take
     return takeprofit;
 }
 
-bool OrderManager::unOffsetStopLevelsFromOrder(int ticket, string symName, double &stoplossOut, double &takeprofitOut, bool isPosition) {
+bool OrderManager::unOffsetStopLevelsFromOrder(long ticket, string symName, double &stoplossOut, double &takeprofitOut, bool isPosition) {
     if(!checkDoSelect(ticket, isPosition)) { return false; }
     
     stoplossOut = getOrderStopLoss(isPosition);
@@ -308,12 +308,12 @@ bool OrderManager::unOffsetStopLevelsFromOrder(int ticket, string symName, doubl
     return true;
 }
 
-bool OrderManager::unOffsetStopLossFromOrder(int ticket, string symName, double &stoplossOut, bool isPosition) {
+bool OrderManager::unOffsetStopLossFromOrder(long ticket, string symName, double &stoplossOut, bool isPosition) {
     double takeProfit = 0;
     return unOffsetStopLevelsFromOrder(ticket, symName, stoplossOut, takeProfit, isPosition);
 }
 
-bool OrderManager::unOffsetTakeProfitFromOrder(int ticket, string symName, double &takeprofitOut, bool isPosition) {
+bool OrderManager::unOffsetTakeProfitFromOrder(long ticket, string symName, double &takeprofitOut, bool isPosition) {
     double stopLoss = 0;
     return unOffsetStopLevelsFromOrder(ticket, symName, stopLoss, takeprofitOut, isPosition);
 }

@@ -27,25 +27,37 @@ int OrderManager::prepareGrid(int symIdx, SignalType signal) {
     
     bool signalIsLong = signal == SignalLong;
     
-    checkDoExitGrid(symIdx, signalIsLong, false);
+    if((GridSetStopOrders || GridSetLimitOrders) && GridOpenIfPendingsOpen && (GridStopThreshold == 0 || getGridCount(symIdx, !signalIsLong, true, false, false) <= GridStopThreshold)) { 
+        Error::PrintMinor("Resetting grid normal for stop threshold", true);
+        checkDoExitGrid(symIdx, signalIsLong, false); 
+    }
     
-    bool gridOpenNormal = (GridOpenIfPendingsOpen && (GridStopThreshold == 0 || getGridCount(symIdx, signalIsLong, true, false, false) <= GridStopThreshold)) 
-        || (GridOpenIfPositionsOpen && (GridMarketThreshold == 0 || getGridCount(symIdx, signalIsLong, false, true, false) <= GridMarketThreshold))
-        ;
-    bool gridOpenHedge = (GridOpenIfPendingsOpen && (GridStopThreshold == 0 || getGridCount(symIdx, !signalIsLong, true, false, false) <= GridStopThreshold)) 
-        || (GridOpenIfPositionsOpen && (GridMarketThreshold == 0 || getGridCount(symIdx, !signalIsLong, false, true, false) <= GridMarketThreshold))
-        ;
-    
-    if(gridOpenHedge && (GridOpenIfPendingsOpen && (GridStopThreshold == 0 || getGridCount(symIdx, !signalIsLong, true, false, false) <= GridStopThreshold))) {
+    if((GridSetHedgeStopOrders || GridSetHedgeLimitOrders) && GridOpenIfPendingsOpen && (GridStopThreshold == 0 || getGridCount(symIdx, !signalIsLong, true, false, false) <= GridStopThreshold)) {
         Error::PrintMinor("Resetting grid hedge for stop threshold", true);
         checkDoExitGrid(symIdx, !signalIsLong, false);
     }
     
-    if(gridOpenNormal && !gridOpenHedge && GridResetHedgeOnOpenSignal) {
+    bool gridOpenNormal = (GridSetStopOrders || GridSetLimitOrders)
+        && ((GridOpenIfPendingsOpen && (GridStopThreshold == 0 || getGridCount(symIdx, signalIsLong, true, false, false) <= GridStopThreshold)) 
+            || (GridOpenIfPositionsOpen && (GridMarketThreshold == 0 || getGridCount(symIdx, signalIsLong, false, true, false) <= GridMarketThreshold))
+            || getGridCount(symIdx, signalIsLong, true, true, true) <= 0 
+            )
+        ;
+    bool gridOpenHedge = (GridSetHedgeStopOrders || GridSetHedgeLimitOrders)
+        && ((GridOpenIfPendingsOpen && (GridStopThreshold == 0 || getGridCount(symIdx, !signalIsLong, true, false, false) <= GridStopThreshold)) 
+            || (GridOpenIfPositionsOpen && (GridMarketThreshold == 0 || getGridCount(symIdx, !signalIsLong, false, true, false) <= GridMarketThreshold))
+            || getGridCount(symIdx, !signalIsLong, true, true, true) <= 0
+            )
+        ;
+    
+    if(gridOpenNormal && !gridOpenHedge && (GridSetHedgeStopOrders || GridSetHedgeLimitOrders) && GridResetHedgeOnOpenSignal) {
         Error::PrintMinor("Attempting grid open by resetting hedge", true);
         checkDoExitGrid(symIdx, !signalIsLong, true);
-        gridOpenHedge = (GridOpenIfPendingsOpen && (GridStopThreshold == 0 || getGridCount(symIdx, !signalIsLong, true, false, false) <= GridStopThreshold)) 
-            || (GridOpenIfPositionsOpen && (GridMarketThreshold == 0 || getGridCount(symIdx, !signalIsLong, false, true, false) <= GridMarketThreshold))
+        gridOpenHedge = (GridSetHedgeStopOrders || GridSetHedgeLimitOrders)
+            && ((GridOpenIfPendingsOpen && (GridStopThreshold == 0 || getGridCount(symIdx, !signalIsLong, true, false, false) <= GridStopThreshold)) 
+                || (GridOpenIfPositionsOpen && (GridMarketThreshold == 0 || getGridCount(symIdx, !signalIsLong, false, true, false) <= GridMarketThreshold))
+                || getGridCount(symIdx, !signalIsLong, true, true, true) <= 0
+                )
             ;
     }
     
@@ -218,6 +230,55 @@ int OrderManager::getGridCount(int symIdx, bool isLong, bool checkPendings, bool
     return finalResult;
 }
 
+int OrderManager::getGridNewTradeCount(int symIdx, bool isLong) {
+    int finalResult = 0;
+    
+    // reset normal direction if threshold met
+    if((GridSetStopOrders || GridSetLimitOrders) && GridOpenIfPendingsOpen && (GridStopThreshold == 0 || getGridCount(symIdx, isLong, true, false, false) <= GridStopThreshold)) {
+        finalResult -= getGridCount(symIdx, isLong, true, false, true); // run on actual count
+    }
+    
+    // reset hedge direction if threshold met
+    if((GridSetHedgeStopOrders || GridSetHedgeLimitOrders) && GridOpenIfPendingsOpen && (GridStopThreshold == 0 || getGridCount(symIdx, !isLong, true, false, false) <= GridStopThreshold)) {
+        finalResult -= getGridCount(symIdx, !isLong, true, false, true); // run on actual count
+    }
+    
+    bool gridOpenNormal = (GridSetStopOrders || GridSetLimitOrders)
+        && (GridOpenIfPendingsOpen
+            || (GridOpenIfPositionsOpen && (GridMarketThreshold == 0 || getGridCount(symIdx, isLong, false, true, false) <= GridMarketThreshold))
+            || getGridCount(symIdx, isLong, true, true, true) <= 0 
+            )
+        ;
+    bool gridOpenHedge = (GridSetHedgeStopOrders || GridSetHedgeLimitOrders)
+        && (GridOpenIfPendingsOpen
+            || (GridOpenIfPositionsOpen && (GridMarketThreshold == 0 || getGridCount(symIdx, !isLong, false, true, false) <= GridMarketThreshold))
+            || getGridCount(symIdx, !isLong, true, true, true) <= 0
+            )
+        ;
+    
+    // reset hedge direction if setting normal dir and GridResetHedgeOnOpenSignal is true
+    if(gridOpenNormal && !gridOpenHedge && (GridSetHedgeStopOrders || GridSetHedgeLimitOrders) && GridResetHedgeOnOpenSignal) {
+        finalResult -= getGridCount(symIdx, !isLong, true, false, true); // run on actual count
+        gridOpenHedge = true; // assume success for count
+    }
+    
+    if(!gridOpenNormal && !gridOpenHedge) { return 0; }
+    
+    if(gridOpenNormal) {
+        if(GridSetStopOrders) { finalResult += GridCount; }
+        if(GridSetLimitOrders) { finalResult += GridCount; }
+    }
+    
+    if(gridOpenHedge) {
+        if(GridSetHedgeStopOrders) { finalResult += GridCount; }
+        if(GridSetHedgeLimitOrders) { finalResult += GridCount; }
+    }
+    
+    if(GridOpenMarketInitial) { finalResult += 1; }
+    
+    return finalResult;
+}
+
 bool OrderManager::isTradeModeGrid() {
     return (TradeModeType == TradeGrid);
 }
@@ -251,7 +312,7 @@ bool OrderManager::isGridOrderTypeShort(int orderType) {
 
 void OrderManager::checkDoExitGrid(int symIdx, bool closeLong, bool force) {
     int currentStopCount = getGridCount(symIdx, closeLong, true, false, false); // check on consolidated count (no duals)
-    if(!force && currentStopCount > GridStopThreshold) { return; }
+    if(!force && GridStopThreshold != 0 && currentStopCount > GridStopThreshold) { return; }
     currentStopCount = getGridCount(symIdx, closeLong, true, false, true); // run on actual count
     
     bool isPosition = false; // cycle through orders/pendings only

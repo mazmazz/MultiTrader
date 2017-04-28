@@ -77,6 +77,9 @@ void OrderManager::~OrderManager() {
     Common::SafeDeletePointerArray(lastTradeBetween);
     Common::SafeDeletePointerArray(lastValueBetween);
 
+    Common::SafeDelete(basketSymbolBreakEvenJumpDistanceLoc);
+    Common::SafeDelete(basketSymbolTrailingStopLoc);
+    Common::SafeDelete(basketSymbolJumpingStopLoc);
     Common::SafeDelete(basketSymbolTakeProfitLoc);
     Common::SafeDelete(basketSymbolStopLossLoc);
     Common::SafeDelete(gridCloseDistanceLoc);

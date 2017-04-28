@@ -70,7 +70,7 @@ void OrderManager::checkDoBasketSymbolExit() {
     int symCount = ArraySize(MainSymbolMan.symbols);
     
     for(int i = 0; i < symCount; i++) {
-        checkDoBasketSymbolExit(i);
+        checkDoBasketSymbolExit(i); // todo: consolidate close order loop into one pass
     }
 }
 
@@ -88,7 +88,7 @@ void OrderManager::checkDoBasketSymbolExit(int symIdx) {
         basketSymbolWins[symIdx]++;
     }
     
-    if(close) {
+    if(close) { // todo: consolidate close order loop into one pass
 #ifdef __MQL4__
         sendBasketClose(symIdx, false);
 #else

@@ -41,6 +41,13 @@ datetime ProjectExpiration = D'2017.06.04';
 
 TimePoint LastTickTime;
 
+#ifdef _Benchmark
+int Benchmark_FilterCounter = 0;
+uint Benchmark_LastMilCounter = 0; 
+ulong Benchmark_WorkMilCounter = 0;
+string Benchmark_Message = "";
+#endif
+
 int OnInit() {
     Error::ProjectName = _ProjectShortName;
     Error::TerminalLevel = ::ErrorTerminalLevel;
@@ -60,8 +67,9 @@ int OnInit() {
 #endif
 
 #ifdef _Benchmark
+    Benchmark_WorkMilCounter = GetTickCount();
     uint setupMilCounter = GetTickCount();
-    Error::PrintMinor(TimeCurrent() + " | Setup started");
+    Error::PrintNormal(TimeCurrent() + " | Setup started");
 #endif
 
     Main = new MainMultiTrader();
@@ -70,7 +78,7 @@ int OnInit() {
     int result = Main.onInit();
     
 #ifdef _Benchmark
-    Error::PrintMinor(TimeCurrent() + " | Setup finished: " + (GetTickCount() - setupMilCounter));
+    Error::PrintNormal(TimeCurrent() + " | Setup finished: " + (GetTickCount() - setupMilCounter));
 #endif
     
     Main.doFirstRun();
@@ -177,15 +185,25 @@ void OnTimer() {
     if(!ValidateSession()) { return; }
 
     Main.onTimer();
+    
+#ifndef _Benchmark
+    Comment(""); // needed in MT5 to force update chart, otherwise objs do not update until tick fired (because there's so many?)
+#endif
 }
 
 void OnTick() {
+#ifdef __MQL4__
+    if(CycleMode != CycleRealTicks && !IsTesting() && !IsOptimization()) { return; }
+#else
+#ifdef __MQL5__
+    if(CycleMode != CycleRealTicks) { return; }
+#endif
+#endif
+    
     if(!ValidateSession()) { return; }
 
 #ifdef __MQL4__
-    if(CycleMode == CycleRealTicks) { 
-        Main.onTick(); 
-    } else if(IsTesting() || IsOptimization()) {
+    if(IsTesting() || IsOptimization()) {
         bool proceed;
         switch(CycleMode) {
             case CycleTimerMilliseconds:
@@ -202,10 +220,9 @@ void OnTick() {
             Main.onTick(); 
             LastTickTime.update();
         }
+    } else
+#endif
+    if(CycleMode == CycleRealTicks) { 
+        Main.onTick(); 
     }
-#else
-#ifdef __MQL5__
-    Main.onTick(); 
-#endif
-#endif
 }

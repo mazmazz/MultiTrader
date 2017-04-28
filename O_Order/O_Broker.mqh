@@ -331,8 +331,13 @@ long OrderManager::getOrderType(bool isPosition) {
 }
 
 long OrderManager::getOrderTicket(bool isPosition) {
-    if(!isPosition) { return OrderGetInteger(ORDER_TICKET); }
-    else { return PositionGetInteger(POSITION_TICKET); }
+    long result = 0;
+    if(!isPosition) { result = OrderGetInteger(ORDER_TICKET); }
+    else { result = PositionGetInteger(POSITION_TICKET); }
+    
+    return result;
+    
+    //return result < 0 ? 0 : result; // xGetInteger returns long, tickets are referred as ulongs
 }
 
 double OrderManager::getOrderStopLoss(bool isPosition) {

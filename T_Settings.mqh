@@ -54,6 +54,12 @@ enum BasketStopMode {
     //, BasketStopSumAllSymbols // Sum stop levels from all symbols
 };
 
+enum LosingMode {
+    LosingBlockNone        // Always trade
+    , LosingBlockByDirection // Do not trade if direction is losing
+    , LosingBlockByTotal   // Do not trade if symbol total is losing
+};
+
 input int MagicNumber=5001;
 input string ConfigComment=""; // ConfigComment: Comment to display on dashboard
 
@@ -76,12 +82,14 @@ input int BrokerPipDecimal = 1; // BrokerPoints: # of pip decimals, e.g. 0 if 4-
 input string OrderComment_=""; // OrderComment: Comment to attach to orders
 
 input string Lbl_TradeParams="---- Trade Parameters ----"; // :
+input int MaxTradesPerAccount=200;
 input int MaxTradesPerSymbol=0;
 // input int MaxTradesTimeframe=60;
 input double TradeMinMarginLevel=200; // MinTradeMarginLevel (percent)
 input string MaxSpreadCalc = "4.0";
 input string MaxSlippageCalc = "4.0";
 input string LotSizeCalc = "0.01";
+//input LosingMode BlockOrderByLosing = LosingBlockNone;
 
 input string Lbl_TradeSignal="---- Trade Signal Settings ----"; // :
 input bool CloseOrderOnOppositeSignal=true; // CloseOrderOnOppositeSignal: Close when entry signal is opposite

@@ -20,25 +20,67 @@ bool OrderManager::isEntrySafe(int symIdx) {
     }
         // MT5: LONGONLY and SHORTONLY
         // MT4: CLOSEONLY, FULL, or DISABLED
-    if(!checkBasketSafe(symIdx)) { return false; }
-    
-    if(getCurrentSessionIdx(symIdx) >= 0) {
-        if(!getOpenByMarketSchedule(symIdx)) { return false; }
-    } else { return false; }
 
+    // Margin
+    if(AccountInfoDouble(ACCOUNT_MARGIN) > 0 && AccountInfoDouble(ACCOUNT_MARGIN_LEVEL) < TradeMinMarginLevel) { return false; }
+
+    // Spread
     int maxSpread = 0;
     if(!getValuePoints(maxSpread, maxSpreadLoc, symIdx)) { return false; }
     int currentSpread = SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_SPREAD);
     if(currentSpread > maxSpread) { return false; }
 
+    // Basket
+    if(!checkBasketSafe(symIdx)) { return false; }
+
+    // Trade between delay
+    if(!getLastTimeElapsed(symIdx, true, TimeSettingUnit, TradeBetweenDelay)) { return false; }
+
+    // Schedule
+    if(getCurrentSessionIdx(symIdx) >= 0) {
+        if(!getOpenByMarketSchedule(symIdx)) { return false; }
+    } else { return false; }
+
+    return true;
+}
+
+bool OrderManager::isEntrySafeByDirection(int symIdx, bool isLong) {
+    // Directional triggers
+    // todo
+
+    // Max trades
+    int testCount = 1;
+    if(isTradeModeGrid()) {
+        testCount = getGridNewTradeCount(symIdx, isLong);
+    }
+    
+    if(testCount <= 0) { return false; } // grid entry will fail, so just fail early
+    
+    if(MaxTradesPerSymbol > 0) {
+        int tradeSymbolCount = (openPendingLongCount[symIdx] + openPendingShortCount[symIdx] 
+            + openMarketLongCount[symIdx] + openMarketShortCount[symIdx]
+            );
+            
+        if(tradeSymbolCount + testCount > MaxTradesPerSymbol) { return false; }
+    }
+    
+    if(MaxTradesPerAccount > 0) {
+#ifdef __MQL4__
+        int tradeTotalCount = getOrdersTotal(false);
+#else
+#ifdef __MQL5__
+        int tradeTotalCount = getOrdersTotal(false) + getOrdersTotal(true);
+#endif
+#endif
+
+        if(tradeTotalCount + testCount > MaxTradesPerAccount) { return false; }
+    }
+    
     return true;
 }
 
 int OrderManager::checkDoEntrySignals(int symIdx) {
     if(!isEntrySafe(symIdx)) { return 0; }
-    if(!getLastTimeElapsed(symIdx, true, TimeSettingUnit, TradeBetweenDelay)) { return 0; }
-    if(AccountInfoDouble(ACCOUNT_MARGIN) > 0 && AccountInfoDouble(ACCOUNT_MARGIN_LEVEL) < TradeMinMarginLevel) { return 0; }
-    if(!isTradeModeGrid() && MaxTradesPerSymbol > 0 && MaxTradesPerSymbol <= (openPendingLongCount[symIdx] + openPendingShortCount[symIdx] + openMarketLongCount[symIdx] + openMarketShortCount[symIdx])) { return 0; }
 
     SignalUnit *checkUnit = MainDataMan.symbol[symIdx].getSignalUnit(true);
     if(Common::IsInvalidPointer(checkUnit)) { return 0; }
@@ -87,8 +129,10 @@ int OrderManager::checkDoEntrySignals(int symIdx) {
         if(checkUnit.type == SignalShort && checkExitUnit.type == SignalLong) { return 0; }
     }
     
-    int result = 0;
     bool isLong = checkUnit.type == SignalLong;
+    if(!isEntrySafeByDirection(symIdx, isLong)) { return 0; }
+    
+    int result = 0;
     switch(TradeModeType) {
         case TradeGrid:
             // check for swap here: getCloseByMarketSchedule passes daily and 3DS closes as false

@@ -135,6 +135,13 @@ void DashboardManager::initDashboard() {
         drawSymbols(); //row++; pos=1;
         row=0; pos=0;
     }
+    
+#ifdef _Benchmark
+    row=0; pos=15;
+    drawText(prefixName("benchmark"), "Cycle " + Benchmark_Message);
+    //Comment("Cycle " + Benchmark_Message);
+    row=0; pos=0;
+#endif
 }
 
 void DashboardManager::drawHeader() {
@@ -404,6 +411,11 @@ void DashboardManager::updateDashboard() {
             if(BasketTotalPerDay) { ObjectSetText(prefixName(i+"_booked"), basketBooked, fontSize, fontFace, fontColorDefault); }
         }
     }
+    
+#ifdef _Benchmark
+    ObjectSetText(prefixName("benchmark"), "Cycle " + Benchmark_Message, fontSize, fontFace, fontColorDefault);
+    //Comment("Cycle " + Benchmark_Message);
+#endif
 }
 
 void DashboardManager::updateResults() {

@@ -68,8 +68,8 @@ void MainMultiTrader::onTimer() {
 
 void MainMultiTrader::doCycle() {
 #ifdef _Benchmark
-    static int filterCounter; static uint lastMilCounter; ulong workMilCounter = GetTickCount();
-    Error::PrintMinor(TimeCurrent() + " | Cycle started: " + (++filterCounter) + " | Timer mils: " + (GetTickCount() - lastMilCounter));
+    Benchmark_Message = (++Benchmark_FilterCounter) + " | Timer mils: " + (GetTickCount() - Benchmark_LastMilCounter);
+    Error::PrintNormal(TimeCurrent() + " | Cycle started: " + Benchmark_Message);
 #endif
     
     MainDataMan.retrieveDataFromFilters();
@@ -83,8 +83,8 @@ void MainMultiTrader::doCycle() {
     // MainDataWriterMan.writeStuff();
     
 #ifdef _Benchmark
-    Error::PrintMinor(TimeCurrent() + " | Cycle finished: " + filterCounter + " | Work mils: " + (GetTickCount() - workMilCounter));
-    lastMilCounter = GetTickCount();
+    Error::PrintNormal(TimeCurrent() + " | Cycle finished: " + Benchmark_FilterCounter + " | Work mils: " + (GetTickCount() - Benchmark_WorkMilCounter));
+    Benchmark_LastMilCounter = GetTickCount();
 #endif
 }
 

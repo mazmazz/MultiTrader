@@ -164,7 +164,7 @@ class OrderManager {
     bool checkDoSelect(ulong ticket, bool isPosition);
     
     long getOrderType(bool isPosition);
-    long getOrderTicket(bool isPosition);
+    long getOrderTicket(bool isPosition); // OrderGetTicket is ulong, which is correct?
     double getOrderStopLoss(bool isPosition);
     double getOrderTakeProfit(bool isPosition);
     long getOrderMagicNumber(bool isPosition);
@@ -206,6 +206,7 @@ class OrderManager {
     // Entry
     
     bool isEntrySafe(int symIdx);
+    bool isEntrySafeByDirection(int symIdx, bool isLong);
     int checkDoEntrySignals(int symIdx);
     int prepareSingleOrder(int symIdx, SignalType signal, bool isPending);
     
@@ -229,6 +230,7 @@ class OrderManager {
     bool isGridOpen(int symIdx, bool checkPendingsOnly);
     bool isGridOpen(int symIdx, bool isLong, bool checkPendingsOnly);
     int getGridCount(int symIdx, bool isLong, bool checkPendings, bool checkPositions, bool checkLimitOrders);
+    int getGridNewTradeCount(int symIdx, bool isLong);
     bool isTradeModeGrid();
     void checkDoExitGrid(int symIdx, bool closeLong, bool force);
     

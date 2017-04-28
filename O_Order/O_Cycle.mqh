@@ -45,7 +45,7 @@ void OrderManager::doCurrentPositions(bool firstRun, bool isPosition) {
         int symbolIdx = MainSymbolMan.getSymbolId(symbolName);
         if(symbolIdx < 0) { continue; }
         
-        int ticket = getOrderTicket(isPosition);
+        long ticket = getOrderTicket(isPosition); // in mql5 returns long, for native ulong ticket use OrderGetTicket(i)
         double profit = getProfitPips(ticket, isPosition);
         int type = getOrderType(isPosition);
         

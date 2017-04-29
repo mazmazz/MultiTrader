@@ -55,6 +55,7 @@ class FilterStoch : public Filter {
         , string buySellZoneList
         , bool addToExisting = false
     );
+    bool isSubfilterMatching(int compareIdx, int subIdx);
 
     bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
@@ -145,6 +146,16 @@ void FilterStoch::addSubfilter(string modeList, string nameList, string hiddenLi
         MultiSettings::Parse(shiftList, shift, count, addToExisting);
         MultiSettings::Parse(buySellZoneList, buySellZone, count, addToExisting);
     }
+}
+
+bool FilterStoch::isSubfilterMatching(int compareIdx, int subIdx) {
+    return timeFrame[compareIdx] == timeFrame[subIdx]
+        && kPeriod[compareIdx] == kPeriod[subIdx]
+        && dPeriod[compareIdx] == dPeriod[subIdx]
+        && slowing[compareIdx] == slowing[subIdx]
+        && (ENUM_MA_METHOD)method[compareIdx] == (ENUM_MA_METHOD)method[subIdx]
+        && (ENUM_STO_PRICE)priceField[compareIdx] == (ENUM_STO_PRICE)priceField[subIdx]
+        ;
 }
 
 //+------------------------------------------------------------------+

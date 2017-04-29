@@ -62,7 +62,9 @@ class Filter {
     
 #ifdef __MQL5__
     virtual int getNewIndicatorHandle(int symIdx, int subIdx) { return INVALID_HANDLE; }
+    virtual bool isSubfilterMatching(int compareIdx, int subIdx) { return false; }
     void loadIndicatorHandles(ArrayDim<int> &buffer[]);
+    int getExistingIndicatorHandle(ArrayDim<int> &buffer[], int symIdx,int subIdx);
     void unloadIndicatorHandles(ArrayDim<int> &buffer[]);
 #endif
 };
@@ -175,20 +177,54 @@ void Filter::loadIndicatorHandles(ArrayDim<int> &buffer[]) {
         ArrayInitialize(buffer[i]._, INVALID_HANDLE);
         
         for(int j = 0; j < subfilterCount; j++) {
-            if(buffer[i]._[j] != INVALID_HANDLE) { IndicatorRelease(buffer[i]._[j]); }
+            if(buffer[i]._[j] != INVALID_HANDLE) { 
+                IndicatorRelease(buffer[i]._[j]);
+                buffer[i]._[j] = INVALID_HANDLE;
+            }
             if(subfilterMode[j] == SubfilterDisabled) { continue; }
             
-            buffer[i]._[j] = getNewIndicatorHandle(i, j);
+            int existingHandle = getExistingIndicatorHandle(buffer, i, j);
+                        
+            buffer[i]._[j] = existingHandle != INVALID_HANDLE ? existingHandle : getNewIndicatorHandle(i, j);
         }
     }
 }
 
+int Filter::getExistingIndicatorHandle(ArrayDim<int> &buffer[], int symIdx,int subIdx) {
+    int size = MathMin(ArraySize(buffer), subIdx);
+    for(int i = 0; i < size; i++) {
+        if(buffer[symIdx]._[i] == INVALID_HANDLE) { continue; }
+        
+        if(isSubfilterMatching(i, subIdx)) {
+            return buffer[symIdx]._[i];
+        }
+    }
+    
+    return INVALID_HANDLE;
+}
+
 void Filter::unloadIndicatorHandles(ArrayDim<int> &buffer[]) {
+    int unloaded[];
+    
     int subfilterCount = getSubfilterCount();
     int symbolCount = MainSymbolMan.getSymbolCount();
     for(int i = 0; i < symbolCount; i++) {
         for(int j = 0; j < subfilterCount; j++) {
-            if(buffer[i]._[j] != INVALID_HANDLE) { IndicatorRelease(buffer[i]._[j]); }
+            if(buffer[i]._[j] != INVALID_HANDLE) {
+                for(int k = 0; k < ArraySize(unloaded); k++) {
+                    if(unloaded[k] == buffer[i]._[j]) {
+                        buffer[i]._[j] = INVALID_HANDLE;
+                        break;
+                    }
+                }
+                
+                if(buffer[i]._[j] != INVALID_HANDLE) {
+                    int address = buffer[i]._[j];
+                    if(IndicatorRelease(address)) {
+                        Common::ArrayPush(unloaded, address);
+                    }
+                }
+            }
         }
         ArrayFree(buffer[i]._);
     }

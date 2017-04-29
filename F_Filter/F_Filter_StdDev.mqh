@@ -50,6 +50,7 @@ class FilterStdDev : public Filter {
         , string periodShiftList
         , bool addToExisting = false
     );
+    bool isSubfilterMatching(int compareIdx, int subIdx);
 
     bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
@@ -131,6 +132,15 @@ void FilterStdDev::addSubfilter(string modeList, string nameList, string hiddenL
         MultiSettings::Parse(appliedPriceList, appliedPrice, count, addToExisting);
         MultiSettings::Parse(periodShiftList, periodShift, count, addToExisting);
     }
+}
+
+bool FilterStdDev::isSubfilterMatching(int compareIdx, int subIdx) {
+    return timeFrame[compareIdx] == timeFrame[subIdx]
+        && period[compareIdx] == period[subIdx]
+        && shift[compareIdx] == shift[subIdx]
+        && (ENUM_MA_METHOD)method[compareIdx] == (ENUM_MA_METHOD)method[subIdx]
+        && appliedPrice[compareIdx] == appliedPrice[subIdx]
+        ;
 }
 
 //+------------------------------------------------------------------+

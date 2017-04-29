@@ -41,6 +41,7 @@ class FilterAtr : public Filter {
         , string shiftList
         , bool addToExisting = false
     );
+    bool isSubfilterMatching(int compareIdx, int subIdx);
 
     bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
@@ -103,6 +104,12 @@ void FilterAtr::addSubfilter(string modeList, string nameList, string hiddenList
         MultiSettings::Parse(periodList, period, count, addToExisting);
         MultiSettings::Parse(shiftList, shift, count, addToExisting);
     }
+}
+
+bool FilterAtr::isSubfilterMatching(int compareIdx, int subIdx) {
+    return timeFrame[compareIdx] == timeFrame[subIdx]
+        && period[compareIdx] == period[subIdx]
+        ;
 }
 
 //+------------------------------------------------------------------+

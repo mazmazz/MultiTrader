@@ -136,6 +136,38 @@ void DashboardManager::initDashboard() {
         row=0; pos=0;
     }
     
+    if(DisplayBackgroundColor != clrNONE) {
+        color chartColor = DisplayShowChart || (IsTesting() && SingleSymbolMode) ? Common::InvertColor(DisplayBackgroundColor) : DisplayBackgroundColor;
+        
+        ChartSetInteger(0, CHART_COLOR_BACKGROUND, DisplayBackgroundColor);
+        ChartSetInteger(0, CHART_COLOR_FOREGROUND, chartColor);
+        
+        if(!DisplayShowChart && !IsTesting() && !SingleSymbolMode) {
+            ChartSetInteger(0, CHART_COLOR_GRID, chartColor);
+            ChartSetInteger(0, CHART_COLOR_VOLUME, chartColor);
+            ChartSetInteger(0, CHART_COLOR_CHART_UP, chartColor);
+            ChartSetInteger(0, CHART_COLOR_CHART_DOWN, chartColor);
+            ChartSetInteger(0, CHART_COLOR_CHART_LINE, chartColor);
+            ChartSetInteger(0, CHART_COLOR_CANDLE_BULL, chartColor);
+            ChartSetInteger(0, CHART_COLOR_CANDLE_BEAR, chartColor);
+            ChartSetInteger(0, CHART_COLOR_BID, chartColor);
+            ChartSetInteger(0, CHART_COLOR_ASK, chartColor);
+            ChartSetInteger(0, CHART_COLOR_LAST, chartColor);
+            ChartSetInteger(0, CHART_COLOR_STOP_LEVEL, chartColor);
+        
+            ChartSetInteger(0, CHART_DRAG_TRADE_LEVELS, false);
+            ChartSetInteger(0, CHART_SHOW_TRADE_LEVELS, false);
+            ChartSetInteger(0, CHART_SHOW_DATE_SCALE, false);
+            ChartSetInteger(0, CHART_SHOW_PRICE_SCALE, false);
+            ChartSetInteger(0, CHART_SHOW_OHLC, false);
+            ChartSetInteger(0, CHART_SHOW_BID_LINE, false);
+            ChartSetInteger(0, CHART_SHOW_ASK_LINE, false);
+            ChartSetInteger(0, CHART_SHOW_LAST_LINE, false);
+            ChartSetInteger(0, CHART_SHOW_PERIOD_SEP, false);
+            ChartSetInteger(0, CHART_SHOW_VOLUMES, false);
+        }
+    }
+    
 #ifdef _Benchmark
     row=0; pos=15;
     drawText(prefixName("benchmark"), "Cycle " + Benchmark_Message);
@@ -163,12 +195,12 @@ void DashboardManager::drawHeader() {
     pos += drawText(prefixName("results_total_label"), padText("Total", maxTextPos+1));
     pos += drawText(prefixName("results_total"), "       ");
     
-    if(DisplayShowBasketStopLevels && BasketMasterInitialStopLossMode != BasketStopDisable) {
+    if(/*DisplayShowBasketStopLevels &&*/ MainOrderMan.isBasketStopEnabled(true, false, true, false)) {
         pos += drawText(prefixName("results_stoploss_label"), "SL ");
         pos += drawText(prefixName("results_stoploss"), "       ");
     }
     
-    if(DisplayShowBasketStopLevels && BasketMasterInitialTakeProfitMode != BasketStopDisable) {
+    if(/*DisplayShowBasketStopLevels &&*/ MainOrderMan.isBasketStopEnabled(false, true, true, false)) {
         pos += drawText(prefixName("results_takeprofit_label"), "TP ");
         pos += drawText(prefixName("results_takeprofit"), "       ");
     }
@@ -196,11 +228,11 @@ void DashboardManager::drawLegend() {
     
     string basketLegendText = " Total";
     
-    if(DisplayShowBasketStopLevels && BasketSymbolInitialStopLossEnabled) {
+    if(/*DisplayShowBasketStopLevels &&*/ MainOrderMan.isBasketStopEnabled(true, false, false, true)) {
         basketLegendText += sepChar+"SL   ";
     }
     
-    if(DisplayShowBasketStopLevels && BasketSymbolInitialTakeProfitEnabled) {
+    if(/*DisplayShowBasketStopLevels &&*/ MainOrderMan.isBasketStopEnabled(false, true, false, true)) {
         basketLegendText += sepChar+"TP   ";
     }
     
@@ -235,11 +267,11 @@ void DashboardManager::drawSymbols() {
         
         pos += drawText(prefixName(i+"_total"), "     " + (TradeModeType == TradeGrid || DisplayShowBasketSymbolLongShort ? " " : ""));
         
-        if(DisplayShowBasketStopLevels && BasketSymbolInitialStopLossEnabled) {
+        if(/*DisplayShowBasketStopLevels &&*/ MainOrderMan.isBasketStopEnabled(true, false, false, true)) {
             pos += drawText(prefixName(i+"_stoploss"), "      ");
         }
         
-        if(DisplayShowBasketStopLevels && BasketSymbolInitialTakeProfitEnabled) {
+        if(/*DisplayShowBasketStopLevels &&*/ MainOrderMan.isBasketStopEnabled(false, true, false, true)) {
             pos += drawText(prefixName(i+"_takeprofit"), "      ");
         }
         
@@ -397,11 +429,11 @@ void DashboardManager::updateDashboard() {
         
         ObjectSetText(prefixName(i+"_total"), basketTotal, fontSize, fontFace, fontColorDefault);
         
-        if(DisplayShowBasketStopLevels && BasketSymbolInitialStopLossEnabled) {
+        if(/*DisplayShowBasketStopLevels &&*/ MainOrderMan.isBasketStopEnabled(true, false, false, true)) {
             ObjectSetText(prefixName(i+"_stoploss"), basketStoploss, fontSize, fontFace, fontColorDefault);
         }
         
-        if(DisplayShowBasketStopLevels && BasketSymbolInitialTakeProfitEnabled) {
+        if(/*DisplayShowBasketStopLevels &&*/ MainOrderMan.isBasketStopEnabled(false, true, false, true)) {
             ObjectSetText(prefixName(i+"_takeprofit"), basketTakeprofit, fontSize, fontFace, fontColorDefault);
         }
         
@@ -422,11 +454,11 @@ void DashboardManager::updateResults() {
     if(!DisplayShow) { return; }
     ObjectSetText(prefixName("results_total"), StringFormat("%.1f", (MainOrderMan.basketProfit+MainOrderMan.basketBookedProfit)), fontSize, fontFace, fontColorDefault);
     
-    if(DisplayShowBasketStopLevels && BasketMasterInitialStopLossMode != BasketStopDisable) {
+    if(/*DisplayShowBasketStopLevels &&*/ MainOrderMan.isBasketStopEnabled(true, false, true, false)) {
         ObjectSetText(prefixName("results_stoploss"), StringFormat("%.1f", MainOrderMan.basketMasterStopLoss, fontSize, fontFace, fontColorDefault));
     }
     
-    if(DisplayShowBasketStopLevels && BasketMasterInitialTakeProfitMode != BasketStopDisable) {
+    if(/*DisplayShowBasketStopLevels &&*/ MainOrderMan.isBasketStopEnabled(false, true, true, false)) {
         ObjectSetText(prefixName("results_takeprofit"), StringFormat("%.1f", MainOrderMan.basketMasterTakeProfit, fontSize, fontFace, fontColorDefault));
     }
     

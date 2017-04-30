@@ -178,14 +178,14 @@ input string Lbl_Basket_Master_Stop="________ Master Basket Stop Levels ________
 
 input BasketStopMode BasketMasterInitialStopLossMode=BasketStopDisable;
 input double BasketStopLossValue=-200.0;
-input double BasketStopLossFactor=1;
+//input double BasketStopLossFactor=1;
 input int BasketMaxLosingPerDay=2;
 
 input string Lbl_Basket_Master_Stop_Gap=""; // :
 
 input BasketStopMode BasketMasterInitialTakeProfitMode=BasketStopDisable;
 input double BasketTakeProfitValue=400.0;
-input double BasketTakeProfitFactor=1;
+//input double BasketTakeProfitFactor=1;
 input int BasketMaxWinningPerDay=1;
 
 input string Lbl_Basket_Master_Stop_Breakeven="---- Master Break Even Stop ----"; // :

@@ -256,4 +256,28 @@ double OrderManager::unOffsetValue(double value, double offset, string symName =
     return value-offset;
 }
 
+int OrderManager::getTotalMasterOrderCount(bool checkMarket = true, bool checkPendings = true, bool checkLongs = true, bool checkShorts = true) {
+    int size = ArraySize(MainSymbolMan.symbols);
+    int finalResult = 0;
+    for(int i = 0; i < size; i++) {
+        finalResult += getTotalOrderCount(i, checkMarket, checkPendings, checkLongs, checkShorts);
+    }
+    
+    return finalResult;
+}
+
+int OrderManager::getTotalSymbolOrderCount(int symIdx, bool checkMarket = true, bool checkPendings = true, bool checkLongs = true, bool checkShorts = true) {
+    return getTotalOrderCount(symIdx, checkMarket, checkPendings, checkLongs, checkShorts);
+}
+
+int OrderManager::getTotalOrderCount(int symIdx, bool checkMarket = true, bool checkPendings = true, bool checkLongs = true, bool checkShorts = true) {
+    int finalResult = 0;
+    if(checkMarket && checkLongs) { finalResult += openMarketLongCount[symIdx]; }
+    if(checkMarket && checkShorts) { finalResult += openMarketShortCount[symIdx]; }
+    if(checkPendings && checkLongs) { finalResult += openPendingLongCount[symIdx]; }
+    if(checkPendings && checkShorts) { finalResult += openPendingShortCount[symIdx]; }
+    
+    return finalResult;
+}
+
 OrderManager *MainOrderMan = NULL;

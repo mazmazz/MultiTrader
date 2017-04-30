@@ -63,7 +63,9 @@ bool OrderManager::isEntrySafeByDirection(int symIdx, bool isLong) {
             + openMarketLongCount[symIdx] + openMarketShortCount[symIdx]
             );
             
-        if(tradeSymbolCount + testCount > MaxTradesPerSymbol) { return false; }
+        if(tradeSymbolCount + testCount > MaxTradesPerSymbol) { 
+            return false; 
+        }
     }
     
     if(MaxTradesPerAccount > 0) {
@@ -75,7 +77,9 @@ bool OrderManager::isEntrySafeByDirection(int symIdx, bool isLong) {
 #endif
 #endif
 
-        if(tradeTotalCount + testCount > MaxTradesPerAccount) { return false; }
+        if(tradeTotalCount + testCount > MaxTradesPerAccount) { 
+            return false; 
+        }
     }
     
     return true;

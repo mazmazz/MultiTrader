@@ -38,14 +38,14 @@ void OrderManager::checkDoBasketExit() {
 
 void OrderManager::checkDoBasketMasterExit() {
     bool close = false;
-    if(basketMasterStopLoss != 0 && BasketMasterInitialStopLossMode != BasketStopDisable && (basketProfit+basketBookedProfit) <= basketMasterStopLoss) {
-        Error::PrintInfo("Close Basket: Stop Loss - " + (basketProfit + basketBookedProfit) + " pips | Setting: " + basketMasterStopLoss, true);
+    if(basketMasterStopLoss != 0 && isBasketStopEnabled(true, false, true, false) && (basketProfit+basketBookedProfit) <= basketMasterStopLoss) {
+        Error::PrintInfo("Master Close Basket - SL: " + basketMasterStopLoss + " | Current: " + (basketProfit + basketBookedProfit), true);
         close = true;
         basketLosses++;
     }
     
-    if(basketMasterTakeProfit != 0 && BasketMasterInitialTakeProfitMode != BasketStopDisable && (basketProfit+basketBookedProfit) >= basketMasterTakeProfit) {
-        Error::PrintInfo("Close Basket: Take Profit - " + (basketProfit + basketBookedProfit) + " pips | Setting: " + basketMasterTakeProfit, true);
+    if(basketMasterTakeProfit != 0 && isBasketStopEnabled(false, true, true, false) && (basketProfit+basketBookedProfit) >= basketMasterTakeProfit) {
+        Error::PrintInfo("Master Close Basket - TP: " + basketMasterTakeProfit + " | Current: " + (basketProfit + basketBookedProfit), true);
         close = true;
         basketWins++;
     }
@@ -59,8 +59,8 @@ void OrderManager::checkDoBasketMasterExit() {
         sendBasketClose(false);
 #endif
 #endif
-        basketMasterStopLoss = 0;
-        basketMasterTakeProfit = 0;
+
+        updateBasketStopLevels(); // reset both master and symbol stops if necessary now, orders can open before next cycle
     }
 }
 
@@ -76,14 +76,14 @@ void OrderManager::checkDoBasketSymbolExit() {
 
 void OrderManager::checkDoBasketSymbolExit(int symIdx) {
     bool close = false;
-    if(basketSymbolStopLoss[symIdx] != 0 && BasketSymbolInitialStopLossEnabled && (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]) <= basketSymbolStopLoss[symIdx]) {
-        Error::PrintInfo(MainSymbolMan.symbols[symIdx].name + "Close Basket: Stop Loss - " + (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]) + " pips | Setting: " + basketSymbolStopLoss[symIdx], true);
+    if(basketSymbolStopLoss[symIdx] != 0 && isBasketStopEnabled(true, false, false, true) && (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]) <= basketSymbolStopLoss[symIdx]) {
+        Error::PrintInfo(MainSymbolMan.symbols[symIdx].name + " Close Basket - SL: " + basketSymbolStopLoss[symIdx] + " | Current: " + (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]), true);
         close = true;
         basketSymbolLosses[symIdx]++;
     }
     
-    if(basketSymbolTakeProfit[symIdx] != 0 && BasketSymbolInitialTakeProfitEnabled && (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]) >= basketSymbolTakeProfit[symIdx]) {
-        Error::PrintInfo(MainSymbolMan.symbols[symIdx].name + "Close Basket: Take Profit - " + (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]) + " pips | Setting: " + basketSymbolTakeProfit[symIdx], true);
+    if(basketSymbolTakeProfit[symIdx] != 0 && isBasketStopEnabled(false, true, false, true) && (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]) >= basketSymbolTakeProfit[symIdx]) {
+        Error::PrintInfo(MainSymbolMan.symbols[symIdx].name + " Close Basket - TP: " + basketSymbolTakeProfit[symIdx] + " | Current: " + (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]), true);
         close = true;
         basketSymbolWins[symIdx]++;
     }
@@ -97,8 +97,8 @@ void OrderManager::checkDoBasketSymbolExit(int symIdx) {
         sendBasketClose(symIdx, false);
 #endif
 #endif
-        basketSymbolStopLoss[symIdx] = 0;
-        basketSymbolTakeProfit[symIdx] = 0;
+        
+        updateBasketStopLevels(); // reset both master and symbol stops if necessary now, orders can open before next cycle
     }
 }
 
@@ -193,25 +193,31 @@ void OrderManager::updateBasketMasterStopLevels() {
 }
 
 void OrderManager::updateBasketMasterStopLevel(bool isStopLoss) {
-    if(isStopLoss) { 
-        if(basketMasterStopLoss == 0 && BasketMasterInitialStopLossMode != BasketStopDisable) {
-            basketMasterStopLoss = getBasketMasterInitialStopLevel(isStopLoss);
-        } 
-        //else {
-            double level = 0;
-            if(getBasketModifiedStopLevel(-1, level)) {
-                basketMasterStopLoss = level;
-            }
-        //}
+    if(isStopLoss) {
+        if(isBasketStopEnabled(true, false, true, false) && getTotalMasterOrderCount(true, false) > 0) {
+            if(basketMasterStopLoss == 0 && BasketMasterInitialStopLossMode != BasketStopDisable) {
+                basketMasterStopLoss = getBasketMasterInitialStopLevel(isStopLoss);
+            } 
+            //else {
+                double level = 0;
+                if(getBasketModifiedStopLevel(-1, level)) {
+                    basketMasterStopLoss = level;
+                }
+            //}
+        } else { basketMasterStopLoss = 0; }
     }
     else { 
-        if(basketMasterTakeProfit == 0 && BasketMasterInitialTakeProfitMode != BasketStopDisable) { 
-            basketMasterTakeProfit = getBasketMasterInitialStopLevel(isStopLoss);
-        }
+        if(isBasketStopEnabled(false, true, true, false) && getTotalMasterOrderCount(true, false) > 0) {
+            if(basketMasterTakeProfit == 0 && BasketMasterInitialTakeProfitMode != BasketStopDisable) { 
+                basketMasterTakeProfit = getBasketMasterInitialStopLevel(isStopLoss);
+            }
+        } else { basketMasterTakeProfit = 0; }
     }
 }
 
 void OrderManager::updateBasketSymbolStopLevels() {
+    if(!isBasketStopEnabled(true, true, false, true)) { return; }
+
     int symCount = ArraySize(MainSymbolMan.symbols);
     
     for(int i = 0; i < symCount; i++) {
@@ -223,7 +229,7 @@ void OrderManager::updateBasketSymbolStopLevels() {
 void OrderManager::updateBasketSymbolStopLevel(int symIdx, bool isStopLoss) {
     double stopLevel = 0;
     if(isStopLoss) {
-        if(openMarketLongCount[symIdx] + openMarketShortCount[symIdx] > 0) {
+        if(isBasketStopEnabled(true, false, false, true) && openMarketLongCount[symIdx] + openMarketShortCount[symIdx] > 0) {
             if(basketSymbolStopLoss[symIdx] == 0 && BasketSymbolInitialStopLossEnabled) {
                 if(getBasketSymbolInitialStopLevel(symIdx, isStopLoss, stopLevel)) {
                     basketSymbolStopLoss[symIdx] = stopLevel;
@@ -236,7 +242,7 @@ void OrderManager::updateBasketSymbolStopLevel(int symIdx, bool isStopLoss) {
             //}
         } else { basketSymbolStopLoss[symIdx] = 0; }
     } else {
-        if(openMarketLongCount[symIdx] + openMarketShortCount[symIdx] > 0) {
+        if(isBasketStopEnabled(false, true, false, true) && openMarketLongCount[symIdx] + openMarketShortCount[symIdx] > 0) {
             if(basketSymbolTakeProfit[symIdx] == 0 && BasketSymbolInitialTakeProfitEnabled) {
                 if(getBasketSymbolInitialStopLevel(symIdx, isStopLoss, stopLevel)) {
                     basketSymbolTakeProfit[symIdx] = stopLevel;
@@ -278,6 +284,8 @@ double OrderManager::getBasketMasterInitialStopLevel(bool isStopLoss) {
             level = 0; break;
     }
     
+    Error::PrintInfo("Master Basket initial " + (isStopLoss ? "SL: " : "TP: ") + level);
+    
     return level;
 }
 
@@ -287,20 +295,23 @@ bool OrderManager::getBasketSymbolInitialStopLevel(int symIdx, bool isStopLoss, 
     ) { return false; }
     
     double stopLevel = 0;
+    bool finalResult = false;
     
     if(isStopLoss) {
         if(getValue(stopLevel, basketSymbolStopLossLoc, symIdx)) {
             stopLevelOut = stopLevel;
-            return true;
+            finalResult = true;
         }
     } else {
         if(getValue(stopLevel, basketSymbolTakeProfitLoc, symIdx)) {
             stopLevelOut = stopLevel;
-            return true;
+            finalResult = true;
         }
     }
     
-    return false;
+    Error::PrintInfo(MainSymbolMan.symbols[symIdx].name + " Basket initial " + (isStopLoss ? "SL: " : "TP: ") + stopLevel);
+    
+    return finalResult;
 }
 
 bool OrderManager::getBasketModifiedStopLevel(int symIdx, double &stopLevelOut) {
@@ -311,13 +322,17 @@ bool OrderManager::getBasketModifiedStopLevel(int symIdx, double &stopLevelOut) 
         if(!getBasketTrailingStopLevel(symIdx, level)) {
             if(!getBasketBreakEvenStopLevel(symIdx, level)) {
                 return false;
-            } else { logMessage = " Basket mod stop: Breakeven - "; }
-        } else { logMessage = " Basket mod stop: Trailing - "; }
-    } else { logMessage = " Basket mod stop: Jump - "; }
+            } else { logMessage = "Basket mod stop - Breakeven: "; }
+        } else { logMessage = "Basket mod stop - Trailing: "; }
+    } else { logMessage = "Basket mod stop - Jump: "; }
     
     stopLevelOut = level;
     
-    Error::PrintInfo(MainSymbolMan.symbols[symIdx].name + logMessage + level, true);
+    Error::PrintInfo((symIdx >= 0 ? MainSymbolMan.symbols[symIdx].name + " " : "Master ") + logMessage + level + " | Current: "
+        + (symIdx >= 0 ? (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]) 
+            : basketProfit+basketBookedProfit
+            )
+        , true);
 
     return true;
 }
@@ -402,4 +417,20 @@ bool OrderManager::isBasketStopLossProgressed(int symIdx, double newStopLoss) {
     double oldStopLoss = symIdx < 0 ? basketMasterStopLoss : basketSymbolStopLoss[symIdx];
     return newStopLoss != 0 && (oldStopLoss == 0 || newStopLoss > oldStopLoss);
         // if proposed stop loss = 0, return false because 0 is reserved for uninited (next cycle, initial stop is set)
+}
+
+bool OrderManager::isBasketStopEnabled(bool checkStopLoss = true, bool checkTakeProfit = true, bool checkMaster = true, bool checkSymbol = true) {
+    return 
+        (checkMaster && checkStopLoss && BasketMasterInitialStopLossMode != BasketStopDisable)
+        || (checkMaster && checkTakeProfit && BasketMasterInitialTakeProfitMode != BasketStopDisable)
+        || (checkMaster && checkStopLoss && BasketMasterBreakEvenStopEnabled)
+        || (checkMaster && checkStopLoss && BasketMasterTrailingStopEnabled)
+        || (checkMaster && checkStopLoss && BasketMasterJumpingStopEnabled)
+        
+        || (checkSymbol && checkStopLoss && BasketSymbolInitialStopLossEnabled)
+        || (checkSymbol && checkTakeProfit && BasketSymbolInitialTakeProfitEnabled)
+        || (checkSymbol && checkStopLoss && BasketSymbolBreakEvenStopEnabled)
+        || (checkSymbol && checkStopLoss && BasketSymbolTrailingStopEnabled)
+        || (checkSymbol && checkStopLoss && BasketSymbolJumpingStopEnabled)
+        ;
 }

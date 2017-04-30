@@ -90,6 +90,8 @@ class OrderManager {
     
     void doPositions(bool firstRun);
     
+    bool isBasketStopEnabled(bool checkStopLoss = true, bool checkTakeProfit = true, bool checkMaster = true, bool checkSymbol = true);
+    
     private:
     
     //+------------------------------------------------------------------+
@@ -133,6 +135,10 @@ class OrderManager {
     
     double offsetValue(double value, double offset, string symName = NULL, bool offsetIsPips = true);
     double unOffsetValue(double value, double offset, string symName = NULL, bool offsetIsPips = true);
+    
+    int getTotalMasterOrderCount(bool checkMarket = true, bool checkPendings = true, bool checkLongs = true, bool checkShorts = true);
+    int getTotalSymbolOrderCount(int symIdx, bool checkMarket = true, bool checkPendings = true, bool checkLongs = true, bool checkShorts = true);
+    int getTotalOrderCount(int symIdx, bool checkMarket = true, bool checkPendings = true, bool checkLongs = true, bool checkShorts = true);
     
     //+------------------------------------------------------------------+
     // Broker

@@ -112,6 +112,8 @@ class Common {
     static bool IsAccountHedging();
     static bool IsOrderRetcodeSuccess(int retcode, bool checkNoChange = true);
 #endif
+    
+    static color InvertColor(color target);
 };
 
 // https://github.com/dingmaotu/mql4-lib
@@ -610,3 +612,7 @@ bool Common::IsOrderRetcodeSuccess(int retcode, bool checkNoChange = true) {
     );
 }
 #endif
+
+color Common::InvertColor(color target) {
+    return 0x00FFFFFF ^ target;
+}

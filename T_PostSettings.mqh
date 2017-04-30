@@ -38,7 +38,7 @@ int SignalHistoryLevel=3;
 input string LblDisplay="---- Display Settings ----"; // :
 input bool DisplayShow=true;
 input bool DisplayShowTable=true;
-input bool DisplayShowBasketStopLevels=true;
+//input bool DisplayShowBasketStopLevels=true;
 input bool DisplayShowBasketSymbolLongShort=false;
 input bool DisplaySignalInternal=false;
 input bool DisplayColor=true;
@@ -47,6 +47,8 @@ input bool DisplayColor=true;
 input color DisplayFontColorDefault = _FontColorDefault;
 string DisplayFont="Lucida Console"; // Integral font to monospace layout and scaling, should not be user setting
 input int DisplayScale=1; // DisplayScale: 0 = Small, 1+ = Large
+input color DisplayBackgroundColor = clrNONE;
+input bool DisplayShowChart = false;
 //input int DisplayFontSize=11;
 //input int DisplaySpacing=13;
 //input DisplayStyleEnum DisplayStyle=ValueAndSignal;

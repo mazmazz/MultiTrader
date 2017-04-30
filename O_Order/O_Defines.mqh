@@ -232,6 +232,10 @@ class OrderManager {
     void fillGridExitFlags(int symbolIdx);
     bool isGridOpen(int symIdx, bool checkPendingsOnly);
     bool isGridOpen(int symIdx, bool isLong, bool checkPendingsOnly);
+    void getGridOpenPermission(int symIdx, bool isLong, bool &gridOpenNormal, bool &gridOpenHedge
+        , bool &openNormalEnabled, bool &openNormalIfPending, bool &openNormalIfPosition
+        , bool &openHedgeEnabled, bool &openHedgeIfPending, bool &openHedgeIfPosition
+        );
     int getGridCount(int symIdx, bool isLong, bool checkPendings, bool checkPositions, bool checkLimitOrders);
     int getGridNewTradeCount(int symIdx, bool isLong);
     bool isTradeModeGrid();

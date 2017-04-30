@@ -186,9 +186,7 @@ void OnTimer() {
 
     Main.onTimer();
     
-#ifndef _Benchmark
-    Comment(""); // needed in MT5 to force update chart, otherwise objs do not update until tick fired (because there's so many?)
-#endif
+    if(!IsTesting() && !IsOptimization()) { Comment(""); } // needed in MT5 to force update chart, otherwise objs do not update until tick fired (because there's so many?)
 }
 
 void OnTick() {

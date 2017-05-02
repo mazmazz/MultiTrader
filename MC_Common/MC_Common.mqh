@@ -57,6 +57,9 @@ class Common {
     
     static int ArrayTsearch(string &array[], string value, int count=-1, int start=0, int direction=MODE_ASCEND, bool caseSensitive=true);
     
+    template <typename T>
+    static int ArrayFind(T &array[], T needle);
+    
     // string
     static string StringTrim(string inputStr);
     //template<typename T>
@@ -169,6 +172,15 @@ int Common::ArrayPush(T &array[], T unit, int maxSize = -1) {
     if(isSeries) { ArraySetAsSeries(array, true); }
     
     return size + 1;
+}
+
+template<typename T>
+int Common::ArrayFind(T &array[], T needle) {
+    int size = ArraySize(array);
+    for(int i = 0; i < size; i++) {
+        if(array[i] == needle) { return i; }
+    }
+    return -1;
 }
 
 template<typename T>
@@ -500,7 +512,7 @@ double Common::GetSingleValueFromBuffer(int indiHandle, int shift=0, int bufferN
     double buffer[1];
     int result = CopyBuffer(indiHandle, bufferNum, shift, 1, buffer);
     
-    if(result < 0) { return -1; }
+    if(result < 1) { return 0; }
     else { return buffer[0]; }
 }
 #endif

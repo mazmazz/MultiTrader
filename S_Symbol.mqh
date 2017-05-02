@@ -54,12 +54,12 @@ class SymbolManager {
     int addSymbol(string name, string bareName = "", string baseCurName = "", string quoteCurName = "");
     int getSymbolId(string symName, bool isFormSymName = false);
     int getSymbolCount();
-    bool isSymbolTradable(string symName);
     bool isSymbolExcluded(string symName, string excludeSym, string &excludeCur[]);
     void removeAllSymbols();
     
     bool retrieveData();
     
+    static bool isSymbolTradable(string symName);
     static int getAllSymbols(string &allSymBuffer[]);
     static string getCompareSymbol(int symType = 0);
     static string getSymbolPrefix(string symName);
@@ -143,15 +143,6 @@ int SymbolManager::getSymbolId(string symName, bool isBareSymName = false) {
     }
     
     return -1;
-}
-
-bool SymbolManager::isSymbolTradable(string symName) {
-    // todo: allow non-forex types to be traded?
-    return (
-        SymbolInfoInteger(symName, SYMBOL_TRADE_CALC_MODE) == 0 // forex type
-        && SymbolInfoInteger(symName, SYMBOL_TRADE_MODE) > 0 // not disabled for trading
-        && SymbolSelect(symName, true) // attempt add or select in Market Watch
-        );
 }
 
 bool SymbolManager::isSymbolExcluded(string symName, string excludeSymIn, string &excludeCurIn[]) {
@@ -269,6 +260,15 @@ string SymbolManager::getSymbolQuoteCurrency(string symName) {
     string result = NULL;
     SymbolInfoString(symName, SYMBOL_CURRENCY_PROFIT, result);
     return result;
+}
+
+bool SymbolManager::isSymbolTradable(string symName) {
+    // todo: allow non-forex types to be traded?
+    return (
+        SymbolInfoInteger(symName, SYMBOL_TRADE_CALC_MODE) == 0 // forex type
+        && SymbolInfoInteger(symName, SYMBOL_TRADE_MODE) > 0 // not disabled for trading
+        && SymbolSelect(symName, true) // attempt add or select in Market Watch
+        );
 }
 
 SymbolManager *MainSymbolMan;

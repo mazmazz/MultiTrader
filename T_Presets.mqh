@@ -21,11 +21,8 @@
 
 #include "F_Filter/F_Filter_ATR.mqh"
 #include "F_Filter/F_Filter_StdDev.mqh"
-#include "F_Filter/F_Filter_Stoch.mqh"
-//#include "F_Filter/F_Filter_CSS.mqh"
-#ifdef __MQL4__
-//#include "F_Filter/F_Filter_HGI.mqh"
-#endif
+#include "F_Filter/F_Filter_CSS.mqh"
+#include "F_Filter/F_Filter_FB.mqh"
 
 //+------------------------------------------------------------------+
 
@@ -67,99 +64,82 @@ input string StdDev_Value_AppliedPrice="a=0|b=0|c=0";
 input string StdDev_Value_PeriodShift="a=0|b=0|c=0";
 
 //+------------------------------------------------------------------+
-//| Stoch
-//+------------------------------------------------------------------+
-
-input string Lbl_Stoch_1="________ Stoch Settings [Stoch] ________"; // :
-
-input string LbL_Stoch_Entry="---- Stoch Entry Settings ----"; // :
-input string Stoch_Entry_Modes="a=1|b=1|c=1";
-input string Stoch_Entry_Names="a=M15|b=M30|c=M60";
-input string Stoch_Entry_TimeFrame="a=15|b=30|c=60";
-
-input string Lbl_Stoch_Entry_Indi=""; // :
-input string Stoch_Entry_KPeriod="a=5|b=5|c=5";
-input string Stoch_Entry_DPeriod="a=3|b=3|c=3";
-input string Stoch_Entry_Slowing="a=3|b=3|c=3";
-input string Stoch_Entry_Method="a=3|b=3|c=3";
-input string Stoch_Entry_PriceField="a=0|b=0|c=0";
-input string Stoch_Entry_Shift="a=0|b=0|c=0";
-input string Stoch_Entry_BuySellZone="a=22.0|b=22.0|c=22.0";
-
-input string LbL_Stoch_Exit="---- Stoch Exit Settings ----"; // :
-input string Stoch_Exit_Modes="a=1";
-input string Stoch_Exit_Names="a=M15";
-input string Stoch_Exit_TimeFrame="a=15";
-
-input string Lbl_Stoch_Exit_Indi=""; // :
-input string Stoch_Exit_KPeriod="a=5";
-input string Stoch_Exit_DPeriod="a=3";
-input string Stoch_Exit_Slowing="a=3";
-input string Stoch_Exit_Method="a=3";
-input string Stoch_Exit_PriceField="a=0";
-input string Stoch_Exit_Shift="a=0";
-input string Stoch_Exit_BuySellZone="a=30.0";
-
-//+------------------------------------------------------------------+
-//| HGI
-//+------------------------------------------------------------------+
-
-//input string Lbl_Hgi_1="________ HGI Settings [HGI] ________"; // :
-//input string LbL_Hgi_Entry="---- HGI Entry Settings ----"; // :
-//input string Hgi_Entry_Modes="a=1";
-//input string Hgi_Entry_Names="a=M60";
-
-//input string Lbl_Hgi_Entry_Indi=""; // :
-//input string Hgi_Entry_TimeFrame="a=60";
-//input string Hgi_Entry_Shift="a=0";
-//input string Hgi_Entry_OnTrend="a=1";
-//input string Hgi_Entry_OnRange="a=1";
-//input string Hgi_Entry_OnRad="a=0";
-//input string Hgi_Entry_OnSignal="a=1";
-//input string Hgi_Entry_OnSlope="a=0";
-//
-//input string LbL_Hgi_Exit="---- HGI Exit Settings ----"; // :
-//input string Hgi_Exit_Modes="a=1";
-//input string Hgi_Exit_Names="a=M60";
-
-//input string Lbl_Hgi_Exit_Indi=""; // :
-//input string Hgi_Exit_TimeFrame="a=60";
-//input string Hgi_Exit_Shift="a=0";
-//input string Hgi_Exit_OnTrend="a=1";
-//input string Hgi_Exit_OnRange="a=1";
-//input string Hgi_Exit_OnRad="a=0";
-//input string Hgi_Exit_OnSignal="a=1";
-//input string Hgi_Exit_OnSlope="a=0";
-
-//+------------------------------------------------------------------+
 //| CSS
 //+------------------------------------------------------------------+
 
-//input string Lbl_CSS="________ CSS Settings [CSS] ________";
-//input string Lbl_CSS_General_Settings="---- CSS General Settings ----";
-//input string CSS_SymbolsToWeigh = "AUDCAD,AUDCHF,AUDJPY,AUDNZD,AUDUSD,CADJPY,CHFJPY,EURAUD,EURCAD,EURJPY,EURNZD,EURUSD,GBPAUD,GBPCAD,GBPCHF,GBPJPY,GBPNZD,GBPUSD,NZDCHF,NZDJPY,NZDUSD,USDCAD,USDCHF,USDJPY"; // CSS_SymbolsToWeigh: Leave blank to weigh all symbols
-//
-//input string Lbl_CSS_Entry_Settings="---- CSS Entry Settings ----";
-//input string CSS_Entry_Modes="a=1|b=1";
-//input string CSS_Entry_Names="a=H1|b=H1SS";
+input string Lbl_CSS="________ CSS Settings [CSS] ________";
+input string Lbl_CSS_General_Settings="---- CSS General Settings ----";
+input string CSS_SymbolsToWeigh = "AUDCAD,AUDCHF,AUDJPY,AUDNZD,AUDUSD,CADJPY,CHFJPY,EURAUD,EURCAD,EURJPY,EURNZD,EURUSD,GBPAUD,GBPCAD,GBPCHF,GBPJPY,GBPNZD,GBPUSD,NZDCHF,NZDJPY,NZDUSD,USDCAD,USDCHF,USDJPY"; // CSS_SymbolsToWeigh: Leave blank to weigh all symbols
 
-//input string Lbl_CSS_Entry_Indi=""; // :
-//input string CSS_Entry_TimeFrame="a=60|b=60";
-//input string CSS_Entry_Shift="a=0|b=0";
-//input string CSS_Entry_MaPeriod="a=21|b=7";
-//input string CSS_Entry_AtrPeriod="a=100|b=50";
-//input string CSS_Entry_CalcMethod="a=0|b=2";
-//
-//input string Lbl_CSS_Exit_Settings="---- CSS Exit Settings ----";
-//input string CSS_Exit_Modes="a=1|b=1";
-//input string CSS_Exit_Names="a=H1x|b=H1SSx"; 
+input string Lbl_CSS_Entry_Settings="---- CSS Entry Settings ----";
+input string CSS_Entry_Modes="a=0|b=1";
+input string CSS_Entry_Names="a=D1|b=D1SS";
 
-//input string Lbl_CSS_Exit_Indi=""; // :
-//input string CSS_Exit_TimeFrame="a=60|b=60";
-//input string CSS_Exit_Shift="a=0|b=0";
-//input string CSS_Exit_MaPeriod="a=21|b=7";
-//input string CSS_Exit_AtrPeriod="a=100|b=50";
-//input string CSS_Exit_CalcMethod="a=0|b=2";
+input string Lbl_CSS_Entry_Indi=""; // :
+input string CSS_Entry_ResultType="a=3|b=3";
+input string CSS_Entry_CalcMethod="a=1|b=3";
+input string CSS_Entry_TimeFrame="a=1440|b=1440";
+input string CSS_Entry_MaPeriod="a=21|b=7";
+input string CSS_Entry_AtrPeriod="a=100|b=50";
+input string CSS_Entry_Shift="a=0|b=0";
+input string CSS_Entry_Candles="a=0|b=0";
+input string CSS_Entry_Absolute="a=0|b=0";
+input string CSS_Entry_TradeLevel="a=0.2|b=2.0";
+input string CSS_Entry_DifferenceThreshold="a=0|b=0";
+
+input string Lbl_CSS_Exit_Settings="---- CSS Exit Settings ----";
+input string CSS_Exit_Modes="a=0|b=1";
+input string CSS_Exit_Names="a=D1|b=D1SS";
+
+input string Lbl_CSS_Exit_Indi=""; // :
+input string CSS_Exit_ResultType="a=3|b=3";
+input string CSS_Exit_CalcMethod="a=1|b=3";
+input string CSS_Exit_TimeFrame="a=1440|b=1440";
+input string CSS_Exit_MaPeriod="a=21|b=7";
+input string CSS_Exit_AtrPeriod="a=100|b=50";
+input string CSS_Exit_Shift="a=0|b=0";
+input string CSS_Exit_Candles="a=0|b=0";
+input string CSS_Exit_Absolute="a=0|b=0";
+input string CSS_Exit_TradeLevel="a=0.2|b=2.0";
+input string CSS_Exit_DifferenceThreshold="a=0|b=0";
+
+//+------------------------------------------------------------------+
+//| Flying Buddha
+//+------------------------------------------------------------------+
+
+input string Lbl_FB="________ Flying Buddha Settings [FB] ________";
+
+input string Lbl_FB_Entry_Settings="---- FB Entry Settings ----";
+input string FB_Entry_Modes="a=1";
+input string FB_Entry_Names="a=M1";
+
+input string Lbl_FB_Entry_Indi=""; // :
+input string FB_Entry_TimeFrame="a=1";
+input string FB_Entry_MaPeriodFast="a=5";
+input string FB_Entry_MaAvgModeFast="a=1";
+input string FB_Entry_MaPriceFast="a=0";
+input string FB_Entry_MaEnableSlow="a=1";
+input string FB_Entry_MaPeriodSlow="a=10";
+input string FB_Entry_MaAvgModeSlow="a=1";
+input string FB_Entry_MaPriceSlow="a=0";
+input string FB_Entry_CompareMaFastSlow="a=0";
+input string FB_Entry_Shift="a=1";
+
+input string Lbl_FB_Exit_Settings="---- FB Exit Settings ----";
+input string FB_Exit_Modes="a=1";
+input string FB_Exit_Names="a=M1";
+
+input string Lbl_FB_Exit_Indi=""; // :
+input string FB_Exit_TimeFrame="a=1";
+input string FB_Exit_MaPeriodFast="a=5";
+input string FB_Exit_MaAvgModeFast="a=1";
+input string FB_Exit_MaPriceFast="a=0";
+input string FB_Exit_MaEnableSlow="a=1";
+input string FB_Exit_MaPeriodSlow="a=10";
+input string FB_Exit_MaAvgModeSlow="a=1";
+input string FB_Exit_MaPriceSlow="a=0";
+input string FB_Exit_CompareMaFastSlow="a=0";
+input string FB_Exit_Shift="a=1";
 
 //+------------------------------------------------------------------+
 // 2. Add filters to LoadFilters() below and add settings [HOOKS]
@@ -182,49 +162,34 @@ void LoadFilters() {
         , StdDev_Value_Method, StdDev_Value_AppliedPrice, StdDev_Value_PeriodShift
         );
         
-    FilterStoch* stoch = new FilterStoch();
-    stoch.addSubfilter(Stoch_Entry_Modes, Stoch_Entry_Names, NULL, SubfilterEntry
-        , Stoch_Entry_TimeFrame, Stoch_Entry_KPeriod, Stoch_Entry_DPeriod
-        , Stoch_Entry_Slowing, Stoch_Entry_Method, Stoch_Entry_PriceField
-        , Stoch_Entry_Shift, Stoch_Entry_BuySellZone
+    FilterCss* css = new FilterCss();
+    css.addSubfilter(CSS_Entry_Modes, CSS_Entry_Names, NULL, SubfilterEntry
+       , CSS_Entry_ResultType, CSS_Entry_CalcMethod
+       , CSS_Entry_TimeFrame, CSS_Entry_MaPeriod, CSS_Entry_AtrPeriod, CSS_Entry_Shift
+       , CSS_Entry_Candles, CSS_Entry_Absolute, CSS_Entry_TradeLevel, CSS_Entry_DifferenceThreshold
+       );
+    css.addSubfilter(CSS_Exit_Modes, CSS_Exit_Names, NULL, SubfilterExit
+       , CSS_Exit_ResultType, CSS_Exit_CalcMethod
+       , CSS_Exit_TimeFrame, CSS_Exit_MaPeriod, CSS_Exit_AtrPeriod, CSS_Exit_Shift
+       , CSS_Exit_Candles, CSS_Exit_Absolute, CSS_Exit_TradeLevel, CSS_Exit_DifferenceThreshold
+       , true
+       );
+    
+    Main.addFilter(css);
+    
+    FilterFb *fb = new FilterFb();
+    fb.addSubfilter(FB_Entry_Modes, FB_Entry_Names, NULL, SubfilterEntry
+        , FB_Entry_TimeFrame, FB_Entry_MaPeriodFast, FB_Entry_MaAvgModeFast, FB_Entry_MaPriceFast
+        , FB_Entry_MaEnableSlow, FB_Entry_MaPeriodSlow, FB_Entry_MaAvgModeSlow, FB_Entry_MaPriceSlow
+        , FB_Entry_CompareMaFastSlow, FB_Entry_Shift
         );
-    stoch.addSubfilter(Stoch_Exit_Modes, Stoch_Exit_Names, NULL, SubfilterExit
-        , Stoch_Exit_TimeFrame, Stoch_Exit_KPeriod, Stoch_Exit_DPeriod
-        , Stoch_Exit_Slowing, Stoch_Exit_Method, Stoch_Exit_PriceField
-        , Stoch_Exit_Shift, Stoch_Exit_BuySellZone
+
+    fb.addSubfilter(FB_Exit_Modes, FB_Exit_Names, NULL, SubfilterExit
+        , FB_Exit_TimeFrame, FB_Exit_MaPeriodFast, FB_Exit_MaAvgModeFast, FB_Exit_MaPriceFast
+        , FB_Exit_MaEnableSlow, FB_Exit_MaPeriodSlow, FB_Exit_MaAvgModeSlow, FB_Exit_MaPriceSlow
+        , FB_Exit_CompareMaFastSlow, FB_Exit_Shift
         , true
-        );
-        
-    //FilterCss* css = new FilterCss();
-    //css.addSubfilter(CSS_Entry_Modes, CSS_Entry_Names, NULL, SubfilterEntry
-    //    , CSS_Entry_TimeFrame, CSS_Entry_Shift, CSS_Entry_MaPeriod
-    //    , CSS_Entry_AtrPeriod, CSS_Entry_CalcMethod
-    //    );
-    //css.addSubfilter(CSS_Exit_Modes, CSS_Exit_Names, NULL, SubfilterExit
-    //    , CSS_Exit_TimeFrame, CSS_Exit_Shift, CSS_Exit_MaPeriod
-    //    , CSS_Exit_AtrPeriod, CSS_Exit_CalcMethod
-    //    , true
-    //    );
-    
-    Main.addFilter(atr);
-    Main.addFilter(stdDev);
-    Main.addFilter(stoch);
-    //Main.addFilter(css);
-    
-#ifdef __MQL4__
-    //FilterHgi* hgi = new FilterHgi();
-    //hgi.addSubfilter(Hgi_Entry_Modes, Hgi_Entry_Names, NULL, SubfilterEntry
-    //    , Hgi_Entry_TimeFrame, Hgi_Entry_Shift, Hgi_Entry_OnTrend
-    //    , Hgi_Entry_OnRange, Hgi_Entry_OnRad, Hgi_Entry_OnSignal
-    //    , Hgi_Entry_OnSlope
-    //    );
-    //hgi.addSubfilter(Hgi_Exit_Modes, Hgi_Exit_Names, NULL, SubfilterExit
-    //    , Hgi_Exit_TimeFrame, Hgi_Exit_Shift, Hgi_Exit_OnTrend
-    //    , Hgi_Exit_OnRange, Hgi_Exit_OnRad, Hgi_Exit_OnSignal
-    //    , Hgi_Exit_OnSlope
-    //    , true
-    //    );
-    
-    //Main.addFilter(hgi);
-#endif
+    );
+
+    Main.addFilter(fb);
 }

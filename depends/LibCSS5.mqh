@@ -21,7 +21,7 @@
 // * Added parameters for caching mechanism
 // v1.1.2, 9/6/13
 // * Added flushCache parameter
-// v5.0.0, 5/1/2017, modified by mazmazz - https://github.com/mazmazz
+// v5.0.0, 5/1/2017, written by mazmazz - https://github.com/mazmazz
 // * Added MQL5 compatibility
 // * Added SuperSlope calculation
 // * Added getCSSDelta, getCSSCross, getCSSTradeDirection
@@ -30,10 +30,10 @@
 //| Internalize dependencies MC_Common and SymbolManager             |
 //+------------------------------------------------------------------+
 
-#define _LibCSSInternal
+//#define _LibCSSInternal
 
 #ifndef _LibCSSInternal
-#include "../../MC_Common/MC_Common.mqh"
+#include "../MC_Common/MC_Common.mqh"
 #else
 
 #ifdef _LibCSSInternal
@@ -83,10 +83,8 @@ enum CSS_VERSION {
 class CLibCSS {
     public:
     CSS_VERSION calcMethod;
-    string symbolsToWeigh;
     bool ignoreFuture;
     bool useOnlySymbolOnChart;
-    bool doNotCache;
     
     int symbolCount;
     int currencyCount;
@@ -96,31 +94,34 @@ class CLibCSS {
     
     CLibCSS();
     ~CLibCSS();
-    void init();
+    void initSymbols(string symbolsToWeigh = NULL, bool addToExisting = false);
+    void setPeriods(int maPeriodIn, int atrPeriodIn);
     
-    double getSlope( string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift );
+    double getSlope( string symbol, ENUM_TIMEFRAMES tf, int shift );
     
-    void getCSS( double &css[], ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift, string symbol = "" );
-    void getCSS( double &css[], string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift );
+    void getCSS( double &css[], ENUM_TIMEFRAMES tf, int shift, string symbol = "" );
+    void getCSS( double &css[], string symbol, ENUM_TIMEFRAMES tf, int shift );
     
-    double getCSSCurrency( string currency, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift );
-    double getCSSCurrency( string symbol, string currency, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift );
+    double getCSSCurrency( string currency, ENUM_TIMEFRAMES tf, int shift );
+    double getCSSCurrency( string symbol, string currency, ENUM_TIMEFRAMES tf, int shift );
     
-    double getCSSDiff( string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift, bool absolute = false );
-    double getCSSDelta( string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift, int candles, bool absolute = false );
-    TRADE_DIRECTION getCSSCross(string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift, int candles);
-    bool getCSSTradeLevelCrossed(string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift, int tradeLevel);
-    TRADE_DIRECTION getCSSTradeDirection(string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift, double differenceThreshold);
+    double getCSSDiff( string symbol, ENUM_TIMEFRAMES tf, int shift, bool absolute = false );
+    double getCSSDelta( string symbol, ENUM_TIMEFRAMES tf, int shift, int candles, bool absolute = false );
+    TRADE_DIRECTION getCSSCross(string symbol, ENUM_TIMEFRAMES tf, int shift, int candles);
+    bool getCSSTradeLevelCrossed(string symbol, ENUM_TIMEFRAMES tf, int shift, double tradeLevel);
+    TRADE_DIRECTION getCSSTradeDirection(string symbol, ENUM_TIMEFRAMES tf, int shift, double differenceThreshold);
     
 #ifdef __MQL4__
-    double getSlopeRSI( string symbol, int workPeriod, int rsiPeriodIn, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift );
+    double getSlopeRSI( string symbol, int workPeriod, int rsiPeriodIn, ENUM_TIMEFRAMES tf, int shift );
 #endif
-    double getGlobalMarketTrend( string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift ); 
+    double getGlobalMarketTrend( string symbol, ENUM_TIMEFRAMES tf, int shift ); 
     
     int getCurrencyIndex(string currency);
 
     private:
     bool sundayCandlesDetected;
+    int maperiod;
+    int atrperiod;
     double  currencyValues[];      // Currency slope strength
     
     string lastSymbol;
@@ -130,21 +131,21 @@ class CLibCSS {
     int lastShift;
     datetime lastDatetime;
     bool firstRun;
+    string lastSymbolsToWeigh;
     
 #ifdef __MQL5__
     int iAtrHandles[];
     int iMaHandles[];
 #endif
 
-    void initSymbols();
-    void initCurrencies();
+    void initCurrencies(int newSymbolCount);
 
-    void calcCSS( string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift );
-    bool isCSSParamsNew(string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift);
+    void calcCSS( string symbol, ENUM_TIMEFRAMES tf, int shift );
+    bool isCSSParamsNew(string symbol, ENUM_TIMEFRAMES tf, int shift);
     
     bool isSundayCandle(string symbol = NULL, int shift = -1);
     int calcBarOpenTime(string symbol, ENUM_TIMEFRAMES tf, int shift);
-    double calcTma(string symbol, ENUM_TIMEFRAMES tf, int maperiod, int shift);
+    double calcTma(string symbol, ENUM_TIMEFRAMES tf, int ma_period, int shift);
     double calcBarClose(string symbol, ENUM_TIMEFRAMES tf, int shift);
     double calcAtr(string symbol, ENUM_TIMEFRAMES tf, int atr_period, int shift);
     double calcMa(string symbol, ENUM_TIMEFRAMES tf, int ma_period, int ma_shift, ENUM_MA_METHOD ma_method, int applied_price, int shift);
@@ -153,20 +154,24 @@ class CLibCSS {
 
 void CLibCSS::CLibCSS() {
     calcMethod = CSS_VERSION_CSS;
+    maperiod=21;
+    atrperiod=100;
     ignoreFuture = true;
     sundayCandlesDetected = false;
     useOnlySymbolOnChart = false;
-    symbolsToWeigh = "GBPNZD,EURNZD,GBPAUD,GBPCAD,GBPJPY,GBPCHF,CADJPY,EURCAD,EURAUD,USDCHF,GBPUSD,EURJPY,NZDJPY,AUDCHF,AUDJPY,USDJPY,EURUSD,NZDCHF,CADCHF,AUDNZD,NZDUSD,CHFJPY,AUDCAD,USDCAD,NZDCAD,AUDUSD,EURCHF,EURGBP";
     symbolCount = 0;
     currencyCount = 0;
-    firstRun = true;
     
+    firstRun = true;
     lastSymbol = "";
     lastTf = NULL;
     lastMaperiod = 0;
     lastAtrperiod = 0;
     lastShift = 0;
     lastDatetime = 0;
+    lastSymbolsToWeigh = NULL;
+    
+    sundayCandlesDetected = isSundayCandle();
 }
 
 void CLibCSS::~CLibCSS() {
@@ -178,7 +183,7 @@ void CLibCSS::~CLibCSS() {
     
     size = ArraySize(iMaHandles);
     for(int i = 0; i < size; i++) {
-        if(iAtrHandles[i] != INVALID_HANDLE) { IndicatorRelease(iAtrHandles[i]); }
+        if(iMaHandles[i] != INVALID_HANDLE) { IndicatorRelease(iMaHandles[i]); }
     }
 #endif
 }
@@ -186,85 +191,106 @@ void CLibCSS::~CLibCSS() {
 //+------------------------------------------------------------------+
 // Init
 
-void CLibCSS::init()
-{
-    initSymbols();
-    initCurrencies();
+void CLibCSS::initSymbols(string symbolsToWeigh = NULL, bool addToExisting = false) {
+    symbolsToWeigh = Common::StringTrim(symbolsToWeigh);
+    
+    if(!addToExisting) {
+        ArrayFree(symbolNames);
+        symbolCount = 0;
+    } else {
+        if(symbolsToWeigh == lastSymbolsToWeigh) { return; }
+        if(calcMethod != CSS_VERSION_SUPERSLOPE && StringLen(symbolsToWeigh) <= 0) { return; }
+    }
+    
+    string symbolsToWeighIn[];
+    int newSymbolCount = 0;
+    
+    if(useOnlySymbolOnChart || (calcMethod == CSS_VERSION_SUPERSLOPE && StringLen(symbolsToWeigh) <= 0)) {
+        if(SymbolManager::isSymbolTradable(Symbol())) { 
+            if(!addToExisting || Common::ArrayFind(symbolNames, Symbol()) < 0) { 
+                Common::ArrayPush(symbolNames, Symbol()); 
+                newSymbolCount++;
+            }
+        }
+    } else if(!addToExisting && StringLen(symbolsToWeigh) <= 0) {
+        newSymbolCount = SymbolManager::getAllSymbols(symbolNames);
+    } else {
+        StringSplit(
+            symbolsToWeigh
+            , ','
+            , symbolsToWeighIn
+        );
 
-    sundayCandlesDetected = isSundayCandle();
-  
-    return;
+        // load symbolNames
+        Common::ArrayReserve(symbolNames, ArraySize(symbolsToWeighIn));
+
+        for(int i = 0; i < ArraySize(symbolsToWeighIn); i++) {
+            string symName = SymbolManager::fixSymbolName(symbolsToWeighIn[i]);
+            if(SymbolManager::isSymbolTradable(symName)) { 
+                if(!addToExisting || Common::ArrayFind(symbolNames, symName) < 0) { 
+                    Common::ArrayPush(symbolNames, symName); 
+                    newSymbolCount++;
+                }
+            }
+        }
+    }
+
+    symbolCount = ArraySize(symbolNames);
+    
+    initCurrencies(newSymbolCount);
+    
+    firstRun = (!firstRun ? !addToExisting : true);
+    lastSymbolsToWeigh = symbolsToWeigh;
 }
 
-void CLibCSS::initSymbols()
-{
-   int i;
-
-   ArrayFree(symbolNames);
-
-   string symbolsToWeighIn[];
-
-   symbolsToWeigh = Common::StringTrim(symbolsToWeigh);
-
-   if(useOnlySymbolOnChart || calcMethod == CSS_VERSION_SUPERSLOPE) {
-      if(SymbolManager::isSymbolTradable(Symbol())) { Common::ArrayPush(symbolNames, Symbol()); }
-   } else if(StringLen(symbolsToWeigh) <= 0) {
-      SymbolManager::getAllSymbols(symbolNames);
-   } else {
-      StringSplit(
-         symbolsToWeigh
-         , ','
-         , symbolsToWeighIn
-      );
-
-      // load symbolNames
-      Common::ArrayReserve(symbolNames, ArraySize(symbolsToWeighIn));
-
-      for(i = 0; i < ArraySize(symbolsToWeighIn); i++) {
-         string symName = SymbolManager::fixSymbolName(symbolsToWeighIn[i]);
-         if(SymbolManager::isSymbolTradable(symName)) { Common::ArrayPush(symbolNames, symName); }
-      }
-   }
-
-   symbolCount = ArraySize(symbolNames);
-}
-
-void CLibCSS::initCurrencies()
-{
-   ArrayFree(currencyNames);
-   ArrayFree(currencyOccurrences);
-   ArrayFree(currencyValues);
+void CLibCSS::initCurrencies(int newSymbolCount) {
+    if(newSymbolCount >= symbolCount) { // !addToExisting
+       ArrayFree(currencyNames);
+       ArrayFree(currencyOccurrences);
+       ArrayFree(currencyValues);
+       currencyCount = 0;
+    }
    
-   for ( int i = 0; i < symbolCount; i++ )
-   {
-      // If currency not in array, then add to currencyNames
-      string baseCur = SymbolManager::getSymbolBaseCurrency(symbolNames[i]);
-      string quoteCur = SymbolManager::getSymbolQuoteCurrency(symbolNames[i]);
+    for ( int i = MathMax(symbolCount-newSymbolCount, 0); i < symbolCount; i++ ) {
+        // If currency not in array, then add to currencyNames
+        string baseCur = SymbolManager::getSymbolBaseCurrency(symbolNames[i]);
+        string quoteCur = SymbolManager::getSymbolQuoteCurrency(symbolNames[i]);
+        
+        if(Common::ArrayFind(currencyNames, baseCur) < 0) {
+            int newSize = Common::ArrayPush(currencyNames, baseCur);
+            if(ArrayResize(currencyOccurrences, newSize) == newSize) { currencyOccurrences[newSize-1] = 0; }
+            if(ArrayResize(currencyValues, newSize) == newSize) { currencyValues[newSize-1] = 0; }
+            currencyCount = newSize;
+        }
+        
+        if(Common::ArrayFind(currencyNames, quoteCur) < 0) {
+            int newSize = Common::ArrayPush(currencyNames, quoteCur);
+            if(ArrayResize(currencyOccurrences, newSize) == newSize) { currencyOccurrences[newSize-1] = 0; }
+            if(ArrayResize(currencyValues, newSize) == newSize) { currencyValues[newSize-1] = 0; }
+            currencyCount = newSize;
+        }
+        
+        // Increase currency occurrence
+        currencyOccurrences[getCurrencyIndex(baseCur)]++;
+        currencyOccurrences[getCurrencyIndex(quoteCur)]++;
+    }
+}
 
-      if(Common::ArrayTsearch(currencyNames, baseCur) < 0) {
-         int newSize = Common::ArrayPush(currencyNames, baseCur);
-         if(ArrayResize(currencyOccurrences, newSize) == newSize) { currencyOccurrences[newSize-1] = 0; }
-         if(ArrayResize(currencyValues, newSize) == newSize) { currencyValues[newSize-1] = 0; }
-         currencyCount = newSize;
-      }
 
-      if(Common::ArrayTsearch(currencyNames, quoteCur) < 0) {
-         int newSize = Common::ArrayPush(currencyNames, quoteCur);
-         if(ArrayResize(currencyOccurrences, newSize) == newSize) { currencyOccurrences[newSize-1] = 0; }
-         if(ArrayResize(currencyValues, newSize) == newSize) { currencyValues[newSize-1] = 0; }
-         currencyCount = newSize;
-      }
-      
-      // Increase currency occurrence
-      currencyOccurrences[getCurrencyIndex(baseCur)]++;
-      currencyOccurrences[getCurrencyIndex(quoteCur)]++;
-   }
+void CLibCSS::setPeriods(int maPeriodIn, int atrPeriodIn) {
+    if(maPeriodIn == maperiod && atrPeriodIn == atrperiod) { return; }
+    
+    ArrayFill(currencyValues, 0, ArraySize(currencyValues), 0);
+    
+    maperiod = maPeriodIn;
+    atrperiod = atrPeriodIn;
+    firstRun = true; // force CSS re-calc
 }
 
 //+------------------------------------------------------------------+
 //| getSlope()                                                       |
 //+------------------------------------------------------------------+
-double CLibCSS::getSlope( string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift )
+double CLibCSS::getSlope( string symbol, ENUM_TIMEFRAMES tf, int shift )
 {
     double dblTma = 0, dblPrev = 0;
     if ( sundayCandlesDetected && tf == PERIOD_D1 ) {
@@ -279,9 +305,9 @@ double CLibCSS::getSlope( string symbol, ENUM_TIMEFRAMES tf, int maperiod, int a
             dblPrev=calcTma(symbol,tf,maperiod,shift+1);
         } else {
             // This is used in SuperSlope and CSSv3.8 (ignoreFuture = true), and is equivalent to LibCSS's method
-                // Not exactly sure how 231 or 251 make sense as operands
-                // But SuperSlope keeps these values, even when the MA and ATR periods
-                // are different from CSS
+                // 231, 251, and 20(?) are hardcoded to the original maPeriod=21 and atrPeriod=100
+                // But I don't know how they're determined. SuperSlope uses these same values for its own ma/atrPeriod
+                // so just do the same
             
             dblTma=calcMa(symbol,tf,maperiod,0,MODE_LWMA,PRICE_CLOSE,shift);
             if(dblTma == 0) { return 0; } // this means iMA failed in MT5 because it hasn't finished loading, so return 0
@@ -299,16 +325,16 @@ double CLibCSS::getSlope( string symbol, ENUM_TIMEFRAMES tf, int maperiod, int a
    return ( gadblSlope );
 }
 
-void CLibCSS::calcCSS( string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift ) {
+void CLibCSS::calcCSS( string symbol, ENUM_TIMEFRAMES tf, int shift ) {
    int i;
 
-   if (isCSSParamsNew(symbol, tf, maperiod, atrperiod, shift)) {
+   if (isCSSParamsNew(symbol, tf, shift)) {
       ArrayInitialize(currencyValues, 0.0);
       double slope = 0;
 
       switch(calcMethod) {
          case CSS_VERSION_SUPERSLOPE:
-            slope = getSlope(symbol, tf, maperiod, atrperiod, shift);
+            slope = getSlope(symbol, tf, shift);
             currencyValues[getCurrencyIndex(SymbolManager::getSymbolBaseCurrency(symbol))] += slope;
             currencyValues[getCurrencyIndex(SymbolManager::getSymbolQuoteCurrency(symbol))] -= slope;
             break;
@@ -318,7 +344,7 @@ void CLibCSS::calcCSS( string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrp
             // Get Slope for all symbols and totalize for all currencies   
             for ( i = 0; i < symbolCount; i++ )
             {
-               slope = getSlope(symbolNames[i], tf, maperiod, atrperiod, shift);
+               slope = getSlope(symbolNames[i], tf, shift);
                currencyValues[getCurrencyIndex(SymbolManager::getSymbolBaseCurrency(symbolNames[i]))] += slope;
                currencyValues[getCurrencyIndex(SymbolManager::getSymbolQuoteCurrency(symbolNames[i]))] -= slope;
             }
@@ -332,7 +358,7 @@ void CLibCSS::calcCSS( string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrp
    }
 }
 
-bool CLibCSS::isCSSParamsNew(string symbol,ENUM_TIMEFRAMES tf,int maperiod,int atrperiod,int shift) {
+bool CLibCSS::isCSSParamsNew(string symbol,ENUM_TIMEFRAMES tf,int shift) {
     datetime newDatetime = shift == 0 ? TimeCurrent() : calcBarClose(symbol, tf, shift);
     
     if((calcMethod == CSS_VERSION_SUPERSLOPE ? symbol != lastSymbol : false) // don't check for symbol with CSS
@@ -357,28 +383,28 @@ bool CLibCSS::isCSSParamsNew(string symbol,ENUM_TIMEFRAMES tf,int maperiod,int a
 //+------------------------------------------------------------------+
 //| getCSS and getCSSCurrency
 //+------------------------------------------------------------------+
-void CLibCSS::getCSS( double &css[], ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift, string symbol = "" )
+void CLibCSS::getCSS( double &css[], ENUM_TIMEFRAMES tf, int shift, string symbol = "" )
 {
-   getCSS(css, "", tf, maperiod, atrperiod, shift);
+   getCSS(css, "", tf, shift);
 }
 
-void CLibCSS::getCSS( double &css[], string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift )
+void CLibCSS::getCSS( double &css[], string symbol, ENUM_TIMEFRAMES tf, int shift )
 {
-   calcCSS(symbol, tf, maperiod, atrperiod, shift);
+   calcCSS(symbol, tf, shift);
 
    ArrayFree(css);
    ArrayCopy(css, currencyValues);
 }
 
-double CLibCSS::getCSSCurrency( string currency, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift ) {
-   return getCSSCurrency("", currency, tf, maperiod, atrperiod, shift);
+double CLibCSS::getCSSCurrency( string currency, ENUM_TIMEFRAMES tf, int shift ) {
+   return getCSSCurrency("", currency, tf, shift);
 }
 
-double CLibCSS::getCSSCurrency( string symbol, string currency, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift )
+double CLibCSS::getCSSCurrency( string symbol, string currency, ENUM_TIMEFRAMES tf, int shift )
 {
     int curIdx = getCurrencyIndex(currency);
     if(curIdx < 0) { return TRADE_DIRECTION_NONE; }
-    calcCSS( symbol, tf, maperiod, atrperiod, shift );
+    calcCSS( symbol, tf, shift );
     
     return ( currencyValues[curIdx] );
 }
@@ -386,12 +412,12 @@ double CLibCSS::getCSSCurrency( string symbol, string currency, ENUM_TIMEFRAMES 
 //+------------------------------------------------------------------+
 //| getCSSDiff, Delta, Cross, TradeLevelCrossed, TradeDirection
 //+------------------------------------------------------------------+
-double CLibCSS::getCSSDiff( string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift, bool absolute = false )
+double CLibCSS::getCSSDiff( string symbol, ENUM_TIMEFRAMES tf, int shift, bool absolute = false )
 {
     int curIdx = getCurrencyIndex(SymbolManager::getSymbolBaseCurrency(symbol));
     int curQuoteIdx = getCurrencyIndex(SymbolManager::getSymbolQuoteCurrency(symbol));
     if(curIdx < 0 || curQuoteIdx < 0) { return 0; }
-    calcCSS( symbol, tf, maperiod, atrperiod, shift );
+    calcCSS( symbol, tf, shift );
     
     double slopeBase = currencyValues[curIdx];
     double slopeQuote = currencyValues[curQuoteIdx];
@@ -403,34 +429,34 @@ double CLibCSS::getCSSDiff( string symbol, ENUM_TIMEFRAMES tf, int maperiod, int
     else { return ( slopeBase - slopeQuote ); }
 }
 
-double CLibCSS::getCSSDelta( string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift, int candles, bool absolute = false ) {
+double CLibCSS::getCSSDelta( string symbol, ENUM_TIMEFRAMES tf, int shift, int candles, bool absolute = false ) {
     if(shift == candles || shift+candles < 0) { return 0; }
-    double diffA = getCSSDiff(symbol, tf, maperiod, atrperiod, shift, absolute);
-    double diffB = getCSSDiff(symbol, tf, maperiod, atrperiod, shift+candles, absolute);
+    double diffA = getCSSDiff(symbol, tf, shift, absolute);
+    double diffB = getCSSDiff(symbol, tf, shift+candles, absolute);
     
     return diffA-diffB;
 }
 
-TRADE_DIRECTION CLibCSS::getCSSCross(string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift, int candles) {
+TRADE_DIRECTION CLibCSS::getCSSCross(string symbol, ENUM_TIMEFRAMES tf, int shift, int candles) {
     if(shift == candles || shift+candles < 0) { return TRADE_DIRECTION_NONE; }
-    double diffB = getCSSDiff(symbol, tf, maperiod, atrperiod, shift+candles);
-    double diffA = getCSSDiff(symbol, tf, maperiod, atrperiod, shift);
+    double diffB = getCSSDiff(symbol, tf, shift+candles);
+    double diffA = getCSSDiff(symbol, tf, shift);
     
     if(diffB < 0 && diffA > 0) { return TRADE_DIRECTION_LONG; }
     else if(diffA < 0 && diffB > 0) { return TRADE_DIRECTION_SHORT; }
     else { return TRADE_DIRECTION_NONE; }
 }
 
-bool CLibCSS::getCSSTradeLevelCrossed(string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift, int tradeLevel) {
-    double slope = getCSSCurrency(symbol, SymbolManager::getSymbolBaseCurrency(symbol), tf, maperiod, atrperiod, shift);
+bool CLibCSS::getCSSTradeLevelCrossed(string symbol, ENUM_TIMEFRAMES tf, int shift, double tradeLevel) {
+    double slope = getCSSCurrency(symbol, SymbolManager::getSymbolBaseCurrency(symbol), tf, shift);
     
     return MathAbs(slope) > MathAbs(tradeLevel);
 }
 
-TRADE_DIRECTION CLibCSS::getCSSTradeDirection(string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift, double differenceThreshold) {
+TRADE_DIRECTION CLibCSS::getCSSTradeDirection(string symbol, ENUM_TIMEFRAMES tf, int shift, double differenceThreshold) {
     int curIdx = getCurrencyIndex(SymbolManager::getSymbolBaseCurrency(symbol));
     if(curIdx < 0) { return TRADE_DIRECTION_NONE; }
-    calcCSS(symbol, tf, maperiod, atrperiod, shift);
+    calcCSS(symbol, tf, shift);
     
     if(currencyValues[curIdx] > differenceThreshold * (calcMethod == CSS_VERSION_SUPERSLOPE ? 0.5 : 1)) { return TRADE_DIRECTION_LONG; }
     else if(currencyValues[curIdx] < differenceThreshold * (calcMethod == CSS_VERSION_SUPERSLOPE ? -0.5 : -1)) { return TRADE_DIRECTION_SHORT; }
@@ -441,7 +467,7 @@ TRADE_DIRECTION CLibCSS::getCSSTradeDirection(string symbol, ENUM_TIMEFRAMES tf,
 //| getSlopeRSI( string symbol, ENUM_TIMEFRAMES tf, int shift )                  |
 //+------------------------------------------------------------------+
 #ifdef __MQL4__
-double CLibCSS::getSlopeRSI( string symbol, int workPeriod, int rsiPeriod, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift )
+double CLibCSS::getSlopeRSI( string symbol, int workPeriod, int rsiPeriod, ENUM_TIMEFRAMES tf, int shift )
 {
    double slope[];
    //int workPeriod = 17;
@@ -449,7 +475,7 @@ double CLibCSS::getSlopeRSI( string symbol, int workPeriod, int rsiPeriod, ENUM_
    ArraySetAsSeries( slope, true );
    for ( int i = 0; i < workPeriod; i++ )
    {
-      slope[i] = getSlope( symbol, tf, maperiod, atrperiod, shift + i );
+      slope[i] = getSlope( symbol, tf, shift + i );
    }
    return( calcRsiByArray( slope, workPeriod, rsiPeriod, 0 ) );
 }
@@ -458,9 +484,9 @@ double CLibCSS::getSlopeRSI( string symbol, int workPeriod, int rsiPeriod, ENUM_
 //+------------------------------------------------------------------+
 //| getGlobalMarketTrend( ENUM_TIMEFRAMES tf, int shift )                        |
 //+------------------------------------------------------------------+
-double CLibCSS::getGlobalMarketTrend( string symbol, ENUM_TIMEFRAMES tf, int maperiod, int atrperiod, int shift ) 
+double CLibCSS::getGlobalMarketTrend( string symbol, ENUM_TIMEFRAMES tf, int shift ) 
 {
-   calcCSS( symbol, tf, maperiod, atrperiod, shift );
+   calcCSS( symbol, tf, shift );
       
    double gmt = 0;
    for ( int i = 0; i < currencyCount; i++ )
@@ -541,11 +567,11 @@ double CLibCSS::calcAtr(string symbol, ENUM_TIMEFRAMES tf, int atr_period, int s
 #endif
 }
 
-double CLibCSS::calcTma(string symbol, ENUM_TIMEFRAMES tf, int maperiod, int shift)
+double CLibCSS::calcTma(string symbol, ENUM_TIMEFRAMES tf, int ma_period, int shift)
 {
-   double dblSum  = calcBarClose( symbol, tf, shift ) * maperiod;
-   double dblSumw = maperiod;
-   int maperiodLess = maperiod-1;
+   double dblSum  = calcBarClose( symbol, tf, shift ) * ma_period;
+   double dblSumw = ma_period;
+   int maperiodLess = ma_period-1;
    int jnx,knx;
 
    for(jnx=1,knx=maperiodLess; jnx<=maperiodLess; jnx++,knx--)

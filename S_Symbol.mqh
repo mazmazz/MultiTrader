@@ -52,6 +52,7 @@ class SymbolManager {
     void retrieveActiveSymbols(string includeSym, string excludeSym, string excludeCur);
     
     int addSymbol(string name, string bareName = "", string baseCurName = "", string quoteCurName = "");
+    string getSymbolName(int symIdx);
     int getSymbolId(string symName, bool isFormSymName = false);
     int getSymbolCount();
     bool isSymbolExcluded(string symName, string excludeSym, string &excludeCur[]);
@@ -129,6 +130,10 @@ int SymbolManager::addSymbol(string name, string bareName = "", string baseCurNa
 
 int SymbolManager::getSymbolCount() {
     return ArraySize(symbols);
+}
+
+string SymbolManager::getSymbolName(int symIdx) {
+    return symbols[symIdx].name;
 }
 
 int SymbolManager::getSymbolId(string symName, bool isBareSymName = false) {

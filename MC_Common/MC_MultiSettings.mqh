@@ -101,16 +101,28 @@ class ScheduleUnit {
 class MultiSettings {
     public:
     template<typename T>
-    static void Parse(string options, T &destArray[], int expectedCount=-1, bool addToArray = true);
+    static void Parse(string options, T &destArray[], int expectedCount=-1, bool addToArray = true, bool fillDefaultVal = true);
     template<typename T>
-    static void Parse(string options, T &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = true);
+    static void Parse(string options, T &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = true, bool fillDefaultVal = true);
+    template<typename T>
+    static void Parse(string options, T defaultVal, T &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = true, bool fillDefaultVal = true, bool paramDefaultValUndefined = false);
     
-    static int CountPairs(string &optionPairList[]);
+    template<typename T>
+    static void FillDestArrayByValue(T &destArray[],int keyAddrInt,bool valueNumResult, double valueNum, string value);
+    static void FillDestArrayByValue(bool &destArray[],int index,bool valueNumResult, double valueNum, string value);
+    
+    template<typename T>
+    static void GetDefaultUndefinedValue(T &out);
+    static void GetDefaultUndefinedValue(string &out);
+    
     static int CountPairs(string optionPairs);
+    static int CountPairs(string optionPairs, bool &defaultValSetOut);
+    static int CountPairs(string &optionPairList[]);
+    static int CountPairs(string &optionPairList[], bool &defaultValSetOut);
     static bool IsPairValid(string pair);
     
     static string GetPairValue(string pair);
-    static string GetPairKey(string pair, int indexNum = -1);
+    static string GetPairKey(string pair);
 
     static bool ParseLocation(string location, ValueLocation *locOut);
     static CalcSource GetLocationSource(string location);
@@ -133,6 +145,8 @@ class MultiSettings {
     static string KeyValDelimiter;
     static string PairDelimiter;
     
+    static string DefaultDelimiter;
+    
     static string RedirectDelimiter;
     static string OptimizeParamDelimiter;
     
@@ -147,6 +161,8 @@ double MultiSettings::Redirects[];
 
 string MultiSettings::KeyValDelimiter = "=";
 string MultiSettings::PairDelimiter = "|";
+
+string MultiSettings::DefaultDelimiter = "*";
 
 string MultiSettings::RedirectDelimiter = "@";
 string MultiSettings::OptimizeParamDelimiter = ",";
@@ -166,121 +182,185 @@ string MultiSettings::DateTimeDelimiter = ":";
 // 2c. If proper a=value, convert AddrAbc to AddrInt and record value
 
 template<typename T>
-void MultiSettings::Parse(string options, T &destArray[], int expectedCount=-1, bool addToArray = true) {
-    Parse(options, destArray, IntZeroArray, expectedCount, addToArray);
+void MultiSettings::Parse(string options, T &destArray[], int expectedCount=-1, bool addToArray = true, bool fillDefaultVal = true) {
+    T defaultVal; GetDefaultUndefinedValue(defaultVal);
+    Parse(options, defaultVal, destArray, IntZeroArray, expectedCount, addToArray, fillDefaultVal, true);
 }
 
 template<typename T>
-void MultiSettings::Parse(string options, T &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = true) {
+void MultiSettings::Parse(string options, T &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = true, bool fillDefaultVal = true) {
+    T defaultVal; GetDefaultUndefinedValue(defaultVal);
+    Parse(options, defaultVal, destArray, idArray, expectedCount, addToArray, fillDefaultVal, true);
+}
+
+template<typename T>
+void MultiSettings::Parse(string options, T defaultVal, T &destArray[], int &idArray[], int expectedCount=-1, bool addToArray = true, bool fillDefaultVal = true, bool paramDefaultValUndefined = false) {
     string pairList[];
     int pairListCount = StringSplit(options, StringGetCharacter(PairDelimiter, 0), pairList);
-
-    int pairValidCount = CountPairs(pairList);
+    bool defaultValSet = false;
+    int pairValidCount = CountPairs(pairList, defaultValSet);
     
-    if(pairValidCount < 1 || (expectedCount > -1 ? pairValidCount != expectedCount : false)) {
-        Error::ThrowFatalError(ErrorFatal
-            , pairValidCount < 1 ? 
-                ("pairValidCount=" + pairValidCount + " not >= 1") 
-                : ("pairValidCount=" + pairValidCount + " does not match expectedCount=" + expectedCount + ". options=" + options)
-            , FunctionTrace    
-            );
+    if(pairValidCount < 1 && !defaultValSet && expectedCount < 0) {
+        Error::ThrowFatal("No valid key=val pairs found.", NULL, options);
         return;
     }
     
     bool fillIdArray = ArrayIsDynamic(idArray);
     if(fillIdArray) { 
         if(!addToArray) { ArrayFree(idArray); } 
-        Common::ArrayReserve(idArray, ArraySize(idArray) + pairValidCount); 
+        Common::ArrayReserve(idArray, ArraySize(idArray) + (expectedCount >= 0 ? expectedCount : pairValidCount)); 
     }
     
     int destArraySize = 0;
     int oldArraySize = 0;
     if(!addToArray) { ArrayFree(destArray); }
     else { oldArraySize = ArraySize(destArray); }
-    destArraySize = ArrayResize(destArray, oldArraySize+pairValidCount);
+    destArraySize = ArrayResize(destArray, oldArraySize + (expectedCount >= 0 ? expectedCount : pairValidCount));
     
-    for(int i = 0; i < pairValidCount; i++) {
+    int filledAddr[];
+    string valueDefault = NULL; double valueNumDefault = NULL; bool valueNumResultDefault = false;
+    for(int i = 0; i < pairValidCount+(defaultValSet?1:0); i++) { // defaults are not counted, add them here so the loop crosses them
         string key = NULL, value = NULL; int keyAddrInt = 0; double valueNum = 0; bool valueNumResult = false;
         
         if(IsPairValid(pairList[i])) {
-            key = GetPairKey(pairList[i], i);
+            key = GetPairKey(pairList[i]);
             value = GetPairValue(pairList[i]);
             valueNumResult = ParseValueRedirect(value, valueNum);
+            
+            if(key == DefaultDelimiter) {
+                valueDefault = value;
+                valueNumDefault = valueNum;
+                valueNumResultDefault = valueNumResult;
+                defaultValSet = true;
+                continue;
+            }
             
             keyAddrInt = StringLen(key) <= 0 ? i : Common::AddrAbcToInt(key);
             if(addToArray) { keyAddrInt += oldArraySize; }
 
             if(keyAddrInt < 0 || keyAddrInt >= destArraySize) {
-                Error::ThrowFatalError(ErrorFatal, "key=" + key + " keyAddrInt=" + keyAddrInt + " is not within destArraySize=" + destArraySize, FunctionTrace, pairList[i]);
+                Error::ThrowFatal("key=" + key + " (index " + keyAddrInt + " is not within expected count " + destArraySize, NULL, options);
                 return;
             } else {
-                if(typename(T) == "bool") { destArray[keyAddrInt] = valueNumResult ? valueNum : Common::StrToBool(value); }
-                else if(typename(T) == "int") { destArray[keyAddrInt] = valueNumResult ? valueNum : StringToInteger(value); }
-                else if(typename(T) == "double") { destArray[keyAddrInt] = valueNumResult ? valueNum : StringToDouble(value); }
-                else { destArray[keyAddrInt] = value; }
-                
-                Common::ArrayPush(idArray, keyAddrInt);
+                FillDestArrayByValue(destArray, keyAddrInt, valueNumResult, valueNum, value);
+                Common::ArrayPush(idArray, keyAddrInt); // fails silently if fixed array
+                Common::ArrayPush(filledAddr, keyAddrInt);
             }
         }
     }
+    
+    if(!fillDefaultVal || ArraySize(filledAddr) >= expectedCount) { return; }
+    
+    if(!defaultValSet) {
+        if(!paramDefaultValUndefined) {
+            if(typename(T) == "string") {
+                valueDefault = defaultVal;
+                valueNumDefault = 0;
+                valueNumResultDefault = false;
+            } else {
+                valueDefault = NULL;
+                valueNumDefault = defaultVal;
+                valueNumResultDefault = true;
+            }
+        } else {
+            Error::ThrowFatal("Pairs are missing (" + pairValidCount + " specified, expected up to " + expectedCount + ") and default value not found. Default value must be specified", NULL, options);
+            return;
+        }
+    }    
+    
+    // pass 2: fill non-filled values with default, if it exists
+    for(int i = 0; i < destArraySize; i++) {
+        if(Common::ArrayFind(filledAddr, i) >= 0) { continue; }
+        
+        FillDestArrayByValue(destArray, i, valueNumResultDefault, valueNumDefault, valueDefault);
+    }
+}
+
+template<typename T>
+void MultiSettings::FillDestArrayByValue(T &destArray[],int keyAddrInt,bool valueNumResult, double valueNum, string value) {
+    if(typename(T) == "int") { destArray[keyAddrInt] = valueNumResult ? valueNum : StringToInteger(value); }
+    else if(typename(T) == "double") { destArray[keyAddrInt] = valueNumResult ? valueNum : StringToDouble(value); }
+    else { destArray[keyAddrInt] = value; }
+}
+
+// workaround for bool because template errors out with destArray[i] = value, says string can't convert to bool
+void MultiSettings::FillDestArrayByValue(bool &destArray[],int keyAddrInt,bool valueNumResult, double valueNum, string value) {
+    destArray[keyAddrInt] = valueNumResult ? valueNum : Common::StrToBool(value);
+}
+
+template<typename T>
+void MultiSettings::GetDefaultUndefinedValue(T &out) {
+    out = 0;
+}
+
+// workaround for string because 0 does not convert implicitly
+void MultiSettings::GetDefaultUndefinedValue(string &out) {
+    out = NULL;
 }
 
 //+------------------------------------------------------------------+
 
 int MultiSettings::CountPairs(string optionPairs) {
+    bool defaultValSet = false;
+    return CountPairs(optionPairs, defaultValSet);
+}
+
+int MultiSettings::CountPairs(string optionPairs, bool &defaultValSetOut) {
     string pairList[];
     int pairListCount = StringSplit(optionPairs, StringGetCharacter(PairDelimiter, 0), pairList);
     
-    return CountPairs(pairList);
+    return CountPairs(pairList, defaultValSetOut);
 }
 
 int MultiSettings::CountPairs(string &optionPairList[]) {
+    bool defaultValSet = false;
+    return CountPairs(optionPairList, defaultValSet);
+}
+
+int MultiSettings::CountPairs(string &optionPairList[], bool &defaultValSetOut) {
     int optionPairCount = 0;
     int optionPairListCount = ArraySize(optionPairList);
     
-    bool groupHasEquals = false;
     int numPairsWithoutEquals = 0;
     for(int i = 0; i < optionPairListCount; i++) {
-        if(IsPairValid(optionPairList[i])) { optionPairCount++; }
-        if(StringFind(optionPairList[i], KeyValDelimiter) > -1) { groupHasEquals = true; }
-        else { numPairsWithoutEquals++; }
-    }
-    
-    if(groupHasEquals && numPairsWithoutEquals > 0) {
-        optionPairCount = 0;
-        Error::ThrowFatalError(ErrorFatal, "All option pairs must be key=val when at least one key=val is present.", FunctionTrace, Common::ConcatStringFromArray(optionPairList));
+        if(IsPairValid(optionPairList[i])) { 
+            if(GetPairKey(optionPairList[i]) == DefaultDelimiter) { 
+                defaultValSetOut = true; // do not count in tally
+            } else {
+                optionPairCount++;
+            }
+        }
+        else { return 0; }
     }
     
     return optionPairCount;
 }
 
 bool MultiSettings::IsPairValid(string pair) {
-    // We support value-only (25) and key=value (a=25). 
-    // Empty values are also supported but I'm undecided on this: key=blank (a=), or blank ().
-    // Only invalid pair is =value (=25) or = (=), no key provided.
-    // If one pair uses =, all of them must use =.
+    // We support key=value (a=25). 
+    // Empty values are also supported: key=
     
     pair = Common::StringTrim(pair);
     
     int delimiterPos = StringFind(pair, KeyValDelimiter);
     int pairLen = StringLen(pair);
-    return (delimiterPos != 0); // todo: check if key is abc valid
+    if(delimiterPos > 0) { return true; }
+    else { 
+        Error::ThrowFatal("Option pair found without key=. All options pairs must specify key=val", NULL, pair); 
+        return false;
+    } // todo: check if key is abc valid
         // Add this if empty values should not be supported: && pairLen > 0 && pairLen != delimiterPos
 }
 
 //+------------------------------------------------------------------+
 
-string MultiSettings::GetPairKey(string pair, int indexNum = -1) {
+string MultiSettings::GetPairKey(string pair) {
     pair = Common::StringTrim(pair);
     int delimiterPos = StringFind(pair, KeyValDelimiter);
     
-    if(delimiterPos > 0) { return StringSubstr(pair, 0, delimiterPos); }
-    else if(delimiterPos < 0) {
-        if(indexNum < 0) { return ""; } // -1 means to return no key; calling procedure should know how to handle this case.
-        else { return Common::AddrIntToAbc(indexNum, true); }
-    }
+    if(delimiterPos > 0) { return Common::StringTrim(StringSubstr(pair, 0, delimiterPos)); }
     else {
-        Error::ThrowFatalError(ErrorFatal, "Invalid key=val pair", FunctionTrace, pair);
+        Error::ThrowFatal("Option pair found without key=. All options pairs must specify key=[val]", NULL, pair); 
         return "";
     }
 }
@@ -289,10 +369,9 @@ string MultiSettings::GetPairValue(string pair) {
     pair = Common::StringTrim(pair);
     int delimiterPos = StringFind(pair, KeyValDelimiter);
     
-    if(delimiterPos > 0) { return StringSubstr(pair, delimiterPos+1); }
-    else if(delimiterPos < 0) { return pair; }
+    if(delimiterPos > 0) { return Common::StringTrim(StringSubstr(pair, delimiterPos+1)); }
     else {
-        Error::ThrowFatalError(ErrorFatal, "Invalid key=val pair", FunctionTrace, pair);
+        Error::ThrowFatal("Option pair found without key=. All options pairs must specify key=[val]", NULL, pair); 
         return "";
     }
 }

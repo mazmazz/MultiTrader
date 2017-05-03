@@ -123,24 +123,24 @@ void Filter::setupSubfilters(string pairList, string nameList, string hiddenList
     
     switch(subfilterTypeIn) {
         case SubfilterEntry:
-            MultiSettings::Parse(pairList, subfilterMode, entrySubfilterId, pairCount, addToArray);
+            MultiSettings::Parse(pairList, subfilterMode, entrySubfilterId, pairCount, addToArray, false);
             break;
         
         case SubfilterExit:
-            MultiSettings::Parse(pairList, subfilterMode, exitSubfilterId, pairCount, addToArray);
+            MultiSettings::Parse(pairList, subfilterMode, exitSubfilterId, pairCount, addToArray, false);
             break;
             
         case SubfilterValue:
-            MultiSettings::Parse(pairList, subfilterMode, valueSubfilterId, pairCount, addToArray);
+            MultiSettings::Parse(pairList, subfilterMode, valueSubfilterId, pairCount, addToArray, false);
             break;
     }
     
     Common::ArrayReserve(subfilterName, pairCount);
-    if(StringLen(nameList) > 0) { MultiSettings::Parse(nameList, subfilterName, pairCount, addToArray); }
+    if(StringLen(nameList) > 0) { MultiSettings::Parse(nameList, subfilterName, pairCount, addToArray, true); }
     else { ArrayResize(subfilterName, addToArray ? ArraySize(subfilterName)+pairCount : pairCount); }
     
     Common::ArrayReserve(subfilterHidden, pairCount);
-    if(StringLen(hiddenList) > 0) { MultiSettings::Parse(hiddenList, subfilterHidden, pairCount, addToArray); }
+    if(StringLen(hiddenList) > 0) { MultiSettings::Parse(hiddenList, subfilterHidden, pairCount, addToArray, true); }
     else { ArrayResize(subfilterHidden, addToArray ? ArraySize(subfilterHidden)+pairCount : pairCount); ArrayInitialize(subfilterHidden, 0); }
     
     for(int i = oldSize; i < oldSize + ArraySize(subfilterMode); i++) {

@@ -116,7 +116,7 @@ bool OrderManager::checkDoExitByDistance(long ticket, int symIdx, double distanc
     
     bool result = false;
     if(distanceCrossed) {
-        bool result = sendClose(ticket, symIdx, isPosition);
+        result = sendClose(ticket, symIdx, isPosition);
         if(result) {
             int digits = SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_DIGITS);
             Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Distance " + DoubleToString(currentDistance, BrokerPipDecimal) + "/" + DoubleToString(distancePips, BrokerPipDecimal), true);

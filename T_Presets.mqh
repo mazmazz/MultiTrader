@@ -31,7 +31,7 @@
 
 input string Lbl_IndisAndFilters="********** Indicators & Filters **********"; // Filter List
 input string Lbl_FilterLegend="0 = Disabled; 1 = Normal; 2 = Opposite; 3 = Not Opposite"; // Legend
-input string Lbl_Format="a=1|b=0|c=1"; // Format
+input string Lbl_Format="a:1|b:0|c:1"; // Format
 input string Lbl_Format2="# of subfilters must be same across a filter's settings."; // Format
 input string Lbl_Format3="Do not add a trailing |";
 
@@ -40,31 +40,31 @@ input string Lbl_Format3="Do not add a trailing |";
 //+------------------------------------------------------------------+
 
 input string Lbl_ATR="________ ATR Settings [ATR] ________"; // :
-input string ATR_Value_Modes="a=1|b=1|c=1";
-input string ATR_Value_Names="a=H1|b=H4|c=D1";
-input string ATR_Value_Hidden="a=0|b=0|c=0";
+input string ATR_Value_Modes="a:1|b:1|c:1";
+input string ATR_Value_Names="a:H1|b:H4|c:D1";
+input string ATR_Value_Hidden="a:0|b:0|c:0";
 
 input string Lbl_ATR_Value_Indi=""; // :
-input string ATR_Value_TimeFrame="a=60|b=240|c=1440";
-input string ATR_Value_Period="a=20|b=20|c=20";
-input string ATR_Value_Shift="a=0|b=0|c=0";
+input string ATR_Value_TimeFrame="a:60|b:240|c:1440";
+input string ATR_Value_Period="a:20|b:20|c:20";
+input string ATR_Value_Shift="a:0|b:0|c:0";
 
 //+------------------------------------------------------------------+
 //| StdDev
 //+------------------------------------------------------------------+
 
 input string Lbl_StdDev="________ StdDev Settings [StdDev] ________"; // :
-input string StdDev_Value_Modes="a=1|b=1|c=1";
-input string StdDev_Value_Names="a=H1|b=H4|c=D1";
-input string StdDev_Value_Hidden="a=0|b=0|c=0";
+input string StdDev_Value_Modes="a:1|b:1|c:1";
+input string StdDev_Value_Names="a:H1|b:H4|c:D1";
+input string StdDev_Value_Hidden="a:0|b:0|c:0";
 
 input string Lbl_StdDev_Value_Indi=""; // :
-input string StdDev_Value_TimeFrame="a=60|b=240|c=1440";
-input string StdDev_Value_Period="a=20|b=20|c=20";
-input string StdDev_Value_Shift="a=0|b=0|c=0";
-input string StdDev_Value_Method="a=0|b=0|c=0";
-input string StdDev_Value_AppliedPrice="a=0|b=0|c=0";
-input string StdDev_Value_PeriodShift="a=0|b=0|c=0";
+input string StdDev_Value_TimeFrame="a:60|b:240|c:1440";
+input string StdDev_Value_Period="a:20|b:20|c:20";
+input string StdDev_Value_Shift="a:0|b:0|c:0";
+input string StdDev_Value_Method="a:0|b:0|c:0";
+input string StdDev_Value_AppliedPrice="a:0|b:0|c:0";
+input string StdDev_Value_PeriodShift="a:0|b:0|c:0";
 
 //+------------------------------------------------------------------+
 //| Stoch
@@ -73,32 +73,32 @@ input string StdDev_Value_PeriodShift="a=0|b=0|c=0";
 input string Lbl_Stoch_1="________ Stoch Settings [Stoch] ________"; // :
 
 input string LbL_Stoch_Entry="---- Stoch Entry Settings ----"; // :
-input string Stoch_Entry_Modes="a=1|b=1|c=1";
-input string Stoch_Entry_Names="a=M15|b=M30|c=M60";
-input string Stoch_Entry_TimeFrame="a=15|b=30|c=60";
+input string Stoch_Entry_Modes="a:1|b:1|c:1";
+input string Stoch_Entry_Names="a:M15|b:M30|c:M60";
+input string Stoch_Entry_TimeFrame="a:15|b:30|c:60";
 
 input string Lbl_Stoch_Entry_Indi=""; // :
-input string Stoch_Entry_KPeriod="a=5|b=5|c=5";
-input string Stoch_Entry_DPeriod="a=3|b=3|c=3";
-input string Stoch_Entry_Slowing="a=3|b=3|c=3";
-input string Stoch_Entry_Method="a=3|b=3|c=3";
-input string Stoch_Entry_PriceField="a=0|b=0|c=0";
-input string Stoch_Entry_Shift="a=0|b=0|c=0";
-input string Stoch_Entry_BuySellZone="a=22.0|b=22.0|c=22.0";
+input string Stoch_Entry_KPeriod="a:5|b:5|c:5";
+input string Stoch_Entry_DPeriod="a:3|b:3|c:3";
+input string Stoch_Entry_Slowing="a:3|b:3|c:3";
+input string Stoch_Entry_Method="a:3|b:3|c:3";
+input string Stoch_Entry_PriceField="a:0|b:0|c:0";
+input string Stoch_Entry_Shift="a:0|b:0|c:0";
+input string Stoch_Entry_BuySellZone="a:22.0|b:22.0|c:22.0";
 
 input string LbL_Stoch_Exit="---- Stoch Exit Settings ----"; // :
-input string Stoch_Exit_Modes="a=1";
-input string Stoch_Exit_Names="a=M15";
-input string Stoch_Exit_TimeFrame="a=15";
+input string Stoch_Exit_Modes="a:1";
+input string Stoch_Exit_Names="a:M15";
+input string Stoch_Exit_TimeFrame="a:15";
 
 input string Lbl_Stoch_Exit_Indi=""; // :
-input string Stoch_Exit_KPeriod="a=5";
-input string Stoch_Exit_DPeriod="a=3";
-input string Stoch_Exit_Slowing="a=3";
-input string Stoch_Exit_Method="a=3";
-input string Stoch_Exit_PriceField="a=0";
-input string Stoch_Exit_Shift="a=0";
-input string Stoch_Exit_BuySellZone="a=30.0";
+input string Stoch_Exit_KPeriod="a:5";
+input string Stoch_Exit_DPeriod="a:3";
+input string Stoch_Exit_Slowing="a:3";
+input string Stoch_Exit_Method="a:3";
+input string Stoch_Exit_PriceField="a:0";
+input string Stoch_Exit_Shift="a:0";
+input string Stoch_Exit_BuySellZone="a:30.0";
 
 //+------------------------------------------------------------------+
 //| HGI
@@ -106,30 +106,30 @@ input string Stoch_Exit_BuySellZone="a=30.0";
 
 //input string Lbl_Hgi_1="________ HGI Settings [HGI] ________"; // :
 //input string LbL_Hgi_Entry="---- HGI Entry Settings ----"; // :
-//input string Hgi_Entry_Modes="a=1";
-//input string Hgi_Entry_Names="a=M60";
+//input string Hgi_Entry_Modes="a:1";
+//input string Hgi_Entry_Names="a:M60";
 
 //input string Lbl_Hgi_Entry_Indi=""; // :
-//input string Hgi_Entry_TimeFrame="a=60";
-//input string Hgi_Entry_Shift="a=0";
-//input string Hgi_Entry_OnTrend="a=1";
-//input string Hgi_Entry_OnRange="a=1";
-//input string Hgi_Entry_OnRad="a=0";
-//input string Hgi_Entry_OnSignal="a=1";
-//input string Hgi_Entry_OnSlope="a=0";
+//input string Hgi_Entry_TimeFrame="a:60";
+//input string Hgi_Entry_Shift="a:0";
+//input string Hgi_Entry_OnTrend="a:1";
+//input string Hgi_Entry_OnRange="a:1";
+//input string Hgi_Entry_OnRad="a:0";
+//input string Hgi_Entry_OnSignal="a:1";
+//input string Hgi_Entry_OnSlope="a:0";
 //
 //input string LbL_Hgi_Exit="---- HGI Exit Settings ----"; // :
-//input string Hgi_Exit_Modes="a=1";
-//input string Hgi_Exit_Names="a=M60";
+//input string Hgi_Exit_Modes="a:1";
+//input string Hgi_Exit_Names="a:M60";
 
 //input string Lbl_Hgi_Exit_Indi=""; // :
-//input string Hgi_Exit_TimeFrame="a=60";
-//input string Hgi_Exit_Shift="a=0";
-//input string Hgi_Exit_OnTrend="a=1";
-//input string Hgi_Exit_OnRange="a=1";
-//input string Hgi_Exit_OnRad="a=0";
-//input string Hgi_Exit_OnSignal="a=1";
-//input string Hgi_Exit_OnSlope="a=0";
+//input string Hgi_Exit_TimeFrame="a:60";
+//input string Hgi_Exit_Shift="a:0";
+//input string Hgi_Exit_OnTrend="a:1";
+//input string Hgi_Exit_OnRange="a:1";
+//input string Hgi_Exit_OnRad="a:0";
+//input string Hgi_Exit_OnSignal="a:1";
+//input string Hgi_Exit_OnSlope="a:0";
 
 //+------------------------------------------------------------------+
 //| CSS
@@ -140,26 +140,26 @@ input string Stoch_Exit_BuySellZone="a=30.0";
 //input string CSS_SymbolsToWeigh = "AUDCAD,AUDCHF,AUDJPY,AUDNZD,AUDUSD,CADJPY,CHFJPY,EURAUD,EURCAD,EURJPY,EURNZD,EURUSD,GBPAUD,GBPCAD,GBPCHF,GBPJPY,GBPNZD,GBPUSD,NZDCHF,NZDJPY,NZDUSD,USDCAD,USDCHF,USDJPY"; // CSS_SymbolsToWeigh: Leave blank to weigh all symbols
 //
 //input string Lbl_CSS_Entry_Settings="---- CSS Entry Settings ----";
-//input string CSS_Entry_Modes="a=1|b=1";
-//input string CSS_Entry_Names="a=H1|b=H1SS";
+//input string CSS_Entry_Modes="a:1|b:1";
+//input string CSS_Entry_Names="a:H1|b:H1SS";
 
 //input string Lbl_CSS_Entry_Indi=""; // :
-//input string CSS_Entry_TimeFrame="a=60|b=60";
-//input string CSS_Entry_Shift="a=0|b=0";
-//input string CSS_Entry_MaPeriod="a=21|b=7";
-//input string CSS_Entry_AtrPeriod="a=100|b=50";
-//input string CSS_Entry_CalcMethod="a=0|b=2";
+//input string CSS_Entry_TimeFrame="a:60|b:60";
+//input string CSS_Entry_Shift="a:0|b:0";
+//input string CSS_Entry_MaPeriod="a:21|b:7";
+//input string CSS_Entry_AtrPeriod="a:100|b:50";
+//input string CSS_Entry_CalcMethod="a:0|b:2";
 //
 //input string Lbl_CSS_Exit_Settings="---- CSS Exit Settings ----";
-//input string CSS_Exit_Modes="a=1|b=1";
-//input string CSS_Exit_Names="a=H1x|b=H1SSx"; 
+//input string CSS_Exit_Modes="a:1|b:1";
+//input string CSS_Exit_Names="a:H1x|b:H1SSx"; 
 
 //input string Lbl_CSS_Exit_Indi=""; // :
-//input string CSS_Exit_TimeFrame="a=60|b=60";
-//input string CSS_Exit_Shift="a=0|b=0";
-//input string CSS_Exit_MaPeriod="a=21|b=7";
-//input string CSS_Exit_AtrPeriod="a=100|b=50";
-//input string CSS_Exit_CalcMethod="a=0|b=2";
+//input string CSS_Exit_TimeFrame="a:60|b:60";
+//input string CSS_Exit_Shift="a:0|b:0";
+//input string CSS_Exit_MaPeriod="a:21|b:7";
+//input string CSS_Exit_AtrPeriod="a:100|b:50";
+//input string CSS_Exit_CalcMethod="a:0|b:2";
 
 //+------------------------------------------------------------------+
 // 2. Add filters to LoadFilters() below and add settings [HOOKS]

@@ -1,8 +1,8 @@
-//+------------------------------------------------------------------+
-//|                                               LibCSS5 for MQL4/5 |
-//|                      Copyright 2013, Deltabron - Paul Geirnaerdt |
-//|                                          http://www.deltabron.nl |
-//+------------------------------------------------------------------+
+//+-----------------------------------------------------------------------+
+//|                                                    LibCSS5 for MQL4/5 |
+//| Copyright 2013, Deltabron - Paul Geirnaerdt - http://www.deltabron.nl |
+//|                2017, Modified by mazmazz - https://github.com/mazmazz |
+//+-----------------------------------------------------------------------+
 
 #define libCSS_version            "v5.0.0"
 #property strict
@@ -21,10 +21,10 @@
 // * Added parameters for caching mechanism
 // v1.1.2, 9/6/13
 // * Added flushCache parameter
-// v5.0.0, 5/1/2017, written by mazmazz - https://github.com/mazmazz
+// v5.0.0, 5/1/2017, modified by mazmazz - https://github.com/mazmazz
 // * Added MQL5 compatibility
 // * Added SuperSlope calculation
-// * Added getCSSDelta, getCSSCross, getCSSTradeDirection
+// * Added getCSSDelta, getCSSCross, getCSSTradeDirection, getGlobalMarketTrendDelta
 
 //+------------------------------------------------------------------+
 //| Internalize dependencies MC_Common and SymbolManager             |
@@ -115,6 +115,7 @@ class CLibCSS {
     double getSlopeRSI( string symbol, int workPeriod, int rsiPeriodIn, ENUM_TIMEFRAMES tf, int shift );
 #endif
     double getGlobalMarketTrend( string symbol, ENUM_TIMEFRAMES tf, int shift ); 
+    double getGlobalMarketTrendDelta( string symbol, ENUM_TIMEFRAMES tf, int shift, int candles );
     
     int getCurrencyIndex(string currency);
 
@@ -339,6 +340,7 @@ void CLibCSS::calcCSS( string symbol, ENUM_TIMEFRAMES tf, int shift ) {
             currencyValues[getCurrencyIndex(SymbolManager::getSymbolQuoteCurrency(symbol))] -= slope;
             break;
 
+         case CSS_VERSION_3_8:
          case CSS_VERSION_CSS:
          default:
             // Get Slope for all symbols and totalize for all currencies   
@@ -430,7 +432,7 @@ double CLibCSS::getCSSDiff( string symbol, ENUM_TIMEFRAMES tf, int shift, bool a
 }
 
 double CLibCSS::getCSSDelta( string symbol, ENUM_TIMEFRAMES tf, int shift, int candles, bool absolute = false ) {
-    if(shift == candles || shift+candles < 0) { return 0; }
+    if(candles == 0 || shift+candles < 0) { return 0; }
     double diffA = getCSSDiff(symbol, tf, shift, absolute);
     double diffB = getCSSDiff(symbol, tf, shift+candles, absolute);
     
@@ -438,7 +440,7 @@ double CLibCSS::getCSSDelta( string symbol, ENUM_TIMEFRAMES tf, int shift, int c
 }
 
 TRADE_DIRECTION CLibCSS::getCSSCross(string symbol, ENUM_TIMEFRAMES tf, int shift, int candles) {
-    if(shift == candles || shift+candles < 0) { return TRADE_DIRECTION_NONE; }
+    if(candles == 0 || shift+candles < 0) { return TRADE_DIRECTION_NONE; }
     double diffB = getCSSDiff(symbol, tf, shift+candles);
     double diffA = getCSSDiff(symbol, tf, shift);
     
@@ -448,6 +450,8 @@ TRADE_DIRECTION CLibCSS::getCSSCross(string symbol, ENUM_TIMEFRAMES tf, int shif
 }
 
 bool CLibCSS::getCSSTradeLevelCrossed(string symbol, ENUM_TIMEFRAMES tf, int shift, double tradeLevel) {
+    if(tradeLevel == 0) { return true; }
+    
     double slope = getCSSCurrency(symbol, SymbolManager::getSymbolBaseCurrency(symbol), tf, shift);
     
     return MathAbs(slope) > MathAbs(tradeLevel);
@@ -495,6 +499,15 @@ double CLibCSS::getGlobalMarketTrend( string symbol, ENUM_TIMEFRAMES tf, int shi
    }
    
    return ( gmt );
+}
+
+double CLibCSS::getGlobalMarketTrendDelta( string symbol, ENUM_TIMEFRAMES tf, int shift, int candles ) 
+{
+    if(candles == 0 || shift+candles < 0) { return 0; }
+    double gmtA = getGlobalMarketTrend(symbol, tf, shift);
+    double gmtB = getGlobalMarketTrend(symbol, tf, shift+candles);
+    
+    return gmtA - gmtB;
 }
 
 //+------------------------------------------------------------------+

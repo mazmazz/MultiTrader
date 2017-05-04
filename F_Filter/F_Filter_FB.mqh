@@ -184,17 +184,18 @@ bool FilterFb::calculate(int subIdx, int symIdx, DataUnit *dataOut) {
     if(barLow == 0 || barHigh == 0) { return false; }
     
     bool fbLong = false, fbShort = false;
-    if(compareMaFastSlow[subIdx]) {
+    if(compareMaFastSlow[subIdx] && maEnableSlow[subIdx]) {
         fbShort = barLow > maSlowVal && maSlowVal > maFastVal;
-        fbLong = barHigh < maFastVal && maFastVal < maFastVal;
+        fbLong = barHigh < maSlowVal && maFastVal < maSlowVal;
     } else {
-        fbShort = barLow > MathMax(maFastVal, maSlowVal);
-        fbLong = barHigh < MathMin(maFastVal, maSlowVal);
+        fbShort = barLow > (maEnableSlow[subIdx] ? MathMax(maFastVal, maSlowVal) : maFastVal);
+        fbLong = barHigh < (maEnableSlow[subIdx] ? MathMin(maFastVal, maSlowVal) : maFastVal);
     }
     
-    SignalType signal = fbLong ? SignalLong : fbShort ? SignalShort : SignalNone;
+    SignalType signal = fbLong ? SignalBuy : fbShort ? SignalSell : SignalNone;
+    string dataText = fbLong ? "Below" : fbShort ? "Above" : " ";
     
-    dataOut.setRawValue(0, signal);
+    dataOut.setRawValue(1, signal, dataText);
     
     return true;
 }
@@ -202,10 +203,10 @@ bool FilterFb::calculate(int subIdx, int symIdx, DataUnit *dataOut) {
 double FilterFb::getMaValue(int symIdx, int subIdx, bool isFast) {
 #ifdef __MQL4__
     if(isFast) { 
-        return iMA(MainSymbolMan.getSymbolName(symIdx),timeFrame[subIdx],maPeriodFast[subIdx],0,maAvgModeFast[subIdx],maPriceFast[i],shift[subIdx]);
+        return iMA(MainSymbolMan.getSymbolName(symIdx),timeFrame[subIdx],maPeriodFast[subIdx],0,maAvgModeFast[subIdx],maPriceFast[subIdx],shift[subIdx]);
     } else {
         if(!maEnableSlow[subIdx]) { return 0; }
-        return iMA(MainSymbolMan.getSymbolName(symIdx),timeFrame[subIdx],maPeriodSlow[subIdx],0,maAvgModeSlow[subIdx],maPriceSlow[i],shift[subIdx]);
+        return iMA(MainSymbolMan.getSymbolName(symIdx),timeFrame[subIdx],maPeriodSlow[subIdx],0,maAvgModeSlow[subIdx],maPriceSlow[subIdx],shift[subIdx]);
     }
 #else
 #ifdef __MQL5__

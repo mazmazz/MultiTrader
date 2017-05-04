@@ -159,7 +159,7 @@ class MultiSettings {
 
 double MultiSettings::Redirects[];
 
-string MultiSettings::KeyValDelimiter = "=";
+string MultiSettings::KeyValDelimiter = ":"; // = does not import into MT4 ea settings
 string MultiSettings::PairDelimiter = "|";
 
 string MultiSettings::DefaultDelimiter = "*";
@@ -239,7 +239,7 @@ void MultiSettings::Parse(string options, T defaultVal, T &destArray[], int &idA
             if(addToArray) { keyAddrInt += oldArraySize; }
 
             if(keyAddrInt < 0 || keyAddrInt >= destArraySize) {
-                Error::ThrowFatal("key=" + key + " (index " + keyAddrInt + " is not within expected count " + destArraySize, NULL, options);
+                Error::ThrowFatal("key=" + key + " (sub " + (keyAddrInt+1) + ") is not within expected count " + destArraySize, NULL, options);
                 return;
             } else {
                 FillDestArrayByValue(destArray, keyAddrInt, valueNumResult, valueNum, value);
@@ -269,7 +269,7 @@ void MultiSettings::Parse(string options, T defaultVal, T &destArray[], int &idA
     }    
     
     // pass 2: fill non-filled values with default, if it exists
-    for(int i = 0; i < destArraySize; i++) {
+    for(int i = oldArraySize; i < destArraySize; i++) {
         if(Common::ArrayFind(filledAddr, i) >= 0) { continue; }
         
         FillDestArrayByValue(destArray, i, valueNumResultDefault, valueNumDefault, valueDefault);
@@ -497,20 +497,17 @@ double MultiSettings::ParseValueRedirect(string value) {
 bool MultiSettings::ParseValueRedirect(string value, double &valueOut) {
     value = Common::StringTrim(value);
     if(StringFind(value, RedirectDelimiter) < 0) { 
-        valueOut = StringToDouble(value); 
-        return true;
+        return false;
     }
     
     string valRed[];
     if(StringSplit(value, RedirectDelimiter, valRed) < 2) { 
-        valueOut = StringToDouble(value); 
-        return true;
+        return false;
     }
     
     valRed[0] = Common::StringTrim(valRed[0]);
     if(!IsOptimization() && StringLen(valRed[0]) > 0) { 
-        valueOut = StringToDouble(valRed[0]); 
-        return true;
+        return false;
     }
     
     // if there's redirect notation ([value]@[redirectIndex])

@@ -70,6 +70,7 @@ void MainMultiTrader::doCycle() {
 #ifdef _Benchmark
     Benchmark_Message = (++Benchmark_FilterCounter) + " | Timer mils: " + (GetTickCount() - Benchmark_LastMilCounter);
     Error::PrintNormal(TimeCurrent() + " | Cycle started: " + Benchmark_Message);
+    Benchmark_WorkMilCounter = GetTickCount();
 #endif
     
     MainDataMan.retrieveDataFromFilters();
@@ -94,10 +95,10 @@ void MainMultiTrader::onDeinit(const int reason) {
 
 void MainMultiTrader::~MainMultiTrader() {
     Common::SafeDelete(MainDashboardMan);
+    Common::SafeDelete(MainFilterMan);
     Common::SafeDelete(MainOrderMan);
     Common::SafeDelete(MainDataMan);
     Common::SafeDelete(MainSymbolMan);
-    Common::SafeDelete(MainFilterMan);
 }
 
 #ifdef _EmulatedTicks

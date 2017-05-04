@@ -258,7 +258,7 @@ bool FilterCss::calculate(int subIdx, int symIdx, DataUnit *dataOut) {
         case CSS_RESULT_GLOBALMARKETTREND: {
             value = inst.getGlobalMarketTrend(symbol, timeframe, shift[subIdx]);
             bool constraintsMet = MathAbs(value) >= MathAbs(min[subIdx]) && MathAbs(value) <= MathAbs(max[subIdx]);
-                // directionless -- SignalOpen if constraintsMet
+            direction = !constraintsMet ? TRADE_DIRECTION_NONE : TRADE_DIRECTION_BOTH;
             valueText = DoubleToString(value, 4);
             break;
         }
@@ -266,9 +266,7 @@ bool FilterCss::calculate(int subIdx, int symIdx, DataUnit *dataOut) {
         case CSS_RESULT_GLOBALMARKETTREND_DELTA: {
             value = inst.getGlobalMarketTrendDelta(symbol, timeframe, shift[subIdx], candles[subIdx]);
             bool constraintsMet = MathAbs(value) >= MathAbs(min[subIdx]) && MathAbs(value) <= MathAbs(max[subIdx]);
-            direction = !constraintsMet ? TRADE_DIRECTION_NONE : value >= 0 ? TRADE_DIRECTION_LONG : TRADE_DIRECTION_SHORT;
-                // directionless -- SignalOpen if constraintsMet. Could also have a direction flag
-                // value > 0 should be long (shift-candles pos means market has grown bigger)
+            direction = !constraintsMet ? TRADE_DIRECTION_NONE : TRADE_DIRECTION_BOTH;
             valueText = DoubleToString(value, 4);
             break;
         }
@@ -292,6 +290,7 @@ bool FilterCss::calculate(int subIdx, int symIdx, DataUnit *dataOut) {
      switch(direction) {
         case TRADE_DIRECTION_LONG: signal = SignalBuy; break;
         case TRADE_DIRECTION_SHORT: signal = SignalSell; break;
+        case TRADE_DIRECTION_BOTH: signal = SignalOpen; break;
      }
      
      dataOut.setRawValue(value, signal, valueText);

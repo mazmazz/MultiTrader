@@ -26,10 +26,13 @@ class FilterFb : public Filter {
     int maPriceSlow[];
     bool compareMaFastSlow[]; // should be bool
     int shift[];
+    bool directionless[];
 #ifdef __MQL5__
     ArrayDim<int> iMaFastHandle[];
     ArrayDim<int> iMaSlowHandle[];
 #endif
+
+    ArrayDim<datetime> lastCandleTime[];
     
     public:
     ~FilterFb();
@@ -52,6 +55,7 @@ class FilterFb : public Filter {
         , int maPriceSlowIn
         , bool compareMaFastSlowIn
         , int shiftIn
+        , bool directionlessIn
     );
     void addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
         , string timeFrameList
@@ -64,6 +68,7 @@ class FilterFb : public Filter {
         , string maPriceSlowList
         , string compareMaFastSlowList
         , string shiftList
+        , string directionlessList
         , bool addToExisting = false
     );
 
@@ -71,6 +76,7 @@ class FilterFb : public Filter {
     double getMaValue(int symIdx, int subIdx, bool isFast);
     double getBarLow(int symIdx, int subIdx);
     double getBarHigh(int symIdx, int subIdx);
+    datetime getBarOpenTime(string symbol, ENUM_TIMEFRAMES tf,int shift);
 };
 
 //+------------------------------------------------------------------+
@@ -90,6 +96,13 @@ void FilterFb::init() {
     getFastHandle = false;
     loadIndicatorHandles(iMaSlowHandle);
 #endif
+
+    ArrayResize(lastCandleTime, MainSymbolMan.getSymbolCount());
+    int subCount = getSubfilterCount();
+    int size = ArraySize(lastCandleTime);
+    for(int i = 0; i < size; i++) {
+        ArrayResize(lastCandleTime[i]._, subCount);
+    }
 
     isInit = true;
 }
@@ -128,6 +141,7 @@ void FilterFb::addSubfilter(int mode, string name, bool hidden, SubfilterType ty
     , int maPriceSlowIn
     , bool compareMaFastSlowIn
     , int shiftIn
+    , bool directionlessIn
 ) {
     setupSubfilters(mode, name, hidden, type);
     
@@ -141,6 +155,7 @@ void FilterFb::addSubfilter(int mode, string name, bool hidden, SubfilterType ty
     Common::ArrayPush(maPriceSlow, maPriceSlowIn);
     Common::ArrayPush(compareMaFastSlow, compareMaFastSlowIn);
     Common::ArrayPush(shift, shiftIn);
+    Common::ArrayPush(directionless, directionlessIn);
 }
 
 void FilterFb::addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
@@ -154,6 +169,7 @@ void FilterFb::addSubfilter(string modeList, string nameList, string hiddenList,
     , string maPriceSlowList
     , string compareMaFastSlowList
     , string shiftList
+    , string directionlessList
     , bool addToExisting = false
 ) {
     setupSubfilters(modeList, nameList, hiddenList, typeName);
@@ -170,6 +186,7 @@ void FilterFb::addSubfilter(string modeList, string nameList, string hiddenList,
         MultiSettings::Parse(maPriceSlowList, maPriceSlow, count, addToExisting);
         MultiSettings::Parse(compareMaFastSlowList, compareMaFastSlow, count, addToExisting);
         MultiSettings::Parse(shiftList, shift, count, addToExisting);
+        MultiSettings::Parse(directionlessList, directionless, count, addToExisting);
     }
 }
 
@@ -198,10 +215,16 @@ bool FilterFb::calculate(int subIdx, int symIdx, DataUnit *dataOut) {
         fbLong = barHigh < (maEnableSlow[subIdx] ? MathMin(maFastVal, maSlowVal) : maFastVal);
     }
     
-    SignalType signal = fbLong ? SignalBuy : fbShort ? SignalSell : SignalNone;
+    SignalType signal = directionless[subIdx] & (fbLong || fbShort) ? SignalOpen : fbLong ? SignalBuy : fbShort ? SignalSell : SignalNone;
     string dataText = fbLong ? "Below" : fbShort ? "Above" : " ";
     
-    dataOut.setRawValue(1, signal, dataText);
+    datetime value = shift[subIdx] > 0 ? getBarOpenTime(symbol, Common::GetTimeFrameFromMinutes(timeFrame[subIdx]), shift[subIdx]) : TimeCurrent();
+    
+    bool force = false;
+    if(value != lastCandleTime[symIdx]._[subIdx]) { force = true; }
+    lastCandleTime[symIdx]._[subIdx] = value;
+    
+    dataOut.setRawValue(value, signal, dataText, 0, force);
     
     return true;
 }
@@ -252,4 +275,11 @@ double FilterFb::getBarHigh(int symIdx, int subIdx) {
     } else { return 0; }
 #endif
 #endif
+}
+
+datetime FilterFb::getBarOpenTime(string symbol, ENUM_TIMEFRAMES tf,int shift) {
+    datetime barUnits[];
+    if(CopyTime(symbol, tf, shift, 1, barUnits) >=1) {
+        return barUnits[0];
+    } else { return 0; }
 }

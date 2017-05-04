@@ -123,8 +123,9 @@ input string FB_Entry_Names="a:M1";
 
 input string Lbl_FB_Entry_Indi="-- Parameters --"; // :
 input string FB_Entry_TimeFrame="a:1";
-input string FB_Entry_CompareMaFastSlow="a:false";
 input string FB_Entry_Shift="a:1";
+input string FB_Entry_CompareMaFastSlow="a:false";
+input string FB_Entry_SignalDirectionless="a:false";
 
 input string Lbl_FB_Entry_Fast="-- Fast MA --"; // :
 input string FB_Entry_MaPeriodFast="a:5";
@@ -143,8 +144,9 @@ input string FB_Exit_Names="a:M1";
 
 input string Lbl_FB_Exit_Indi="-- Parameters --"; // :
 input string FB_Exit_TimeFrame="a:1";
-input string FB_Exit_CompareMaFastSlow="a:false";
 input string FB_Exit_Shift="a:1";
+input string FB_Exit_CompareMaFastSlow="a:false";
+input string FB_Exit_SignalDirectionless="a:false";
 
 input string Lbl_FB_Exit_Fast="-- Fast MA --"; // :
 input string FB_Exit_MaPeriodFast="a:5";
@@ -197,12 +199,14 @@ void LoadFilters() {
         , FB_Entry_TimeFrame, FB_Entry_MaPeriodFast, FB_Entry_MaAvgModeFast, FB_Entry_MaPriceFast
         , FB_Entry_MaEnableSlow, FB_Entry_MaPeriodSlow, FB_Entry_MaAvgModeSlow, FB_Entry_MaPriceSlow
         , FB_Entry_CompareMaFastSlow, FB_Entry_Shift
+        , FB_Entry_SignalDirectionless
         );
 
     fb.addSubfilter(FB_Exit_Modes, FB_Exit_Names, NULL, SubfilterExit
         , FB_Exit_TimeFrame, FB_Exit_MaPeriodFast, FB_Exit_MaAvgModeFast, FB_Exit_MaPriceFast
         , FB_Exit_MaEnableSlow, FB_Exit_MaPeriodSlow, FB_Exit_MaAvgModeSlow, FB_Exit_MaPriceSlow
         , FB_Exit_CompareMaFastSlow, FB_Exit_Shift
+        , FB_Exit_SignalDirectionless
         , true
     );
     Main.addFilter(fb);

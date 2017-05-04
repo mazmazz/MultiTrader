@@ -40,7 +40,7 @@ bool OrderManager::checkDoExitSignals(long ticket, int symIdx, bool isPosition) 
     
     // todo: grid - how to close pendings when encountering an opposite signal?
     bool checkExit = false, exitIsEmpty = false;
-    SignalUnit *exitCheckUnit = MainDataMan.symbol[symIdx].getSignalUnit(false);
+    SignalUnit *exitCheckUnit = MainDataMan.symbol[symIdx].getSymbolSignalUnit(false);
     checkExit = !Common::IsInvalidPointer(exitCheckUnit) && !exitCheckUnit.fulfilled; // todo: how is this affected by retrace?
     if(checkExit) { exitIsEmpty = exitCheckUnit.type != SignalLong && exitCheckUnit.type != SignalShort && exitCheckUnit.type != SignalClose; }
     
@@ -49,7 +49,7 @@ bool OrderManager::checkDoExitSignals(long ticket, int symIdx, bool isPosition) 
     bool checkEntry = false, entryIsEmpty = false;
     SignalUnit *entryCheckUnit = NULL;
     if(CloseOrderOnOppositeSignal/* || isTradeModeGrid()*/) {
-        entryCheckUnit = MainDataMan.symbol[symIdx].getSignalUnit(true);
+        entryCheckUnit = MainDataMan.symbol[symIdx].getSymbolSignalUnit(true);
         checkEntry = !Common::IsInvalidPointer(entryCheckUnit) && !entryCheckUnit.fulfilled;
         if(checkEntry) { entryIsEmpty = entryCheckUnit.type != SignalLong && entryCheckUnit.type != SignalShort && entryCheckUnit.type != SignalClose; }
     }

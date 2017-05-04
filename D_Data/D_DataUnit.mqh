@@ -32,6 +32,7 @@ class SignalUnit { // ordinarily this would be a struct, but you can't get point
     bool fulfilled;
     bool blocked;
     bool retry;
+    bool force;
     
     SignalUnit() {
         type = SignalNone;
@@ -42,6 +43,7 @@ class SignalUnit { // ordinarily this would be a struct, but you can't get point
         fulfilled = false;
         blocked = false;
         retry = false;
+        force = false;
     }
     
     SignalType getOppositeType() {
@@ -65,6 +67,7 @@ class SignalUnit { // ordinarily this would be a struct, but you can't get point
 class DataUnit {
     public:
     bool success;
+    bool force;
     SignalType signal;
     string rawValueType;
     string stringValue;
@@ -73,10 +76,10 @@ class DataUnit {
     DataUnit();
     DataUnit(bool successIn);
     template<typename T>
-    DataUnit(bool successIn, T value, SignalType signalInput = SignalNone, string stringValueInput = "", datetime lastUpdate = 0);
+    DataUnit(bool successIn, T value, SignalType signalInput = SignalNone, string stringValueInput = "", datetime lastUpdate = 0, bool forceIn = false);
     
     template <typename T>
-    void setRawValue(T value, SignalType signalInput = SignalNone, string stringValueInput = "", datetime lastChangedTimeInput = 0);
+    void setRawValue(T value, SignalType signalInput = SignalNone, string stringValueInput = "", datetime lastChangedTimeInput = 0, bool forceIn = false);
     
     template<typename T>
     bool getRawValue(T &value);
@@ -102,6 +105,7 @@ void DataUnit::DataUnit() {
     rawValueInt = 0;
     rawValueDouble = 0;
     rawValueBool = false;
+    force = false;
 }
 
 void DataUnit::DataUnit(bool successIn) {
@@ -114,10 +118,11 @@ void DataUnit::DataUnit(bool successIn) {
     rawValueInt = 0;
     rawValueDouble = 0;
     rawValueBool = false;
+    force = false;
 }
 
 template <typename T>
-void DataUnit::DataUnit(bool successIn, T value, SignalType signalInput = SignalNone, string stringValueInput = "", datetime lastUpdate = 0) {
+void DataUnit::DataUnit(bool successIn, T value, SignalType signalInput = SignalNone, string stringValueInput = "", datetime lastUpdate = 0, bool forceIn = false) {
     success = successIn;
     signal = SignalNone;
     rawValueType = NULL; 
@@ -127,15 +132,17 @@ void DataUnit::DataUnit(bool successIn, T value, SignalType signalInput = Signal
     rawValueInt = 0;
     rawValueDouble = 0;
     rawValueBool = false;
-    setRawValue(value, signalInput, stringValueInput, lastUpdate);
+    force = false;
+    setRawValue(value, signalInput, stringValueInput, lastUpdate, forceIn);
 }
 
 template <typename T>
-void DataUnit::setRawValue(T value, SignalType signalInput = SignalNone, string stringValueInput = "", datetime lastChangedTimeInput = 0) { 
+void DataUnit::setRawValue(T value, SignalType signalInput = SignalNone, string stringValueInput = "", datetime lastChangedTimeInput = 0, bool forceIn = false) { 
     rawValueType = typename(T);
     signal = signalInput; 
     stringValue = stringValueInput;
     lastChangedTime = lastChangedTimeInput <= 0 ? TimeLocal() : lastChangedTimeInput;
+    force = forceIn;
     
     if(rawValueType == "int") { rawValueInt = value; }
     else if(rawValueType == "double") { rawValueDouble = value; }

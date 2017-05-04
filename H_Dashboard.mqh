@@ -498,7 +498,7 @@ void DashboardManager::updateData(int symbolId, int filterId, int subfilterId, b
             dataResult = 
                 data.getStringValue(MainSymbolMan.symbols[symbolId].digits) 
                 + " " 
-                + signalToString(signal, history.getSignalDuration(TimeSettingUnit), MainFilterMan.filters[filterId].subfilterType[subfilterId], true, MainFilterMan.filters[filterId].alwaysStable);
+                + signalToString(signal, history.getSubSignalDuration(TimeSettingUnit), MainFilterMan.filters[filterId].subfilterType[subfilterId], true, MainFilterMan.filters[filterId].alwaysStable);
                 ;
             
             switch(signal) {
@@ -524,7 +524,7 @@ void DashboardManager::updateSymbolSignal(int symbolId,SubfilterType subType, bo
         color fontColor = 0;
         
         SignalUnit *signalUnit = NULL;
-        signalUnit = MainDataMan.symbol[symbolId].getSignalUnit(subType == SubfilterEntry);
+        signalUnit = MainDataMan.symbol[symbolId].getSymbolSignalUnit(subType == SubfilterEntry);
         if(!Common::IsInvalidPointer(signalUnit)) { signal = signalUnit.type; }
         else { signal = SignalNone; }
         

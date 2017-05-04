@@ -73,6 +73,8 @@ class DataSymbol {
     SignalUnit *exitSignal[];
     SignalType pendingEntrySignalType;
     SignalType pendingExitSignalType;
+    bool pendingEntrySignalForce;
+    bool pendingExitSignalForce;
     bool masterEntrySet;
     bool masterExitSet;
     
@@ -80,10 +82,10 @@ class DataSymbol {
     DataSymbol(int filterCount);
     ~DataSymbol();
     
-    void addSignalUnit(SignalType signal, bool isEntry);
-    SignalUnit *getSignalUnit(bool isEntry, int index = 0);
+    void addSymbolSignalUnit(SignalType signal, bool signalForce, bool isEntry);
+    SignalUnit *getSymbolSignalUnit(bool isEntry, int index = 0);
     void updateSymbolSignal(int filterIdx, int subfilterIdx);
-    int getSignalDuration(TimeUnits stableUnits, SignalUnit *prevUnit, SignalUnit *curUnit = NULL);
+    int getSymbolSignalDuration(TimeUnits stableUnits, SignalUnit *prevUnit, SignalUnit *curUnit = NULL);
     
     private:
     int signalHistoryCount;
@@ -94,6 +96,8 @@ class DataSymbol {
 void DataSymbol::DataSymbol(int filterCount) {
     pendingEntrySignalType = SignalNone;
     pendingExitSignalType = SignalNone;
+    pendingEntrySignalForce = false;
+    pendingExitSignalForce = false;
     masterEntrySet = false;
     masterExitSet = false;
     signalHistoryCount = 0;
@@ -136,28 +140,29 @@ void DataSymbol::setHistoryCount(int signalHistoryCountIn = -1) {
     ArrayResize(exitSignal, size, signalHistoryCount-size); 
 }
 
-void DataSymbol::addSignalUnit(SignalType signal, bool isEntry) {
+void DataSymbol::addSymbolSignalUnit(SignalType signal, bool signalForce, bool isEntry) {
     bool force = false; 
     SignalType compareSignal = SignalNone;
-    SignalUnit *compareUnit = getSignalUnit(isEntry);
+    SignalUnit *compareUnit = getSymbolSignalUnit(isEntry);
     if(Common::IsInvalidPointer(compareUnit)) { force = true; }
     else { compareSignal = compareUnit.type; }
     
-    if (force || (signal != compareSignal)/* || (!Common::IsInvalidPointer(compareUnit) ? compareUnit.retry : false)*/) { // note: allowing a retry upends the "every consecutive signal is different" assumption. Plus, when retrying, should we be modifying the existing signal, or no?
+    if (force || signalForce || (signal != compareSignal)/* || (!Common::IsInvalidPointer(compareUnit) ? compareUnit.retry : false)*/) { // note: allowing a retry upends the "every consecutive signal is different" assumption. Plus, when retrying, should we be modifying the existing signal, or no?
         SignalUnit *newUnit = new SignalUnit();
         newUnit.timeMilliseconds = GetTickCount();
         newUnit.timeDatetime = TimeCurrent();
         newUnit.timeCycles = 0;
         newUnit.type = signal;
+        newUnit.force = signalForce;
         
         if(isEntry && signal != SignalHold && !Common::IsInvalidPointer(compareUnit)) {  // may need to change this if exit signals become more complex or SignalHold fulfilled/blocked becomes significant
             // retracement avoidance: for entry, check last entrySignal[1] if signal type is equal and was fulfilled, then also set fulfilled flag on new unit
             int entryUnitCount = ArraySize(entrySignal);
-            for(int h = 1; h < entryUnitCount; h++) { // this assumes that newUnit and entry[0] are not the same. We check if entry[1] is different.
-                SignalUnit *secondCompareUnit = getSignalUnit(true, h);
+            for(int h = 0; h < entryUnitCount; h++) { // this assumes that newUnit and entry[0] are not the same. We check if entry[1] is different. // update: this is not necessarily true anymore, with force adding
+                SignalUnit *secondCompareUnit = getSymbolSignalUnit(true, h);
                 if(Common::IsInvalidPointer(secondCompareUnit)) { continue; }
                 
-                if(signal != secondCompareUnit.type) { break; } // == secondCompareUnit.getOppositeType()
+                if(signal != secondCompareUnit.type) { continue; } // == secondCompareUnit.getOppositeType() // break -> continue needed to change because of force adding
                 else { newUnit.blocked = true; }
                 // if signal == secondCompareUnit.type, throw dodge 
                 
@@ -165,7 +170,7 @@ void DataSymbol::addSignalUnit(SignalType signal, bool isEntry) {
                 if(SignalRetraceOpenAfterDelay && newUnit.blocked) { // attempt to falsify
                     // todo: more sophisticated rule? should extra lots be allowed to open, after a time?
                     // should we be tracking signal type? Maybe not, signal retrace delays should be agnostic of type
-                    int duration = getSignalDuration(TimeSettingUnit, compareUnit);
+                    int duration = getSymbolSignalDuration(TimeSettingUnit, compareUnit);
                     if(duration < SignalRetraceDelay) {
                         newUnit.blocked = true;
                         // newUnit.retry = true; // retry on next cycle, if signal persists beyond SignalRetraceTime
@@ -185,14 +190,14 @@ void DataSymbol::addSignalUnit(SignalType signal, bool isEntry) {
                        !Common::IsInvalidPointer(exitSignal[i])
                        && signal == exitSignal[i].getOppositeType() // need to refer opposite: an exit SignalShort means open Short, close Long
                        && exitSignal[i].fulfilled
-                       //&& getSignalDuration(TimeSettingUnit, exitSignal[i]) < SignalRetraceTime 
+                       //&& getSymbolSignalDuration(TimeSettingUnit, exitSignal[i]) < SignalRetraceTime 
                             // todo: retracement blocked - ??? do we want to be tracking exit signals for any length of time? do we want to work entirely on order count?
                     ) {
                         // todo: check if exit signal was superceded by later entry signal
                         bool dodgeSupercede = false;
                         for(int j = 0; j < entryUnitCount; j++) {
                             if(Common::IsInvalidPointer(entrySignal[j])) { continue; }
-                            int duration = getSignalDuration(TimeSettingUnit, exitSignal[i], entrySignal[j]);
+                            int duration = getSymbolSignalDuration(TimeSettingUnit, exitSignal[i], entrySignal[j]);
                             if(duration > 0
                                 && signal == entrySignal[j].type // ???
                             ) {
@@ -230,7 +235,7 @@ void DataSymbol::addSignalUnit(SignalType signal, bool isEntry) {
     }
 }
 
-SignalUnit *DataSymbol::getSignalUnit(bool isEntry, int index = 0) {
+SignalUnit *DataSymbol::getSymbolSignalUnit(bool isEntry, int index = 0) {
     if(isEntry) {
         if(ArraySize(entrySignal) > index) { return entrySignal[index]; }
         else { return NULL; }
@@ -243,7 +248,9 @@ SignalUnit *DataSymbol::getSignalUnit(bool isEntry, int index = 0) {
 void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx) {
     SubfilterType subType = MainFilterMan.filters[filterIdx].subfilterType[subfilterIdx];
     SubfilterMode subMode = MainFilterMan.filters[filterIdx].subfilterMode[subfilterIdx];
-    SignalType subSignalType = filter[filterIdx].subfilter[subfilterIdx].history.getSignal();
+    SignalUnit *subSignalUnit = filter[filterIdx].subfilter[subfilterIdx].history.getSubSignalUnit();
+    SignalType subSignalType = subSignalUnit.type;
+    bool subSignalForce = subSignalUnit.force;
     bool subSignalStable = false;
     bool filterMaster = MainFilterMan.filters[filterIdx].signalMaster;
     
@@ -265,7 +272,7 @@ void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx) {
     if(compareSignalType == SignalHold && !filterMaster) { return; }
     
     if(subSignalType != SignalNone) {
-        subSignalStable = filter[filterIdx].subfilter[subfilterIdx].history.getSignalStable(
+        subSignalStable = filter[filterIdx].subfilter[subfilterIdx].history.getSubSignalStable(
             MainFilterMan.filters[filterIdx].alwaysStable ? 0
             : subType == SubfilterEntry ? EntryStableTime : ExitStableTime
             , TimeSettingUnit
@@ -275,7 +282,7 @@ void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx) {
     switch(subMode) {
         case SubfilterNormal:
             if(!subSignalStable) { 
-                if(subSignalType == SignalBuy || subSignalType == SignalSell || subSignalType == SignalClose) {
+                if(subSignalType == SignalBuy || subSignalType == SignalSell || subSignalType == SignalOpen || subSignalType == SignalClose) {
                     if(!filterMaster) { resultSignalType = SignalHold; }
                     else { resultSignalType = compareSignalType; }
                 }
@@ -296,13 +303,18 @@ void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx) {
                             resultSignalType = SignalShort;
                         }
                         break;
-
+                    
+                    case SignalOpen:
+                        // does no changes?
+                        resultSignalType = compareSignalType;
+                        break;
+                    
                     case SignalClose:
-                        if(compareSignalType != SignalClose && compareSignalType != SignalNone && !filterMaster) {
-                            resultSignalType = SignalHold;
-                        } else {
-                            resultSignalType = SignalClose;
-                        }
+                        //if(compareSignalType != SignalClose && compareSignalType != SignalNone && !filterMaster) {
+                        //    resultSignalType = SignalHold;
+                        //} else {
+                            resultSignalType = SignalClose; // force close to take effect
+                        //}
                         break;
                         
                     default:
@@ -315,7 +327,7 @@ void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx) {
             
         case SubfilterOpposite:
             if(!subSignalStable) {
-                if(subSignalType == SignalBuy || subSignalType == SignalSell || subSignalType == SignalClose) {
+                if(subSignalType == SignalBuy || subSignalType == SignalSell || subSignalType == SignalOpen || subSignalType == SignalClose) {
                     if(!filterMaster) { resultSignalType = SignalHold; }
                     else { resultSignalType = compareSignalType; }
                 }
@@ -336,13 +348,20 @@ void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx) {
                             resultSignalType = SignalLong;
                         }
                         break;
+                        
+                    case SignalOpen:
+                        //if((compareSignalType == SignalLong || compareSignalType == SignalShort) && !filterMaster) {
+                        //    resultSignalType = SignalHold;
+                        //} else {
+                            resultSignalType = SignalClose; // force change, as opposite = SignalClose
+                        //}
 
                     case SignalClose:
-                        if(compareSignalType == SignalClose && compareSignalType != SignalNone && !filterMaster) {
-                            resultSignalType = SignalHold;
-                        } else {
-                            resultSignalType = compareSignalType; // don't set as SignalClose, trying to do opposite
-                        }
+                        //if(compareSignalType == SignalClose && !filterMaster) {
+                        //    resultSignalType = SignalHold;
+                        //} else {
+                            resultSignalType = compareSignalType; // don't set as SignalClose, trying to do opposite. and as opposite = SignalOpen, do the same thing as Open does, which is not modify the sym signal
+                        //}
                         break;
                         
                     default:
@@ -362,13 +381,14 @@ void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx) {
                 switch(subSignalType) {
                     case SignalBuy: resultSignalType = SignalLong; break;
                     case SignalSell: resultSignalType = SignalShort; break;
+                    case SignalOpen: break; // do nothing, open can't fire sym signals on its own
                     case SignalClose: resultSignalType = SignalClose; break;
                     // default: break; // do nothing, only set signal if affirmative
                 }
             } else if(
-                ((compareSignalType == SignalLong && subSignalType == SignalSell)
-                    || (compareSignalType == SignalShort && subSignalType == SignalBuy)
-                    || (compareSignalType == SignalClose && subSignalType == SignalNone)
+                ((compareSignalType == SignalLong && (subSignalType == SignalSell || subSignalType == SignalClose))
+                    || (compareSignalType == SignalShort && (subSignalType == SignalBuy || subSignalType == SignalClose))
+                    || (compareSignalType == SignalClose && subSignalType == SignalOpen)
                     ) // or subSignalType != SignalClose ?
                  && !filterMaster // signalMaster can't place SignalHold
             ) {
@@ -380,18 +400,24 @@ void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx) {
     }
     
     if(filterMaster
-        && (subSignalType == SignalBuy || subSignalType == SignalSell || subSignalType == SignalClose) 
+        && (subSignalType == SignalBuy || subSignalType == SignalSell || subSignalType == SignalOpen || subSignalType == SignalClose) 
         && resultSignalType != SignalHold && resultSignalType != SignalNone
     ) {
         if(subType == SubfilterEntry) { masterEntrySet = true; }
         else { masterExitSet = true; }
     }
 
-    if(subType == SubfilterEntry) { pendingEntrySignalType = resultSignalType; } 
-    else { pendingExitSignalType = resultSignalType; }
+    if(subType == SubfilterEntry) { 
+        pendingEntrySignalType = resultSignalType; 
+        if(!pendingEntrySignalForce && subSignalForce) { pendingEntrySignalForce = true; }
+    } 
+    else { 
+        pendingExitSignalType = resultSignalType; 
+        if(!pendingExitSignalForce && subSignalForce) { pendingExitSignalForce = true; }
+    }
 }
 
-int DataSymbol::getSignalDuration(TimeUnits stableUnits, SignalUnit *prevUnit, SignalUnit *curUnit = NULL) {
+int DataSymbol::getSymbolSignalDuration(TimeUnits stableUnits, SignalUnit *prevUnit, SignalUnit *curUnit = NULL) {
     if(Common::IsInvalidPointer(prevUnit)) { return -1; }
     
     //((cur) >= (prev)) ? ((cur)-(prev)) : ((0xFFFFFFFF-(prev))+(cur)+1)
@@ -471,11 +497,13 @@ bool DataManager::retrieveDataFromFilters() {
     for(int i = 0; i < size; i++) {
         symbol[i].pendingEntrySignalType = SignalNone;
         symbol[i].pendingExitSignalType = SignalNone;
+        symbol[i].pendingEntrySignalForce = false;
+        symbol[i].pendingExitSignalForce = false;
         symbol[i].masterEntrySet = false;
         symbol[i].masterExitSet = false;
         MainFilterMan.calculateFilters(i);
-        symbol[i].addSignalUnit(symbol[i].pendingEntrySignalType, true);
-        symbol[i].addSignalUnit(symbol[i].pendingExitSignalType, false);
+        symbol[i].addSymbolSignalUnit(symbol[i].pendingEntrySignalType, symbol[i].pendingEntrySignalForce, true);
+        symbol[i].addSymbolSignalUnit(symbol[i].pendingExitSignalType, symbol[i].pendingExitSignalForce, false);
         
     }
     

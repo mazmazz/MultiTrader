@@ -88,13 +88,13 @@ bool OrderManager::isEntrySafeByDirection(int symIdx, bool isLong) {
 long OrderManager::checkDoEntrySignals(int symIdx) {
     if(!isEntrySafe(symIdx)) { return 0; }
 
-    SignalUnit *checkUnit = MainDataMan.symbol[symIdx].getSignalUnit(true);
+    SignalUnit *checkUnit = MainDataMan.symbol[symIdx].getSymbolSignalUnit(true);
     if(Common::IsInvalidPointer(checkUnit)) { return 0; }
 
     // if signal blocked, then falsify it by seeing if there are no open positions
     if(SignalRetraceOpenAfterExit
         && checkUnit.blocked
-        && (!SignalRetraceOpenAfterDelay || MainDataMan.symbol[symIdx].getSignalDuration(TimeSettingUnit, checkUnit) >= SignalRetraceDelay) // don't falsify if reason is due to retrace time
+        && (!SignalRetraceOpenAfterDelay || MainDataMan.symbol[symIdx].getSymbolSignalDuration(TimeSettingUnit, checkUnit) >= SignalRetraceDelay) // don't falsify if reason is due to retrace time
     ) {
         // should we check only for the same direction as signal? maybe not, would result in multiple open positions
         // if(checkUnit.type == SignalLong) {
@@ -127,7 +127,7 @@ long OrderManager::checkDoEntrySignals(int symIdx) {
     //    }
     //}
     
-    SignalUnit *checkExitUnit = MainDataMan.symbol[symIdx].getSignalUnit(false);
+    SignalUnit *checkExitUnit = MainDataMan.symbol[symIdx].getSymbolSignalUnit(false);
     if(!Common::IsInvalidPointer(checkExitUnit)) {
         // todo: how to handle retraces where exit signal is temporarily not in opposite?
         // retracement delay? loop through buffer and see if exit signal existed within retracement delay?

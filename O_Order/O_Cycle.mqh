@@ -95,7 +95,7 @@ void OrderManager::evaluateFulfilledFromOrder(long ticket, int symbolIdx, bool i
     // if signal already exists for open order, raise fulfilled flag so no repeat is opened
 
     int orderAct = getOrderType(isPosition);
-    SignalUnit *checkEntrySignal = MainDataMan.symbol[symbolIdx].getSignalUnit(true);
+    SignalUnit *checkEntrySignal = MainDataMan.symbol[symbolIdx].getSymbolSignalUnit(true);
     if(!Common::IsInvalidPointer(checkEntrySignal)
         && (checkEntrySignal.type == SignalLong || checkEntrySignal.type == SignalShort)
     ) {

@@ -24,6 +24,8 @@ class FilterAtr : public Filter {
 #endif
     
     public:
+    ~FilterAtr();
+    
     void init();
     void deInit();
 #ifdef __MQL5__
@@ -46,6 +48,10 @@ class FilterAtr : public Filter {
 };
 
 //+------------------------------------------------------------------+
+
+void FilterAtr::~FilterAtr() {
+    deInit();
+}
 
 void FilterAtr::init() {
     if(isInit) { return; }

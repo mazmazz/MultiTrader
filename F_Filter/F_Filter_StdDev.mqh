@@ -27,6 +27,8 @@ class FilterStdDev : public Filter {
 #endif
 
     public:
+    ~FilterStdDev();
+    
     void init();
     void deInit();
 #ifdef __MQL5__
@@ -55,6 +57,10 @@ class FilterStdDev : public Filter {
 };
 
 //+------------------------------------------------------------------+
+
+void FilterStdDev::~FilterStdDev() {
+    deInit();
+}
 
 void FilterStdDev::init() {
     if(isInit) { return; }

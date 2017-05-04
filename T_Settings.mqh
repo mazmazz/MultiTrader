@@ -175,14 +175,13 @@ bool BasketTotalPerDay = false; // dummied out for now
 input bool BasketClosePendings=true;
 
 input string Lbl_Basket_Master_Stop="________ Master Basket Stop Levels ________"; // :
-
+input string Lbl_Basket_Master_StopLoss = "---- Master Stop Loss ----";
 input BasketStopMode BasketMasterInitialStopLossMode=BasketStopDisable;
 input double BasketStopLossValue=-200.0;
 //input double BasketStopLossFactor=1;
 input int BasketMaxLosingPerDay=2;
 
-input string Lbl_Basket_Master_Stop_Gap=""; // :
-
+input string Lbl_Basket_Master_TakeProfit = "---- Master Take Profit ----";
 input BasketStopMode BasketMasterInitialTakeProfitMode=BasketStopDisable;
 input double BasketTakeProfitValue=400.0;
 //input double BasketTakeProfitFactor=1;
@@ -203,13 +202,13 @@ input bool BasketMasterJumpingStopEnabled=false;
 input double BasketMasterJumpingStop = 10.0;
 
 input string Lbl_Basket_Symbol_Stop="________ Symbol Basket Stop Levels ________"; // :
+input string Lbl_Basket_Symbol_StopLoss = "---- Symbol Stop Loss ----";
 input bool BasketSymbolInitialStopLossEnabled = false;
 input string BasketSymbolStopLossCalc="-50.0";
 //input bool BasketSymbolStopLossReUpdate = false;
 input int BasketSymbolMaxLosingPerDay=2;
 
-input string Lbl_Basket_Symbol_Stop_Gap=""; // :
-
+input string Lbl_Basket_Symbol_TakeProfit = "---- Symbol Take Profit ----";
 input bool BasketSymbolInitialTakeProfitEnabled = false;
 input string BasketSymbolTakeProfitCalc="75.0";
 //input bool BasketSymbolTakeProfitReUpdate = false;

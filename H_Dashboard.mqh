@@ -346,7 +346,7 @@ void DashboardManager::drawSubfilterCol(string &legendText, int symbolIdx, Subfi
             if(MainFilterMan.filters[i].subfilterHidden[subIdx]) { continue; }
             
             if(isLegend) { 
-                legendText += padText(truncText(MainFilterMan.filters[i].shortName, maxLabelPos-2) + "-" + MainFilterMan.filters[i].subfilterName[subIdx], colSize);
+                legendText += padText(truncText(MainFilterMan.filters[i].shortName + "-" + MainFilterMan.filters[i].subfilterName[subIdx], maxLabelPos), colSize);
             }
             else { 
                 drawData(symbolIdx, i, subIdx);
@@ -490,8 +490,8 @@ void DashboardManager::updateData(int symbolId, int filterId, int subfilterId, b
             // negate signal for display purposes since this is an exit
             if(!DisplaySignalInternal) {
                 switch(signal) {
-                    case SignalBuy: signal = isExit ? SignalShort : SignalLong; break;
-                    case SignalSell: signal = isExit ? SignalLong : SignalShort; break;
+                    case SignalBuy: signal = isExit ? SignalShort : SignalBuy; break; // short used for short exits (buy safe)
+                    case SignalSell: signal = isExit ? SignalLong : SignalSell; break; // long used for long exits (sell safe)
                 }
             }
         
@@ -501,9 +501,9 @@ void DashboardManager::updateData(int symbolId, int filterId, int subfilterId, b
                 + signalToString(signal, history.getSignalDuration(TimeSettingUnit), MainFilterMan.filters[filterId].subfilterType[subfilterId], true, MainFilterMan.filters[filterId].alwaysStable);
                 ;
             
-            switch(data.signal) {
-                case SignalBuy: fontColor = fontColorBuy; break;
-                case SignalSell: fontColor = fontColorSell; break;
+            switch(signal) {
+                case SignalBuy: case SignalShort: fontColor = fontColorBuy; break; // short used for short exits (buy safe)
+                case SignalSell: case SignalLong: fontColor = fontColorSell; break; // long used for long exits (sell safe)
                 case SignalOpen: fontColor = fontColorAction; break;
                 case SignalClose: fontColor = fontColorCounterAction; break;
                 default: fontColor = fontColorDefault; break;

@@ -178,7 +178,7 @@ int OrderManager::getGridOrderType(SignalType signal, bool isHedge, bool isDual,
 void OrderManager::fillGridExitFlags(int symbolIdx) { 
     if(isTradeModeGrid() && gridExit[symbolIdx]) {
         if(gridExitBySignal[symbolIdx]) {
-            SignalUnit *checkUnit = MainDataMan.symbol[symbolIdx].getSignalUnit(false);
+            SignalUnit *checkUnit = MainDataMan.symbol[symbolIdx].getSymbolSignalUnit(false);
             if(!Common::IsInvalidPointer(checkUnit)) { 
                 checkUnit.fulfilled = true;
             }

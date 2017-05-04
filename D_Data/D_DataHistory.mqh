@@ -30,7 +30,7 @@ class DataHistory {
     void addData(DataUnit *data);
 
     template<typename T>
-    void addData(bool success, T value, SignalType signal = SignalNone, string debugValue = "", datetime lastUpdate = 0);
+    void addData(bool success, T value, SignalType signal = SignalNone, string debugValue = "", datetime lastUpdate = 0, bool forceIn = false);
     
     DataUnit *getData(int index = 0) { 
         if(index >= ArraySize(data)) { return NULL; }
@@ -39,16 +39,16 @@ class DataHistory {
     
     void deleteAllData();
 
-    void addSignalUnit(SignalType curSignal, int checkIndex = 0);
+    void addSubSignalUnit(SignalType curSignal, bool curForce = false, int checkIndex = 0);
     
     template<typename T>
     void compareRawValues(DataUnit *unit, DataUnit *compareUnit);
     
-    SignalType getSignal(int unitIdx = 0);
-    int getSignalDuration(TimeUnits stableUnits, SignalUnit *prevUnit, SignalUnit *curUnit = NULL);
-    bool getSignalStable(int stableLength, TimeUnits stableUnits);
+    SignalType getSubSignal(int unitIdx = 0);
+    int getSubSignalDuration(TimeUnits stableUnits, SignalUnit *prevUnit, SignalUnit *curUnit = NULL);
+    bool getSubSignalStable(int stableLength, TimeUnits stableUnits);
     
-    SignalUnit *getSignalUnit(int index = 0);
+    SignalUnit *getSubSignalUnit(int index = 0);
 };
 
 void DataHistory::DataHistory() {
@@ -90,15 +90,15 @@ void DataHistory::setHistoryCount(int dataHistoryCountIn = -1, int signalHistory
 }
 
 void DataHistory::addData(DataUnit *unit) {
-    addSignalUnit(unit.signal);
+    addSubSignalUnit(unit.signal, unit.force, 0);
     
     Common::ArrayPush(data, unit, dataHistoryCount);
 }
 
 template<typename T>
-void DataHistory::addData(bool success, T value, SignalType signal = SignalNone, string debugValue = "", datetime lastUpdate = 0) {
+void DataHistory::addData(bool success, T value, SignalType signal = SignalNone, string debugValue = "", datetime lastUpdate = 0, bool forceIn = false) {
     DataUnit *newData = NULL;
-    newData = new DataUnit(success, value, signal, debugValue, lastUpdate);
+    newData = new DataUnit(success, value, signal, debugValue, lastUpdate, forceIn);
     
     addData(newData);
 }
@@ -108,35 +108,36 @@ void DataHistory::deleteAllData() {
     Common::SafeDeletePointerArray(signal);
 }
 
-SignalType DataHistory::getSignal(int unitIdx = 0) { // kept for compatibility, this looks at data history, not signal history
+SignalType DataHistory::getSubSignal(int unitIdx = 0) { // kept for compatibility, this looks at data history, not signal history
     if(unitIdx >= ArraySize(data) || Common::IsInvalidPointer(data[unitIdx])) { return SignalNone; }
     else { return data[unitIdx].signal; }
 }
 
-void DataHistory::addSignalUnit(SignalType curSignal, int checkIndex = 0) {
+void DataHistory::addSubSignalUnit(SignalType curSignal, bool curForce = false, int checkIndex = 0) {
     bool force = false;
     SignalType compareSignal = SignalNone;
-    SignalUnit *compareUnit = getSignalUnit(checkIndex);
+    SignalUnit *compareUnit = getSubSignalUnit(checkIndex);
     if(Common::IsInvalidPointer(compareUnit)) { force = true; }
     else { compareSignal = compareUnit.type; }
 
-    if (force || (curSignal != compareSignal)) {
+    if (force || curForce || (curSignal != compareSignal)) {
         SignalUnit *signalUnit = new SignalUnit();
         signalUnit.timeMilliseconds = GetTickCount();
         signalUnit.timeDatetime = TimeCurrent();
         signalUnit.timeCycles = 0;
         signalUnit.type = curSignal;
+        signalUnit.force = curForce;
         Common::ArrayPush(signal, signalUnit, signalHistoryCount);
     } else if(ArraySize(signal) > 0 && !Common::IsInvalidPointer(signal[0])) { signal[0].timeCycles++; }
 }
 
-SignalUnit *DataHistory::getSignalUnit(int index = 0) {
+SignalUnit *DataHistory::getSubSignalUnit(int index = 0) {
     if(ArraySize(signal) > index) { return signal[index]; }
     else { return NULL; }
 }
 
-int DataHistory::getSignalDuration(TimeUnits stableUnits, SignalUnit *prevUnit = NULL, SignalUnit *curUnit = NULL) {
-    if(Common::IsInvalidPointer(prevUnit)) { prevUnit = getSignalUnit(); }
+int DataHistory::getSubSignalDuration(TimeUnits stableUnits, SignalUnit *prevUnit = NULL, SignalUnit *curUnit = NULL) {
+    if(Common::IsInvalidPointer(prevUnit)) { prevUnit = getSubSignalUnit(); }
     if(Common::IsInvalidPointer(prevUnit)) { return -1; }
     
     //((cur) >= (prev)) ? ((cur)-(prev)) : ((0xFFFFFFFF-(prev))+(cur)+1)
@@ -163,6 +164,6 @@ int DataHistory::getSignalDuration(TimeUnits stableUnits, SignalUnit *prevUnit =
     }
 }
 
-bool DataHistory::getSignalStable(int stableLength, TimeUnits stableUnits) {
-    return (getSignalDuration(stableUnits) >= stableLength);
+bool DataHistory::getSubSignalStable(int stableLength, TimeUnits stableUnits) {
+    return (getSubSignalDuration(stableUnits) >= stableLength);
 }

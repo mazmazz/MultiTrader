@@ -76,8 +76,7 @@ input string CSS_Entry_Modes="a:0|b:1";
 input string CSS_Entry_Names="a:D1|b:D1SS";
 
 input string Lbl_CSS_Entry_Indi="-- Parameters --"; // :
-input string CSS_Entry_ResultType="a:3|b:3"; // ResultType: 1=Diff 2=Delta 3=Cross 4=Direction
-    // 5=GMTrend 6=GMT Delta
+input string CSS_Entry_ResultType="a:3|b:3"; // ResultType: 1=Diff 2=Delta 3=Cross 4=Direction 5=GMT 6=GMT Delta
 input string CSS_Entry_CalcMethod="a:1|b:3"; // CalcMethod: 1=CSS 3=SuperSlope
 input string CSS_Entry_TimeFrame="a:1440|b:1440";
 input string CSS_Entry_MaPeriod="a:21|b:7";
@@ -85,13 +84,10 @@ input string CSS_Entry_AtrPeriod="a:100|b:50";
 input string CSS_Entry_Shift="*:0";
 
 input string Lbl_CSS_Entry_Specific="-- Result Settings --"; // :
-input string CSS_Entry_Candles="*:0"; // CSS_Entry_Candles: Delta/Cross
-    // /GMT Delta
+input string CSS_Entry_Candles="*:0"; // CSS_Entry_Candles: Delta/Cross/GMT Delta
 input string CSS_Entry_Absolute="*:false"; // CSS_Entry_Absolute: Diff/Delta
-input string CSS_Entry_Min="*:0.1"; // CSS_Entry_Min: Diff/Delta
-    // /GMT/GMT Delta
-input string CSS_Entry_Max="*:99.0"; // CSS_Entry_Max: Diff/Delta
-    // /GMT/GMT Delta
+input string CSS_Entry_Min="*:0.1"; // CSS_Entry_Min: Diff/Delta/GMT/GMT Delta
+input string CSS_Entry_Max="*:99.0"; // CSS_Entry_Max: Diff/Delta/GMT/GMT Delta
 input string CSS_Entry_TradeLevel="a:0.2|b:2.0"; // CSS_Entry_TradeLevel: Cross, 0 to disable check
 input string CSS_Entry_DifferenceThreshold="*:0"; // CSS_Entry_DifferenceThreshold: Direction
 
@@ -100,8 +96,7 @@ input string CSS_Exit_Modes="a:0|b:1";
 input string CSS_Exit_Names="a:D1|b:D1SS";
 
 input string Lbl_CSS_Exit_Indi="-- Parameters --"; // :
-input string CSS_Exit_ResultType="a:3|b:3"; // ResultType: 1=Diff 2=Delta 3=Cross 4=Direction
-    // 5=GMTrend 6=GMT Delta
+input string CSS_Exit_ResultType="a:3|b:3"; // ResultType: 1=Diff 2=Delta 3=Cross 4=Direction 5=GMT 6=GMT Delta
 input string CSS_Exit_CalcMethod="a:1|b:3"; // CalcMethod: 1=CSS 3=SuperSlope
 input string CSS_Exit_TimeFrame="a:1440|b:1440";
 input string CSS_Exit_MaPeriod="a:21|b:7";
@@ -109,13 +104,10 @@ input string CSS_Exit_AtrPeriod="a:100|b:50";
 input string CSS_Exit_Shift="*:0";
 
 input string Lbl_CSS_Exit_Specific="-- Result Settings --"; // :
-input string CSS_Exit_Candles="*:0"; // CSS_Exit_Candles: Delta/Cross
-    // /GMT Delta
+input string CSS_Exit_Candles="*:0"; // CSS_Exit_Candles: Delta/Cross/GMT Delta
 input string CSS_Exit_Absolute="*:false"; // CSS_Exit_Absolute: Diff/Delta
-input string CSS_Exit_Min="*:0.1"; // CSS_Exit_Min: Diff/Delta
-    // /GMT/GMT Delta
-input string CSS_Exit_Max="*:99.0"; // CSS_Exit_Max: Diff/Delta
-    // /GMT/GMT Delta
+input string CSS_Exit_Min="*:0.1"; // CSS_Exit_Min: Diff/Delta/GMT/GMT Delta
+input string CSS_Exit_Max="*:99.0"; // CSS_Exit_Max: Diff/Delta/GMT/GMT Delta
 input string CSS_Exit_TradeLevel="a:0.2|b:2.0"; // CSS_Exit_TradeLevel: Cross - 0 to disable check
 input string CSS_Exit_DifferenceThreshold="*:0"; // CSS_Exit_DifferenceThreshold: Direction
 

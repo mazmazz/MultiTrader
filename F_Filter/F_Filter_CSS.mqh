@@ -13,6 +13,9 @@
 #include "../S_Symbol.mqh"
 #include "../depends/PipFactor.mqh"
 #include "../depends/LibCSS5.mqh"
+#include "../T_Presets.mqh"
+
+#define _FilterCssGmt
 
 enum FILTER_CSS_RESULT {
     CSS_RESULT_NONE
@@ -46,6 +49,8 @@ class FilterCss : public Filter {
     
     public:
     string symbolsToWeigh;
+    
+    ~FilterCss();
     
     void init();
     void deInit();
@@ -86,10 +91,15 @@ class FilterCss : public Filter {
 
 //+------------------------------------------------------------------+
 
+void FilterCss::~FilterCss() {
+    deInit();
+}
+
 void FilterCss::init() {
      if(isInit) { return; }
      
      shortName = "CSS";
+     symbolsToWeigh = CSS_SymbolsToWeigh;
      instantiateLib();
           
      isInit = true;
@@ -243,33 +253,37 @@ bool FilterCss::calculate(int subIdx, int symIdx, DataUnit *dataOut) {
             direction = value;
             valueText = value == TRADE_DIRECTION_LONG ? "Long" : value == TRADE_DIRECTION_SHORT ? "Short" : " ";
             break;
+
+#ifdef _FilterCssGmt      
+        case CSS_RESULT_GLOBALMARKETTREND: {
+            value = inst.getGlobalMarketTrend(symbol, timeframe, shift[subIdx]);
+            bool constraintsMet = MathAbs(value) >= MathAbs(min[subIdx]) && MathAbs(value) <= MathAbs(max[subIdx]);
+                // directionless -- SignalOpen if constraintsMet
+            valueText = DoubleToString(value, 4);
+            break;
+        }
             
-//        case CSS_RESULT_GLOBALMARKETTREND: {
-//            value = inst.getGlobalMarketTrend(symbol, timeframe, shift[subIdx]);
-//            bool constraintsMet = MathAbs(value) >= MathAbs(min[subIdx]) && MathAbs(value) <= MathAbs(max[subIdx]);
-//            direction = !constraintsMet ? TRADE_DIRECTION_NONE : value >= 0 ? TRADE_DIRECTION_LONG : TRADE_DIRECTION_SHORT; // todo: min threshold
-//                // direction?
-//            valueText = DoubleToString(value, 4);
-//            break;
-//        }
-//            
-//        case CSS_RESULT_GLOBALMARKETTREND_DELTA: {
-//            value = inst.getGlobalMarketTrendDelta(symbol, timeframe, shift[subIdx], candles[subIdx]);
-//            bool constraintsMet = MathAbs(value) >= MathAbs(min[subIdx]) && MathAbs(value) <= MathAbs(max[subIdx]);
-//            direction = !constraintsMet ? TRADE_DIRECTION_NONE : value >= 0 ? TRADE_DIRECTION_LONG : TRADE_DIRECTION_SHORT; // todo: min threshold
-//                // direction?
-//            valueText = DoubleToString(value, 4);
-//            break;
-//        }
-            
+        case CSS_RESULT_GLOBALMARKETTREND_DELTA: {
+            value = inst.getGlobalMarketTrendDelta(symbol, timeframe, shift[subIdx], candles[subIdx]);
+            bool constraintsMet = MathAbs(value) >= MathAbs(min[subIdx]) && MathAbs(value) <= MathAbs(max[subIdx]);
+            direction = !constraintsMet ? TRADE_DIRECTION_NONE : value >= 0 ? TRADE_DIRECTION_LONG : TRADE_DIRECTION_SHORT;
+                // directionless -- SignalOpen if constraintsMet. Could also have a direction flag
+                // value > 0 should be long (shift-candles pos means market has grown bigger)
+            valueText = DoubleToString(value, 4);
+            break;
+        }
+ #endif
+      
         case CSS_RESULT_TRADELEVELCROSSED: // bool
             value = inst.getCSSTradeLevelCrossed(symbol, timeframe, shift[subIdx], tradeLevel[subIdx]);
             // todo: signalopen
             valueText = value ? "Crossed" : " ";
             break;
-          
+            
+ #ifndef _FilterCssGmt        
         case CSS_RESULT_GLOBALMARKETTREND:
         case CSS_RESULT_GLOBALMARKETTREND_DELTA:
+ #endif
         default:
             return false;
      }

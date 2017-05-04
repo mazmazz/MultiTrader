@@ -32,6 +32,8 @@ class FilterFb : public Filter {
 #endif
     
     public:
+    ~FilterFb();
+    
     void init();
     void deInit();
 #ifdef __MQL5__
@@ -72,6 +74,10 @@ class FilterFb : public Filter {
 };
 
 //+------------------------------------------------------------------+
+
+void FilterFb::~FilterFb() {
+    deInit();
+}
 
 void FilterFb::init() {
     if(isInit) { return; }

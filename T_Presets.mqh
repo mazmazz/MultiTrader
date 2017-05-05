@@ -39,7 +39,7 @@ input string Lbl_Format3="Do not add a trailing |";
 input string Lbl_ATR="________ ATR Settings [ATR] ________"; // :
 input string ATR_Value_Modes="a:1";
 input string ATR_Value_Names="a:H1";
-input string ATR_Value_Hidden="a:0";
+input string ATR_Value_Hidden="a:false";
 
 input string Lbl_ATR_Value_Indi="-- Parameters --"; // :
 input string ATR_Value_TimeFrame="a:60";
@@ -53,7 +53,7 @@ input string ATR_Value_Shift="*:0";
 input string Lbl_StdDev="________ StdDev Settings [StdDev] ________"; // :
 input string StdDev_Value_Modes="a:0";
 input string StdDev_Value_Names="a:H1";
-input string StdDev_Value_Hidden="a:0";
+input string StdDev_Value_Hidden="a:false";
 
 input string Lbl_StdDev_Value_Indi="-- Parameters --"; // :
 input string StdDev_Value_TimeFrame="a:60";
@@ -154,7 +154,7 @@ input string FB_Exit_MaAvgModeFast="a:1"; // AvgModeFast: 0=Simple 1=Exponential
 input string FB_Exit_MaPriceFast="a:0"; // MaPriceFast: 0=Close 1=Open 2=High 3=Low 4=Median 5=Typical 6=Weighted
 
 input string Lbl_FB_Exit_Slow="-- Slow MA --"; // :
-input string FB_Exit_MaEnableSlow="a:1";
+input string FB_Exit_MaEnableSlow="a:true";
 input string FB_Exit_MaPeriodSlow="a:10";
 input string FB_Exit_MaAvgModeSlow="a:1"; // AvgModeSlow: 0=Simple 1=Exponential 2=Smoothed 3=Linear-Weight
 input string FB_Exit_MaPriceSlow="a:0"; // MaPriceSlow: 0=Close 1=Open 2=High 3=Low 4=Median 5=Typical 6=Weighted

@@ -497,19 +497,19 @@ double MultiSettings::ParseValueRedirect(string value) {
 bool MultiSettings::ParseValueRedirect(string value, double &valueOut) {
     value = Common::StringTrim(value);
     if(StringFind(value, RedirectDelimiter) < 0) {
-        valueOut = value;
+        valueOut = StringToDouble(value); 
         return false;
     }
     
     string valRed[];
     if(StringSplit(value, RedirectDelimiter, valRed) < 2) { 
-        valueOut = value;
+        valueOut = StringToDouble(value); 
         return false;
     }
     
     valRed[0] = Common::StringTrim(valRed[0]);
     if(!IsOptimization() && StringLen(valRed[0]) > 0) { 
-        valueOut = value;
+        valueOut = StringToDouble(valRed[0]); 
         return false;
     }
     

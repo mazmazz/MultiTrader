@@ -28,7 +28,7 @@ bool OrderManager::isEntrySafe(int symIdx) {
     int maxSpread = 0;
     if(!getValuePoints(maxSpread, maxSpreadLoc, symIdx)) { return false; }
     int currentSpread = SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_SPREAD);
-    if(currentSpread > maxSpread) { return false; }
+    if(maxSpread != 0 && currentSpread > maxSpread) { return false; }
 
     // Basket
     if(!checkBasketSafe(symIdx)) { return false; }

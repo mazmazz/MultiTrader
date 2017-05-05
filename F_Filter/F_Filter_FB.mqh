@@ -220,11 +220,11 @@ bool FilterFb::calculate(int subIdx, int symIdx, DataUnit *dataOut) {
     
     datetime value = shift[subIdx] > 0 ? getBarOpenTime(symbol, Common::GetTimeFrameFromMinutes(timeFrame[subIdx]), shift[subIdx]) : TimeCurrent();
     
-    bool force = false;
-    if(value != lastCandleTime[symIdx]._[subIdx]) { force = true; }
-    lastCandleTime[symIdx]._[subIdx] = value;
+    //bool force = false;
+    //if(value != lastCandleTime[symIdx]._[subIdx] && signal != SignalNone) { force = true; }
+    //lastCandleTime[symIdx]._[subIdx] = value;
     
-    dataOut.setRawValue(value, signal, dataText, 0, force);
+    dataOut.setRawValue(value, signal, dataText, 0/*, force*/);
     
     return true;
 }

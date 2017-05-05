@@ -82,7 +82,7 @@ class DataSymbol {
     DataSymbol(int filterCount);
     ~DataSymbol();
     
-    void addSymbolSignalUnit(SignalType signal, bool signalForce, bool isEntry);
+    void addSymbolSignalUnit(SignalType signal,/* bool signalForce,*/ bool isEntry);
     SignalUnit *getSymbolSignalUnit(bool isEntry, int index = 0);
     void updateSymbolSignal(int filterIdx, int subfilterIdx);
     int getSymbolSignalDuration(TimeUnits stableUnits, SignalUnit *prevUnit, SignalUnit *curUnit = NULL);
@@ -140,20 +140,20 @@ void DataSymbol::setHistoryCount(int signalHistoryCountIn = -1) {
     ArrayResize(exitSignal, size, signalHistoryCount-size); 
 }
 
-void DataSymbol::addSymbolSignalUnit(SignalType signal, bool signalForce, bool isEntry) {
+void DataSymbol::addSymbolSignalUnit(SignalType signal/*, bool signalForce*/,bool isEntry) {
     bool force = false; 
     SignalType compareSignal = SignalNone;
     SignalUnit *compareUnit = getSymbolSignalUnit(isEntry);
     if(Common::IsInvalidPointer(compareUnit)) { force = true; }
     else { compareSignal = compareUnit.type; }
     
-    if (force || signalForce || (signal != compareSignal)/* || (!Common::IsInvalidPointer(compareUnit) ? compareUnit.retry : false)*/) { // note: allowing a retry upends the "every consecutive signal is different" assumption. Plus, when retrying, should we be modifying the existing signal, or no?
+    if (force /*|| signalForce */|| (signal != compareSignal)/* || (!Common::IsInvalidPointer(compareUnit) ? compareUnit.retry : false)*/) { // note: allowing a retry upends the "every consecutive signal is different" assumption. Plus, when retrying, should we be modifying the existing signal, or no?
         SignalUnit *newUnit = new SignalUnit();
         newUnit.timeMilliseconds = GetTickCount();
         newUnit.timeDatetime = TimeCurrent();
         newUnit.timeCycles = 0;
         newUnit.type = signal;
-        newUnit.force = signalForce;
+        //newUnit.force = signalForce;
         
         if(isEntry && signal != SignalHold && !Common::IsInvalidPointer(compareUnit)) {  // may need to change this if exit signals become more complex or SignalHold fulfilled/blocked becomes significant
             // retracement avoidance: for entry, check last entrySignal[1] if signal type is equal and was fulfilled, then also set fulfilled flag on new unit
@@ -245,12 +245,13 @@ SignalUnit *DataSymbol::getSymbolSignalUnit(bool isEntry, int index = 0) {
     }
 }
 
-void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx) {
+void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx/*, bool subSignalForce*/) {
     SubfilterType subType = MainFilterMan.filters[filterIdx].subfilterType[subfilterIdx];
     SubfilterMode subMode = MainFilterMan.filters[filterIdx].subfilterMode[subfilterIdx];
     SignalUnit *subSignalUnit = filter[filterIdx].subfilter[subfilterIdx].history.getSubSignalUnit();
     SignalType subSignalType = subSignalUnit.type;
-    bool subSignalForce = subSignalUnit.force;
+    bool subSignalForce = false;
+    //bool subSignalForce = subSignalUnit.force;
     bool subSignalStable = false;
     bool filterMaster = MainFilterMan.filters[filterIdx].signalMaster;
     
@@ -502,8 +503,8 @@ bool DataManager::retrieveDataFromFilters() {
         symbol[i].masterEntrySet = false;
         symbol[i].masterExitSet = false;
         MainFilterMan.calculateFilters(i);
-        symbol[i].addSymbolSignalUnit(symbol[i].pendingEntrySignalType, symbol[i].pendingEntrySignalForce, true);
-        symbol[i].addSymbolSignalUnit(symbol[i].pendingExitSignalType, symbol[i].pendingExitSignalForce, false);
+        symbol[i].addSymbolSignalUnit(symbol[i].pendingEntrySignalType/*, symbol[i].pendingEntrySignalForce*/, true);
+        symbol[i].addSymbolSignalUnit(symbol[i].pendingExitSignalType/*, symbol[i].pendingExitSignalForce*/, false);
         
     }
     

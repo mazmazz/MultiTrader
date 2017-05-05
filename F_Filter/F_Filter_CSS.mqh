@@ -39,6 +39,7 @@ class FilterCss : public Filter {
     int shift[];
     int candles[]; // Delta/Cross
     bool absolute[]; // Diff/Delta // should be bool
+    bool compareAbsolute[];
     double min[];
     double max[];
     double tradeLevel[]; // tradeLevelCrossed
@@ -64,6 +65,7 @@ class FilterCss : public Filter {
         , int shiftIn
         , int candlesIn = 0
         , bool absoluteIn = false
+        , bool compareAbsoluteIn = false
         , double minIn = 0.2
         , double maxIn = 99
         , double tradeLevelIn = 0
@@ -78,6 +80,7 @@ class FilterCss : public Filter {
         , string shiftList
         , string candlesList // Delta/Cross
         , string absoluteList // Diff/Delta
+        , string compareAbsoluteList
         , string minList
         , string maxList
         , string tradeLevelList // TradeLevelCrossed
@@ -121,6 +124,7 @@ void FilterCss::addSubfilter(int mode, string name, bool hidden, SubfilterType t
     , int shiftIn
     , int candlesIn = 0
     , bool absoluteIn = false
+    , bool compareAbsoluteIn = false
     , double minIn = 0.2
     , double maxIn = 99
     , double tradeLevelIn = 0
@@ -136,6 +140,7 @@ void FilterCss::addSubfilter(int mode, string name, bool hidden, SubfilterType t
     Common::ArrayPush(shift, shiftIn);
     Common::ArrayPush(candles, candlesIn);
     Common::ArrayPush(absolute, absoluteIn);
+    Common::ArrayPush(compareAbsolute, compareAbsoluteIn);
     Common::ArrayPush(min, minIn);
     Common::ArrayPush(max, maxIn);
     Common::ArrayPush(tradeLevel, tradeLevelIn);
@@ -151,6 +156,7 @@ void FilterCss::addSubfilter(string modeList, string nameList, string hiddenList
     , string shiftList
     , string candlesList // Delta/Cross
     , string absoluteList // Diff/Delta
+    , string compareAbsoluteList
     , string minList
     , string maxList
     , string tradeLevelList // TradeLevelCrossed
@@ -170,6 +176,7 @@ void FilterCss::addSubfilter(string modeList, string nameList, string hiddenList
         
         MultiSettings::Parse(candlesList, /*0,*/ candles, count, addToExisting);
         MultiSettings::Parse(absoluteList, /*false,*/ absolute, count, addToExisting);
+        MultiSettings::Parse(compareAbsoluteList, /*false,*/ compareAbsolute, count, addToExisting);
         MultiSettings::Parse(minList, /*false,*/ min, count, addToExisting);
         MultiSettings::Parse(maxList, /*false,*/ max, count, addToExisting);
         MultiSettings::Parse(tradeLevelList, /*0,*/ tradeLevel, count, addToExisting);
@@ -223,7 +230,9 @@ bool FilterCss::calculate(int subIdx, int symIdx, DataUnit *dataOut) {
      switch(resultType[subIdx]) {
         case CSS_RESULT_DIFF: {
             value = inst.getCSSDiff(symbol, timeframe, shift[subIdx], absolute[subIdx]);
-            bool constraintsMet = MathAbs(value) >= MathAbs(min[subIdx]) && MathAbs(value) <= MathAbs(max[subIdx]);
+            bool constraintsMet = false;
+            if(compareAbsolute[subIdx]) { constraintsMet = MathAbs(value) >= MathAbs(min[subIdx]) && MathAbs(value) <= MathAbs(max[subIdx]); }
+            else { constraintsMet = value >= min[subIdx] && value <= max[subIdx]; }
             double dirValue = absolute[subIdx] ? inst.getCSSDiff(symbol, timeframe, shift[subIdx], false) : value;
             direction = !constraintsMet ? TRADE_DIRECTION_NONE : dirValue >= 0 ? TRADE_DIRECTION_LONG : TRADE_DIRECTION_SHORT; // todo: min threshold
             valueText = DoubleToString(value, 4);
@@ -232,7 +241,9 @@ bool FilterCss::calculate(int subIdx, int symIdx, DataUnit *dataOut) {
             
         case CSS_RESULT_DELTA: {
             value = inst.getCSSDelta(symbol, timeframe, shift[subIdx], candles[subIdx], absolute[subIdx]);
-            bool constraintsMet = MathAbs(value) >= MathAbs(min[subIdx]) && MathAbs(value) <= MathAbs(max[subIdx]);
+            bool constraintsMet = false;
+            if(compareAbsolute[subIdx]) { constraintsMet = MathAbs(value) >= MathAbs(min[subIdx]) && MathAbs(value) <= MathAbs(max[subIdx]); }
+            else { constraintsMet = value >= min[subIdx] && value <= max[subIdx]; }
             double dirValue = absolute[subIdx] ? inst.getCSSDelta(symbol, timeframe, shift[subIdx], candles[subIdx], false) : value;
             direction = !constraintsMet ? TRADE_DIRECTION_NONE : dirValue >= 0 ? TRADE_DIRECTION_LONG : TRADE_DIRECTION_SHORT; // todo: min threshold
             valueText = DoubleToString(value, 4);
@@ -257,7 +268,9 @@ bool FilterCss::calculate(int subIdx, int symIdx, DataUnit *dataOut) {
 #ifdef _FilterCssGmt      
         case CSS_RESULT_GLOBALMARKETTREND: {
             value = inst.getGlobalMarketTrend(symbol, timeframe, shift[subIdx]);
-            bool constraintsMet = MathAbs(value) >= MathAbs(min[subIdx]) && MathAbs(value) <= MathAbs(max[subIdx]);
+            bool constraintsMet = false;
+            if(compareAbsolute[subIdx]) { constraintsMet = MathAbs(value) >= MathAbs(min[subIdx]) && MathAbs(value) <= MathAbs(max[subIdx]); }
+            else { constraintsMet = value >= min[subIdx] && value <= max[subIdx]; }
             direction = !constraintsMet ? TRADE_DIRECTION_NONE : TRADE_DIRECTION_BOTH;
             valueText = DoubleToString(value, 4);
             break;
@@ -265,7 +278,9 @@ bool FilterCss::calculate(int subIdx, int symIdx, DataUnit *dataOut) {
             
         case CSS_RESULT_GLOBALMARKETTREND_DELTA: {
             value = inst.getGlobalMarketTrendDelta(symbol, timeframe, shift[subIdx], candles[subIdx]);
-            bool constraintsMet = MathAbs(value) >= MathAbs(min[subIdx]) && MathAbs(value) <= MathAbs(max[subIdx]);
+            bool constraintsMet = false;
+            if(compareAbsolute[subIdx]) { constraintsMet = MathAbs(value) >= MathAbs(min[subIdx]) && MathAbs(value) <= MathAbs(max[subIdx]); }
+            else { constraintsMet = value >= min[subIdx] && value <= max[subIdx]; }
             direction = !constraintsMet ? TRADE_DIRECTION_NONE : TRADE_DIRECTION_BOTH;
             valueText = DoubleToString(value, 4);
             break;

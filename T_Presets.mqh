@@ -86,6 +86,7 @@ input string CSS_Entry_Shift="*:0";
 input string Lbl_CSS_Entry_Specific="-- Result Settings --"; // :
 input string CSS_Entry_Candles="*:0"; // CSS_Entry_Candles: Delta/Cross/GMT Delta
 input string CSS_Entry_Absolute="*:false"; // CSS_Entry_Absolute: Diff/Delta
+input string CSS_Entry_CompareAbsolute="*:false"; // CSS_Entry_CompareAbsolute: GMT/GMT Delta
 input string CSS_Entry_Min="*:0.1"; // CSS_Entry_Min: Diff/Delta/GMT/GMT Delta
 input string CSS_Entry_Max="*:99.0"; // CSS_Entry_Max: Diff/Delta/GMT/GMT Delta
 input string CSS_Entry_TradeLevel="a:0.2|b:2.0"; // CSS_Entry_TradeLevel: Cross, 0 to disable check
@@ -106,6 +107,7 @@ input string CSS_Exit_Shift="*:0";
 input string Lbl_CSS_Exit_Specific="-- Result Settings --"; // :
 input string CSS_Exit_Candles="*:0"; // CSS_Exit_Candles: Delta/Cross/GMT Delta
 input string CSS_Exit_Absolute="*:false"; // CSS_Exit_Absolute: Diff/Delta
+input string CSS_Exit_CompareAbsolute="*:false"; // CSS_Exit_CompareAbsolute: GMT/GMT Delta
 input string CSS_Exit_Min="*:0.1"; // CSS_Exit_Min: Diff/Delta/GMT/GMT Delta
 input string CSS_Exit_Max="*:99.0"; // CSS_Exit_Max: Diff/Delta/GMT/GMT Delta
 input string CSS_Exit_TradeLevel="a:0.2|b:2.0"; // CSS_Exit_TradeLevel: Cross - 0 to disable check
@@ -184,12 +186,12 @@ void LoadFilters() {
     css.addSubfilter(CSS_Entry_Modes, CSS_Entry_Names, NULL, SubfilterEntry
        , CSS_Entry_ResultType, CSS_Entry_CalcMethod
        , CSS_Entry_TimeFrame, CSS_Entry_MaPeriod, CSS_Entry_AtrPeriod, CSS_Entry_Shift
-       , CSS_Entry_Candles, CSS_Entry_Absolute, CSS_Entry_Min, CSS_Entry_Max, CSS_Entry_TradeLevel, CSS_Entry_DifferenceThreshold
+       , CSS_Entry_Candles, CSS_Entry_Absolute, CSS_Entry_CompareAbsolute, CSS_Entry_Min, CSS_Entry_Max, CSS_Entry_TradeLevel, CSS_Entry_DifferenceThreshold
        );
     css.addSubfilter(CSS_Exit_Modes, CSS_Exit_Names, NULL, SubfilterExit
        , CSS_Exit_ResultType, CSS_Exit_CalcMethod
        , CSS_Exit_TimeFrame, CSS_Exit_MaPeriod, CSS_Exit_AtrPeriod, CSS_Exit_Shift
-       , CSS_Exit_Candles, CSS_Exit_Absolute, CSS_Exit_Min, CSS_Exit_Max, CSS_Exit_TradeLevel, CSS_Exit_DifferenceThreshold
+       , CSS_Exit_Candles, CSS_Exit_Absolute, CSS_Exit_CompareAbsolute, CSS_Exit_Min, CSS_Exit_Max, CSS_Exit_TradeLevel, CSS_Exit_DifferenceThreshold
        , true
        );
     Main.addFilter(css);

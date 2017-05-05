@@ -502,42 +502,32 @@ bool MultiSettings::ParseValueRedirect(string value, double &valueOut) {
     }
     
     string valRed[];
-    if(StringSplit(value, RedirectDelimiter, valRed) < 2) { 
+    if(StringSplit(value, StringGetCharacter(RedirectDelimiter, 0), valRed) < 2) { 
         valueOut = StringToDouble(value); 
         return false;
     }
     
-    valRed[0] = Common::StringTrim(valRed[0]);
-    if(!IsOptimization() && StringLen(valRed[0]) > 0) { 
-        valueOut = StringToDouble(valRed[0]); 
+    valRed[1] = Common::StringTrim(valRed[1]);
+    if(StringLen(valRed[1]) <= 0 || Common::GetStringType(valRed[1]) != Type_Numeric) {
+        Error::ThrowFatal("Value redirect " + valRed[1] + " is not valid");
+        valueOut = StringToDouble(value);
         return false;
     }
+    int index = StringToInteger(valRed[1]);
     
-    // if there's redirect notation ([value]@[redirectIndex])
-    valRed[1] = Common::StringTrim(valRed[1]);
-    if(StringLen(valRed[1]) > 0) {
-        string indexStr = NULL;
-        
-        if(StringFind(valRed[1], OptimizeParamDelimiter) < 0) {
-            indexStr = valRed[1];
-        } else {
-            string optParams[];
-            StringSplit(value, OptimizeParamDelimiter, optParams);
-            indexStr = Common::StringTrim(optParams[0]);
-        }
-        
-        int index = StringToInteger(indexStr);
-        
-        if(ArraySize(Redirects) > index) { 
-            valueOut = Redirects[index]; 
-            return true;
-        } else if(StringLen(valRed[0]) > 0) { 
-            valueOut = StringToDouble(valRed[0]); 
-            return true;
-        }
+    if(index < 0 || ArraySize(Redirects) <= index) {
+        Error::ThrowFatal("Value redirect " + index + " does not exist");
+        valueOut = StringToDouble(value);
+        return false;
     }
-    
-    return false;
+
+    if(ArraySize(Redirects) > index) { 
+        valueOut = Redirects[index]; 
+        return true;
+    } else if(StringLen(valRed[0]) > 0) { 
+        valueOut = StringToDouble(valRed[0]); 
+        return true;
+    } else { return false; }
 }
 
 //+------------------------------------------------------------------+

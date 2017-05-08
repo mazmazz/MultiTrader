@@ -30,7 +30,7 @@ class Filter {
     SubfilterMode subfilterMode[];
     string subfilterName[];
     SubfilterType subfilterType[];
-    int subfilterHidden[];
+    bool subfilterHidden[];
     
     int entrySubfilterId[];
     int exitSubfilterId[];
@@ -101,7 +101,7 @@ void Filter::clearSubfilters() {
 void Filter::setupSubfilters(int mode, string name, bool hidden, SubfilterType type) {
     int size = Common::ArrayPush(subfilterMode, (SubfilterMode)mode);
     Common::ArrayPush(subfilterName, name);
-    Common::ArrayPush(subfilterHidden, (int)false);
+    Common::ArrayPush(subfilterHidden, false);
     Common::ArrayPush(subfilterType, type);
     
     switch(type) {

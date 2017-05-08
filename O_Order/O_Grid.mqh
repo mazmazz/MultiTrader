@@ -140,6 +140,8 @@ long OrderManager::prepareGridOrder(SignalType signal, bool isHedge, bool isDual
         , posStoploss, posTakeprofit
         , doDrop
         );
+    if(posStoploss != 0) { posStoploss += (posPriceDist*gridIndexPrice); }
+    if(posTakeprofit != 0) { posTakeprofit += (posPriceDist * gridIndexPrice); }
     
     if(!doDrop) {
         long resultInitial = sendOpen(posSymName, cmd, posVolume, posPriceNormal, posSlippage, posStoploss, posTakeprofit, posComment, posMagic, posExpiration);

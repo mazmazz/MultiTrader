@@ -128,6 +128,7 @@ class MultiSettings {
     static CalcSource GetLocationSource(string location);
     static double GetLocationValue(string location);
     static string GetLocationFilterName(string location);
+    static string GetLocationFilterName(string location, int &filterIdxOut, int &subIdxOut);
     static CalcOperation GetLocationOperation(string location);
     static double GetLocationOperand(string location, CalcOperation operation);
     
@@ -147,6 +148,9 @@ class MultiSettings {
     
     static string DefaultDelimiter;
     
+    static string FilterNameDelimiter;
+    static string FilterIndexDelimiter;
+    
     static string RedirectDelimiter;
     static string OptimizeParamDelimiter;
     
@@ -163,6 +167,9 @@ string MultiSettings::KeyValDelimiter = ":"; // = does not import into MT4 ea se
 string MultiSettings::PairDelimiter = "|";
 
 string MultiSettings::DefaultDelimiter = "*";
+
+string MultiSettings::FilterNameDelimiter = "-"; // these need to be consistent with F_FilterManager
+string MultiSettings::FilterIndexDelimiter = "~";
 
 string MultiSettings::RedirectDelimiter = "@";
 string MultiSettings::OptimizeParamDelimiter = ",";
@@ -280,7 +287,7 @@ template<typename T>
 void MultiSettings::FillDestArrayByValue(T &destArray[],int keyAddrInt,bool valueNumResult, double valueNum, string value) {
     if(typename(T) == "int") { destArray[keyAddrInt] = valueNumResult ? valueNum : StringToInteger(value); }
     else if(typename(T) == "double") { destArray[keyAddrInt] = valueNumResult ? valueNum : StringToDouble(value); }
-    else { destArray[keyAddrInt] = value; }
+    else { destArray[keyAddrInt] = valueNumResult ? valueNum : value; }
 }
 
 // workaround for bool because template errors out with destArray[i] = value, says string can't convert to bool
@@ -389,13 +396,17 @@ bool MultiSettings::ParseLocation(string location, ValueLocation *locOut) {
             locOut.setVal = GetLocationValue(location);
             return true;
             
-        case CalcFilter:
+        case CalcFilter: {
             if(Common::IsInvalidPointer(locOut)) { locOut = new ValueLocation(); }
             locOut.source = source;
-            locOut.filterName = GetLocationFilterName(location);
+            int filterIdx = -1, subIdx = -1;
+            locOut.filterName = GetLocationFilterName(location, filterIdx, subIdx);
+            locOut.filterIdx = filterIdx;
+            locOut.subIdx = subIdx;
             locOut.operation = GetLocationOperation(location);
             locOut.operand = GetLocationOperand(location, locOut.operation);
             return true;
+        }
             
         default:
             return false;
@@ -418,17 +429,34 @@ CalcSource MultiSettings::GetLocationSource(string location) {
 double MultiSettings::GetLocationValue(string location) {
     int delimPos = StringFind(location, PairDelimiter);
     
-    if(delimPos >= 0) { location = StringSubstr(location, 0, delimPos); }
+    if(delimPos >= 0) { location = Common::StringTrim(StringSubstr(location, 0, delimPos)); }
     
     if(Common::GetStringType(location) == Type_Numeric) { return ParseValueRedirect(location); }
     else { return 0; }
 }
 
 string MultiSettings::GetLocationFilterName(string location) {
+    int filterIdx = -1, subIdx = -1;
+    return GetLocationFilterName(location, filterIdx, subIdx);
+}
+
+string MultiSettings::GetLocationFilterName(string location, int &filterIdxOut, int &subIdxOut) {
     int delimPos = StringFind(location, PairDelimiter);
-    
     if(delimPos >= 0) { location = StringSubstr(location, 0, delimPos); }
     
+    int nameDelimPos = StringFind(location, FilterNameDelimiter);
+    int idxDelimPos = StringFind(location, FilterIndexDelimiter);
+    
+    string filterSeg[]; double valRedResult = 0; int filterSegSize = 0;
+    if(nameDelimPos >= 1) {
+        filterSegSize = StringSplit(location, StringGetCharacter(FilterNameDelimiter, 0), filterSeg);
+    } else if(idxDelimPos >= 1) {
+        filterSegSize = StringSplit(location, StringGetCharacter(FilterIndexDelimiter, 0), filterSeg);
+    }
+    
+    if(filterSegSize >= 1 && ParseValueRedirect(filterSeg[0], valRedResult)) { filterIdxOut = valRedResult; }
+    if(filterSegSize >= 2 && ParseValueRedirect(filterSeg[1], valRedResult)) { subIdxOut = valRedResult; }
+        
     return location;
 }
 
@@ -515,7 +543,12 @@ bool MultiSettings::ParseValueRedirect(string value, double &valueOut) {
     }
     int index = StringToInteger(valRed[1]);
     
-    if(index < 0 || ArraySize(Redirects) <= index) {
+    if(index < 0) {
+        valueOut = StringToDouble(value);
+        return false; // negative indexes mean to disable
+    }
+    
+    if(ArraySize(Redirects) <= index) {
         Error::ThrowFatal("Value redirect " + index + " does not exist");
         valueOut = StringToDouble(value);
         return false;

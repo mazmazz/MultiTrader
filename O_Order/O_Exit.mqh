@@ -93,7 +93,7 @@ bool OrderManager::checkDoExitSignals(long ticket, int symIdx, bool isPosition) 
         Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": " + (exitIsTrigger ? "Exit signal - " + EnumToString(exitCheckUnit.type) : entryIsTrigger ? "Entry signal - " + EnumToString(entryCheckUnit.type) : "No trigger"), true);
 
         if(!isTradeModeGrid()) { 
-            if(exitIsTrigger) { exitCheckUnit.fulfilled = true; } // do not set opposite entry fulfilled; that's set by entry action
+            if(exitIsTrigger) { Common::ArrayPush(exitSignalsToFulfill, exitCheckUnit); } // fulfill after exit cycle is done // do not set opposite entry fulfilled; that's set by entry action
         } else {
             gridExitBySignal[symIdx] = exitIsTrigger;
             gridExitByOpposite[symIdx] = entryIsTrigger;
@@ -142,4 +142,11 @@ bool OrderManager::getDistanceFromOpen(long ticket, int symIdx, double &distance
         );
         
     return true;
+}
+
+void OrderManager::setFulfillExitSignals() {
+    int size = ArraySize(exitSignalsToFulfill);
+    for(int i = 0; i < size; i++) {
+        exitSignalsToFulfill[i].fulfilled = true;
+    }
 }

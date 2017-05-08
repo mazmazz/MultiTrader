@@ -15,7 +15,8 @@ enum SubfilterMode {
     SubfilterDisabled,
     SubfilterNormal,
     SubfilterOpposite,
-    SubfilterNotOpposite
+    SubfilterNotOpposite,
+    SubfilterViewOnly
 };
 
 enum SubfilterType {

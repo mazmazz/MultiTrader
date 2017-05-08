@@ -22,6 +22,7 @@ void OrderManager::doPositions(bool firstRun) {
 
     fillBasketFlags();
     resetOpenCount();
+    ArrayFree(exitSignalsToFulfill);
 
 #ifdef __MQL4__
     doCurrentPositions(firstRun, false);
@@ -32,6 +33,8 @@ void OrderManager::doPositions(bool firstRun) {
 #endif
 #endif
 
+    
+    setFulfillExitSignals();
     updateBasketStopLevels();
     checkDoBasketExit();
     

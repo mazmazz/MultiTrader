@@ -21,15 +21,25 @@ input string Lbl_Opt_Info = "Set start/step/stop below for the setting index"; /
 //#endif
 //#endif
 //input string Lbl_Opt_Info2 = "These values have no effect outside of optimization mode"; // :
+input string Opt_0_Comment = "";
 input double Opt_0 = 0.0;
+input string Opt_1_Comment = "";
 input double Opt_1 = 0.0;
+input string Opt_2_Comment = "";
 input double Opt_2 = 0.0;
+input string Opt_3_Comment = "";
 input double Opt_3 = 0.0;
+input string Opt_4_Comment = "";
 input double Opt_4 = 0.0;
+input string Opt_5_Comment = "";
 input double Opt_5 = 0.0;
+input string Opt_6_Comment = "";
 input double Opt_6 = 0.0;
+input string Opt_7_Comment = "";
 input double Opt_7 = 0.0;
+input string Opt_8_Comment = "";
 input double Opt_8 = 0.0;
+input string Opt_9_Comment = "";
 input double Opt_9 = 0.0;
 
 void LoadOptimizationValues() {

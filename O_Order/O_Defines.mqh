@@ -190,6 +190,7 @@ class OrderManager {
     
     bool retryFirstRun[];
     uint firstRunStartTime;
+    SignalUnit *exitSignalsToFulfill[];
     
     void doCurrentPositions(bool firstRun, bool isPosition);
     void evaluateFulfilledFromOrder(long ticket, int symbolIdx, bool isPosition);
@@ -205,6 +206,7 @@ class OrderManager {
     bool checkDoExitSignals(long ticket, int symIdx, bool isPosition);
     bool checkDoExitByDistance(long ticket, int symIdx, double distancePips, bool byGrid, bool isPosition);
     bool getDistanceFromOpen(long ticket, int symIdx, double &distanceOut, bool byGrid, bool isPosition);
+    void setFulfillExitSignals();
     
     //+------------------------------------------------------------------+
     // Modify

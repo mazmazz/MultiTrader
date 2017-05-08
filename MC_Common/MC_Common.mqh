@@ -69,7 +69,7 @@ class Common {
     static int AddrAbcToInt(string addrAbc, bool zeroBased=true);
     static string AddrIntToAbc(int addrInt, bool zeroBased=true);
     static string ConcatStringFromArray(string& strArray[], string delimiter = ";");
-    static StringType GetStringType(string test);
+    static StringType GetStringType(string test, bool checkSymbols = false);
     
     //uuid
     static string GetUuid();
@@ -284,12 +284,12 @@ string Common::ConcatStringFromArray(string& strArray[], string delimiter = ";")
     return finalString;
 }
 
-StringType Common::GetStringType(string test) {
+StringType Common::GetStringType(string test, bool checkSymbols = false) {
     test = StringTrim(test);
     int len = StringLen(test);
     if(len <= 0) { return Type_Empty; }
     
-    bool uppercase = false; bool lowercase = false; bool numeric = false;
+    bool uppercase = false; bool lowercase = false; bool numeric = false; bool symbol = false;
     ushort code = 0;
     
     for(int i= 0; i < len; i++) {
@@ -297,9 +297,10 @@ StringType Common::GetStringType(string test) {
         if(code >= 65 && code <= 90) { uppercase = true; }
         else if(code >= 97 && code <= 122) { lowercase = true; }
         else if(code >= 48 && code <= 57) { numeric = true; }
+        else if(checkSymbols) { symbol = true; }
     }
 
-    if((uppercase||lowercase)&&numeric){ return Type_Alphanumeric; }
+    if((uppercase||lowercase||symbol)&&numeric){ return Type_Alphanumeric; }
     else if(uppercase||lowercase) { return Type_Alpha; }
     else if(numeric) { return Type_Numeric; }
     else return Type_Symbol;

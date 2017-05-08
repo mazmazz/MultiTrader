@@ -73,6 +73,7 @@ int OnInit() {
 #endif
 
     Main = new MainMultiTrader();
+    LoadOptimizationValues();
     LoadFilters();
 
     int result = Main.onInit();

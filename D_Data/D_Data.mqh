@@ -396,6 +396,10 @@ void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx/*, bool subS
                 resultSignalType = SignalHold;
             } else { resultSignalType = compareSignalType; }
             break;
+        
+        case SubfilterViewOnly: 
+            resultSignalType = compareSignalType; // make no changes, pass signal as-is
+            break;
             
         default: break;
     }

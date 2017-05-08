@@ -92,6 +92,8 @@ void DashboardManager::~DashboardManager() {
 void DashboardManager::initDashboard() {
     objPrefix = _ProjectShortName + "_";
     
+    double dpiFactor = TerminalInfoInteger(TERMINAL_SCREEN_DPI)/144.0; // adjusting size to DPI: 1.2 value is based on 144 DPI (150% of 96 DPI)
+    
     fontFace = DisplayFont;
     fontSize = 11+(DisplayScale < 1 ? -4 : (DisplayScale-1)*4); //DisplayFontSize;
     
@@ -106,8 +108,8 @@ void DashboardManager::initDashboard() {
         // todo: underline/italic styles for buy/sell?
     }
     
-    rowSize = fontSize*2.5;
-    posSize = fontSize*1.2;//posSize = getPosSize(); // // guessing at fixed font width
+    rowSize = MathRound(fontSize*2.5*dpiFactor);
+    posSize = MathRound(fontSize*1.2*dpiFactor); //posSize = getPosSize(); // // guessing at fixed font width 
         // http://stackoverflow.com/questions/19113725/what-dependency-between-font-size-and-width-of-char-in-monospace-font
     
     colSize = 10;
@@ -375,6 +377,9 @@ void DashboardManager::drawData(int symbolId, int filterId, int subfilterId) {
         ObjectSetInteger(0, dataObjName, OBJPROP_XDISTANCE, posSize * (dataPosStart + (col*colSize) + colOffset));
         ObjectSetInteger(0, dataObjName, OBJPROP_YDISTANCE, rowSize * row);
         ObjectSetInteger(0, dataObjName, OBJPROP_CORNER, 0);
+        //if(MainFilterMan.filters[filterId].subfilterMode[subfilterId] == SubfilterViewOnly) {
+        //    TextSetFont(fontFace, fontSize, FONT_ITALIC);
+        //}
         updateData(symbolId, filterId, subfilterId, true);
     }
 }
@@ -490,8 +495,8 @@ void DashboardManager::updateData(int symbolId, int filterId, int subfilterId, b
             // negate signal for display purposes since this is an exit
             if(!DisplaySignalInternal) {
                 switch(signal) {
-                    case SignalBuy: signal = isExit ? SignalShort : SignalBuy; break; // short used for short exits (buy safe)
-                    case SignalSell: signal = isExit ? SignalLong : SignalSell; break; // long used for long exits (sell safe)
+                    case SignalBuy: signal = isExit ? SignalShort : SignalLong; break; // short used for short exits (buy safe)
+                    case SignalSell: signal = isExit ? SignalLong : SignalShort; break; // long used for long exits (sell safe)
                 }
             }
         
@@ -502,8 +507,10 @@ void DashboardManager::updateData(int symbolId, int filterId, int subfilterId, b
                 ;
             
             switch(signal) {
-                case SignalBuy: case SignalShort: fontColor = fontColorBuy; break; // short used for short exits (buy safe)
-                case SignalSell: case SignalLong: fontColor = fontColorSell; break; // long used for long exits (sell safe)
+                case SignalBuy: case SignalLong: 
+                    fontColor = isExit ? fontColorSell : fontColorBuy; break; // short used for short exits (buy safe)
+                case SignalSell: case SignalShort: 
+                    fontColor = isExit ? fontColorBuy : fontColorSell; break; // long used for long exits (sell safe)
                 case SignalOpen: fontColor = fontColorAction; break;
                 case SignalClose: fontColor = fontColorCounterAction; break;
                 default: fontColor = fontColorDefault; break;

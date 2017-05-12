@@ -41,6 +41,16 @@ input string Opt_8_Comment = "";
 input double Opt_8 = 0.0;
 input string Opt_9_Comment = "";
 input double Opt_9 = 0.0;
+input string Opt_10_Comment = "";
+input double Opt_10 = 0.0;
+input string Opt_11_Comment = "";
+input double Opt_11 = 0.0;
+input string Opt_12_Comment = "";
+input double Opt_12 = 0.0;
+input string Opt_13_Comment = "";
+input double Opt_13 = 0.0;
+input string Opt_14_Comment = "";
+input double Opt_14 = 0.0;
 
 void LoadOptimizationValues() {
     MultiSettings::PrepareRedirects(10);
@@ -54,4 +64,9 @@ void LoadOptimizationValues() {
     MultiSettings::LoadRedirect(7, Opt_7);
     MultiSettings::LoadRedirect(8, Opt_8);
     MultiSettings::LoadRedirect(9, Opt_9);
+    MultiSettings::LoadRedirect(10, Opt_10);
+    MultiSettings::LoadRedirect(11, Opt_11);
+    MultiSettings::LoadRedirect(12, Opt_12);
+    MultiSettings::LoadRedirect(13, Opt_13);
+    MultiSettings::LoadRedirect(14, Opt_14);
 }

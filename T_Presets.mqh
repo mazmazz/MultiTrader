@@ -21,6 +21,7 @@
 
 #include "F_Filter/F_Filter_ATR.mqh"
 #include "F_Filter/F_Filter_StdDev.mqh"
+#include "F_Filter/F_Filter_Spread.mqh"
 #include "F_Filter/F_Filter_CSS.mqh"
 #include "F_Filter/F_Filter_FB.mqh"
 
@@ -62,6 +63,15 @@ input string StdDev_Value_Shift="*:0";
 input string StdDev_Value_Method="*:0";
 input string StdDev_Value_AppliedPrice="*:0";
 input string StdDev_Value_PeriodShift="*:0";
+
+//+------------------------------------------------------------------+
+//| StdDev
+//+------------------------------------------------------------------+
+
+input string Lbl_Spread="________ Spread Settings [Spread] ________"; // :
+input string Spread_Value_Modes="a:1";
+input string Spread_Value_Names="a:Cur";
+input string Spread_Value_Hidden="*:false";
 
 //+------------------------------------------------------------------+
 //| CSS
@@ -181,6 +191,10 @@ void LoadFilters() {
         , StdDev_Value_Method, StdDev_Value_AppliedPrice, StdDev_Value_PeriodShift
         );
     Main.addFilter(stdDev);
+    
+    FilterSpread* spread = new FilterSpread();
+    spread.addSubfilter(Spread_Value_Modes, Spread_Value_Names, Spread_Value_Hidden, SubfilterValue);
+    Main.addFilter(spread);
         
     FilterCss* css = new FilterCss();
     css.addSubfilter(CSS_Entry_Modes, CSS_Entry_Names, NULL, SubfilterEntry

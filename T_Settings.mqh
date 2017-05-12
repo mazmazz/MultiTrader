@@ -175,17 +175,20 @@ bool BasketTotalPerDay = false; // dummied out for now
 input bool BasketClosePendings=true;
 
 input string Lbl_Basket_Master_Stop="________ Master Basket Stop Levels ________"; // :
+
 input string Lbl_Basket_Master_StopLoss = "---- Master Stop Loss ----";
 input BasketStopMode BasketMasterInitialStopLossMode=BasketStopDisable;
 input double BasketStopLossValue=-200.0;
 //input double BasketStopLossFactor=1;
 input int BasketMaxLosingPerDay=2;
+//input bool BasketMasterStopLossOffsetByOrders = false;
 
 input string Lbl_Basket_Master_TakeProfit = "---- Master Take Profit ----";
 input BasketStopMode BasketMasterInitialTakeProfitMode=BasketStopDisable;
 input double BasketTakeProfitValue=400.0;
 //input double BasketTakeProfitFactor=1;
 input int BasketMaxWinningPerDay=1;
+//input bool BasketMasterTakeProfitOffsetByOrders = false;
 
 input string Lbl_Basket_Master_Stop_Breakeven="---- Master Break Even Stop ----"; // :
 input bool BasketMasterBreakEvenStopEnabled=false;
@@ -208,11 +211,31 @@ input string BasketSymbolStopLossCalc="-50.0";
 //input bool BasketSymbolStopLossReUpdate = false;
 input int BasketSymbolMaxLosingPerDay=2;
 
-input string Lbl_Basket_Symbol_TakeProfit = "---- Symbol Take Profit ----";
+input string Lbl_Basket_Symbol_StopLossOffsets = "-- Symbol Stop Loss Offsets --"; // :
+input bool BasketSymbolStopLossOffsetByOrder = true;
+input string BasketSymbolStopLossOffsetCalc = "Spread-Cur|Factor|-1.0";
+input int BasketSymbolStopLossOffsetRelatedSeconds = 300;
+input int BasketSymbolStopLossOffsetLimitSeconds = 600;
+input bool BasketSymbolStopLossOffsetLimitLower = true;
+input string BasketSymbolStopLossOffsetLimitLowerCalc = "Spread-Cur|Factor|-2.0";
+input bool BasketSymbolStopLossOffsetLimitUpper = true;
+input string BasketSymbolStopLossOffsetLimitUpperCalc = "0.0";
+
+input string Lbl_Basket_Symbol_TakeProfit = "---- Symbol Take Profit ----"; // :
 input bool BasketSymbolInitialTakeProfitEnabled = false;
 input string BasketSymbolTakeProfitCalc="75.0";
 //input bool BasketSymbolTakeProfitReUpdate = false;
 input int BasketSymbolMaxWinningPerDay=2;
+
+input string Lbl_Basket_Symbol_TakeProfitOffsets = "-- Symbol Take Profit Offsets --"; // :
+input bool BasketSymbolTakeProfitOffsetByOrder = false;
+input string BasketSymbolTakeProfitOffsetCalc = "Spread-Cur|Factor|-1.0";
+input int BasketSymbolTakeProfitOffsetRelatedSeconds = 300;
+input int BasketSymbolTakeProfitOffsetLimitSeconds = 600;
+input bool BasketSymbolTakeProfitOffsetLimitLower = true;
+input string BasketSymbolTakeProfitOffsetLimitLowerCalc = "Spread-Cur|Factor|-2.0";
+input bool BasketSymbolTakeProfitOffsetLimitUpper = true;
+input string BasketSymbolTakeProfitOffsetLimitUpperCalc = "0.0";
 
 input string Lbl_Basket_Symbol_Stop_Breakeven="---- Symbol Break Even Stop ----"; // :
 input bool BasketSymbolBreakEvenStopEnabled=false;

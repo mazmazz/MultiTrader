@@ -32,7 +32,6 @@ void OrderManager::doPositions(bool firstRun) {
     doCurrentPositions(firstRun, true);
 #endif
 #endif
-
     
     setFulfillExitSignals();
     updateBasketStopLevels();
@@ -79,6 +78,7 @@ void OrderManager::doCurrentPositions(bool firstRun, bool isPosition) {
         if(!exitResult) {
             addOrderToProfitCount(symbolIdx, type, profit, false, false);
             addOrderToOpenCount(ticket, symbolIdx, isPosition, false);
+            addOrderToBasketSymbolOffset(ticket, symbolIdx, isPosition);
             doModifyPosition(ticket, symbolIdx, isPosition);
         } else {
             if(Common::OrderIsMarket(type)) {

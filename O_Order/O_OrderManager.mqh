@@ -59,6 +59,10 @@ void OrderManager::OrderManager() {
     ArrayResize(basketSymbolLosses, symCount); ArrayInitialize(basketSymbolLosses, 0);
     ArrayResize(basketSymbolWins, symCount); ArrayInitialize(basketSymbolWins, 0);
     
+    ArrayResize(lastOrderOpenTime, symCount); ArrayInitialize(lastOrderOpenTime, 0);
+    ArrayResize(basketSymbolStopLossOffset, symCount); ArrayInitialize(basketSymbolStopLossOffset, 0);
+    ArrayResize(basketSymbolTakeProfitOffset, symCount); ArrayInitialize(basketSymbolTakeProfitOffset, 0);
+    
     ArrayResize(retryFirstRun, symCount); ArrayInitialize(retryFirstRun, false);
     
     if(isTradeModeGrid()) { 
@@ -80,6 +84,10 @@ void OrderManager::~OrderManager() {
     Common::SafeDeletePointerArray(lastTradeBetween);
     Common::SafeDeletePointerArray(lastValueBetween);
 
+    Common::SafeDelete(basketSymbolStopLossOffsetLimitLowerLoc);
+    Common::SafeDelete(basketSymbolStopLossOffsetLimitUpperLoc);
+    Common::SafeDelete(basketSymbolTakeProfitOffsetLimitLowerLoc);
+    Common::SafeDelete(basketSymbolTakeProfitOffsetLimitUpperLoc);
     Common::SafeDelete(basketSymbolBreakEvenJumpDistanceLoc);
     Common::SafeDelete(basketSymbolTrailingStopLoc);
     Common::SafeDelete(basketSymbolJumpingStopLoc);
@@ -115,6 +123,12 @@ void OrderManager::initValueLocations() {
     basketSymbolBreakEvenJumpDistanceLoc = fillValueLocation(BasketSymbolBreakEvenJumpDistanceCalc);
     basketSymbolTrailingStopLoc = fillValueLocation(BasketSymbolTrailingStopCalc);
     basketSymbolJumpingStopLoc = fillValueLocation(BasketSymbolJumpingStopCalc);
+    basketSymbolStopLossOffsetLoc = fillValueLocation(BasketSymbolStopLossOffsetCalc);
+    basketSymbolTakeProfitOffsetLoc = fillValueLocation(BasketSymbolTakeProfitOffsetCalc);
+    basketSymbolStopLossOffsetLimitLowerLoc = fillValueLocation(BasketSymbolStopLossOffsetLimitLowerCalc);
+    basketSymbolStopLossOffsetLimitUpperLoc = fillValueLocation(BasketSymbolStopLossOffsetLimitUpperCalc);
+    basketSymbolTakeProfitOffsetLimitLowerLoc = fillValueLocation(BasketSymbolTakeProfitOffsetLimitLowerCalc);
+    basketSymbolTakeProfitOffsetLimitUpperLoc = fillValueLocation(BasketSymbolTakeProfitOffsetLimitUpperCalc);
 }
 
 ValueLocation *OrderManager::fillValueLocation(string location) {

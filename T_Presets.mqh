@@ -21,6 +21,7 @@
 
 #include "F_Filter/F_Filter_ATR.mqh"
 #include "F_Filter/F_Filter_StdDev.mqh"
+#include "F_Filter/F_Filter_Spread.mqh"
 #include "F_Filter/F_Filter_Stoch.mqh"
 
 //+------------------------------------------------------------------+
@@ -55,12 +56,21 @@ input string StdDev_Value_Names="a:H1";
 input string StdDev_Value_Hidden="*:false";
 
 input string Lbl_StdDev_Value_Indi=""; // :
-input string StdDev_Value_TimeFrame="a:60|b:240|c:1440";
+input string StdDev_Value_TimeFrame="a:60";
 input string StdDev_Value_Period="*:20";
 input string StdDev_Value_Shift="*:0";
 input string StdDev_Value_Method="*:0";
 input string StdDev_Value_AppliedPrice="*:0";
 input string StdDev_Value_PeriodShift="*:0";
+
+//+------------------------------------------------------------------+
+//| StdDev
+//+------------------------------------------------------------------+
+
+input string Lbl_Spread="________ Spread Settings [Spread] ________"; // :
+input string Spread_Value_Modes="a:1";
+input string Spread_Value_Names="a:Cur";
+input string Spread_Value_Hidden="*:false";
 
 //+------------------------------------------------------------------+
 //| Stoch
@@ -118,6 +128,10 @@ void LoadFilters() {
         , StdDev_Value_Method, StdDev_Value_AppliedPrice, StdDev_Value_PeriodShift
         );
     Main.addFilter(stdDev);
+        
+    FilterSpread* spread = new FilterSpread();
+    spread.addSubfilter(Spread_Value_Modes, Spread_Value_Names, Spread_Value_Hidden, SubfilterValue);
+    Main.addFilter(spread);
         
     FilterStoch* stoch = new FilterStoch();
     stoch.addSubfilter(Stoch_Entry_Modes, Stoch_Entry_Names, NULL, SubfilterEntry

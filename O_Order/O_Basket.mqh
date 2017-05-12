@@ -76,14 +76,14 @@ void OrderManager::checkDoBasketSymbolExit() {
 
 void OrderManager::checkDoBasketSymbolExit(int symIdx) {
     bool close = false;
-    if(basketSymbolStopLoss[symIdx] != 0 && isBasketStopEnabled(true, false, false, true) && (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]) <= basketSymbolStopLoss[symIdx]) {
-        Error::PrintInfo(MainSymbolMan.symbols[symIdx].name + " Close Basket - SL: " + basketSymbolStopLoss[symIdx] + " | Current: " + (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]), true);
+    if(basketSymbolStopLoss[symIdx] != 0 && isBasketStopEnabled(true, false, false, true) && (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]) <= getBasketOffsetStopLevel(symIdx, true)) {
+        Error::PrintInfo(MainSymbolMan.symbols[symIdx].name + " Close Basket - SL: " + basketSymbolStopLoss[symIdx] + " + " + basketSymbolStopLossOffset[symIdx] + " | Current: " + (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]), true);
         close = true;
         basketSymbolLosses[symIdx]++;
     }
     
-    if(basketSymbolTakeProfit[symIdx] != 0 && isBasketStopEnabled(false, true, false, true) && (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]) >= basketSymbolTakeProfit[symIdx]) {
-        Error::PrintInfo(MainSymbolMan.symbols[symIdx].name + " Close Basket - TP: " + basketSymbolTakeProfit[symIdx] + " | Current: " + (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]), true);
+    if(basketSymbolTakeProfit[symIdx] != 0 && isBasketStopEnabled(false, true, false, true) && (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]) >= getBasketOffsetStopLevel(symIdx, false)) {
+        Error::PrintInfo(MainSymbolMan.symbols[symIdx].name + " Close Basket - TP: " + basketSymbolTakeProfit[symIdx] + " + " + basketSymbolTakeProfitOffset[symIdx] + " | Current: " + (basketProfitSymbol[symIdx]+basketBookedProfitSymbol[symIdx]), true);
         close = true;
         basketSymbolWins[symIdx]++;
     }
@@ -142,6 +142,10 @@ void OrderManager::fillBasketFlags() {
     ArrayInitialize(basketLongProfitSymbol, 0);
     ArrayInitialize(basketShortProfitSymbol, 0);
     ArrayInitialize(basketSymbolClose, false);
+    
+    ArrayInitialize(lastOrderOpenTime, 0);
+    ArrayInitialize(basketSymbolStopLossOffset, 0);
+    ArrayInitialize(basketSymbolTakeProfitOffset, 0);
     
     if(!BasketTotalPerDay || basketDay != DayOfWeek()) { basketBookedProfit = 0; } // basketDay != DayOfWeek() is done in checkDoBasketExit()
     
@@ -433,4 +437,60 @@ bool OrderManager::isBasketStopEnabled(bool checkStopLoss = true, bool checkTake
         || (checkSymbol && checkStopLoss && BasketSymbolTrailingStopEnabled)
         || (checkSymbol && checkStopLoss && BasketSymbolJumpingStopEnabled)
         ;
+}
+
+//+------------------------------------------------------------------+
+
+void OrderManager::addOrderToBasketSymbolOffset(long ticket, int symIdx, bool isPosition) {
+    datetime orderDatetime = getOrderOpenTime(isPosition);
+    
+    if(BasketSymbolStopLossOffsetByOrder) {
+        int relatedSeconds = BasketSymbolStopLossOffsetRelatedSeconds;
+        if(orderDatetime - lastOrderOpenTime[symIdx] >= relatedSeconds) { basketSymbolStopLossOffset[symIdx] = 0; }
+        if(isBasketSymbolOffsetSafe(ticket, symIdx, true, isPosition)) {
+            double offset = 0;
+            if(getValue(offset, basketSymbolStopLossOffsetLoc, symIdx)) { basketSymbolStopLossOffset[symIdx] += offset; }
+        }
+    }
+    
+    if(BasketSymbolTakeProfitOffsetByOrder) {
+        int relatedSeconds = BasketSymbolTakeProfitOffsetRelatedSeconds;
+        if(orderDatetime - lastOrderOpenTime[symIdx] >= relatedSeconds) { basketSymbolTakeProfitOffset[symIdx] = 0; }
+        if(isBasketSymbolOffsetSafe(ticket, symIdx, false, isPosition)) {
+            double offset = 0;
+            if(getValue(offset, basketSymbolTakeProfitOffsetLoc, symIdx)) { basketSymbolTakeProfitOffset[symIdx] += offset; }
+        }
+    }
+    
+    lastOrderOpenTime[symIdx] = orderDatetime;
+}
+
+bool OrderManager::isBasketSymbolOffsetSafe(long ticket, int symIdx, bool isStopLoss, bool isPosition) {
+    if(!checkDoSelect(ticket, isPosition)) { return false; }
+    
+    datetime orderDatetime = getOrderOpenTime(isPosition);
+    int limitSeconds = isStopLoss ? BasketSymbolStopLossOffsetLimitSeconds : BasketSymbolTakeProfitOffsetLimitSeconds;
+    if(limitSeconds > 0 && (orderDatetime <= 0 || TimeCurrent() - orderDatetime >= limitSeconds)) { return false; }
+    
+    double orderProfit = getProfitPips(ticket, isPosition);
+    bool checkLimitLower = isStopLoss ? BasketSymbolStopLossOffsetLimitLower : BasketSymbolTakeProfitOffsetLimitLower;
+    bool checkLimitUpper = isStopLoss ? BasketSymbolStopLossOffsetLimitUpper : BasketSymbolTakeProfitOffsetLimitUpper;
+    if(checkLimitLower) {
+        double lowerLimit = 0;
+        if(!getValue(lowerLimit, (isStopLoss ? basketSymbolStopLossOffsetLimitLowerLoc : basketSymbolTakeProfitOffsetLimitLowerLoc), symIdx)) { return false; }
+        if(orderProfit <= lowerLimit) { return false; }
+    }
+    
+    if(checkLimitUpper) {
+        double upperLimit = 0;
+        if(!getValue(upperLimit, (isStopLoss ? basketSymbolStopLossOffsetLimitUpperLoc : basketSymbolTakeProfitOffsetLimitUpperLoc), symIdx)) { return false; }
+        if(orderProfit >= upperLimit) { return false; }
+    }
+    
+    return true;
+}
+
+double OrderManager::getBasketOffsetStopLevel(int symIdx, bool isStopLoss) {
+    if(isStopLoss) { return basketSymbolStopLoss[symIdx] + basketSymbolStopLossOffset[symIdx]; }
+    else { return basketSymbolTakeProfit[symIdx] + basketSymbolTakeProfitOffset[symIdx]; }
 }

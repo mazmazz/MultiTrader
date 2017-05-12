@@ -422,8 +422,8 @@ void DashboardManager::updateDashboard() {
         string basketTotal = " ", basketStoploss = " ", basketTakeprofit = " ", basketLong = " ", basketShort = " ", basketBooked = " ";
         if(MainOrderMan.openMarketLongCount[i] + MainOrderMan.openMarketShortCount[i] > 0) {
             basketTotal = padText(StringFormat("%.1f", (MainOrderMan.basketProfitSymbol[i]+(BasketTotalPerDay ? MainOrderMan.basketBookedProfitSymbol[i] : 0))), 5) + (TradeModeType == TradeGrid || DisplayShowBasketSymbolLongShort ? sepChar : "");
-            basketStoploss = padText(StringFormat("%.1f", MainOrderMan.basketSymbolStopLoss[i]), 5) + sepChar;
-            basketTakeprofit = padText(StringFormat("%.1f", MainOrderMan.basketSymbolTakeProfit[i]), 5) + sepChar;
+            basketStoploss = padText(StringFormat("%.1f", MainOrderMan.getBasketOffsetStopLevel(i, true)), 5) + sepChar;
+            basketTakeprofit = padText(StringFormat("%.1f", MainOrderMan.getBasketOffsetStopLevel(i, false)), 5) + sepChar;
             basketLong = padText(StringFormat("%.1f", MainOrderMan.basketLongProfitSymbol[i]), 5) + sepChar;
             basketShort = padText(StringFormat("%.1f", MainOrderMan.basketShortProfitSymbol[i]), 5) + (BasketTotalPerDay ? sepChar : " ");
             if(BasketTotalPerDay) { basketBooked = StringFormat("%f.2", MainOrderMan.basketBookedProfitSymbol[i]); }

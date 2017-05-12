@@ -122,7 +122,7 @@ ValueLocation *OrderManager::fillValueLocation(string location) {
     
     if(MultiSettings::ParseLocation(location, targetLoc) && StringLen(targetLoc.filterName) > 0) {
         if(targetLoc.filterIdx < 0) { targetLoc.filterIdx = MainFilterMan.getFilterId(targetLoc.filterName); }
-        if(targetLoc.subIdx < 0 ) { targetLoc.subIdx = MainFilterMan.getSubfilterId(targetLoc.filterName); }
+        if(targetLoc.subIdx < 0 ) { targetLoc.subIdx = MainFilterMan.getSubfilterId(targetLoc.filterIdx, targetLoc.filterName, true); }
     }
     
     return targetLoc;

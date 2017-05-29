@@ -84,11 +84,32 @@ datetime LastValidateCurrentDate = 0;
 datetime LastValidateSystemDate = 0;
 bool SessionValidated = false;
 
-#ifdef _NoExpiration
-bool ValidateSession(bool firstRun = false) { return true; }
-#else
 bool ValidateSession(bool firstRun = false) {
-    return ValidateExpirationDate(firstRun);
+    bool validated = false;
+    
+#ifndef _NoExpiration
+    validated = ValidateExpirationDate(firstRun);
+#else
+#ifdef _NoExpiration
+    validated = true;
+#endif
+#endif
+
+    if(!validated) { return false; }
+
+#ifndef _NoLiveRestriction
+    validated = (((ENUM_ACCOUNT_TRADE_MODE)AccountInfoInteger(ACCOUNT_TRADE_MODE)) != ACCOUNT_TRADE_MODE_REAL);
+    if(!validated) {
+        Error::ThrowFatal("Live trading is currently not enabled.");
+        return false;
+    }
+#else
+#ifdef _NoLiveRestriction
+    validated = true;
+#endif
+#endif
+
+    return validated;
 }
 
 bool ValidateExpirationDate(bool firstRun = false) {
@@ -192,4 +213,3 @@ bool ValidateExpirationDate(bool firstRun = false) {
     SessionValidated = true;
     return true;
 }
-#endif

@@ -22,7 +22,7 @@
 #include "F_Filter/F_Filter_ATR.mqh"
 #include "F_Filter/F_Filter_StdDev.mqh"
 #include "F_Filter/F_Filter_Spread.mqh"
-#include "F_Filter/F_Filter_Stoch.mqh"
+#include "F_Filter/F_Filter_Sentiment.mqh"
 
 //+------------------------------------------------------------------+
 
@@ -73,38 +73,34 @@ input string Spread_Value_Names="a:Cur";
 input string Spread_Value_Hidden="*:false";
 
 //+------------------------------------------------------------------+
-//| Stoch
+//| Sentiment
 //+------------------------------------------------------------------+
 
-input string Lbl_Stoch_1="________ Stoch Settings [Stoch] ________"; // :
+input string Lbl_Sentiment_1="________ Sentiment Zone Oscillator Settings [Sentiment] ________"; // :
 
-input string LbL_Stoch_Entry="---- Stoch Entry Settings ----"; // :
-input string Stoch_Entry_Modes="a:1|b:1|c:1";
-input string Stoch_Entry_Names="a:M15|b:M30|c:M60";
-input string Stoch_Entry_TimeFrame="a:15|b:30|c:60";
+input string LbL_Sentiment_Entry="---- Sentiment Entry Settings ----"; // :
+input string Sentiment_Entry_Modes="a:1";
+input string Sentiment_Entry_Names="a:H1";
+input string Sentiment_Entry_TimeFrame="a:60";
 
-input string Lbl_Stoch_Entry_Indi=""; // :
-input string Stoch_Entry_KPeriod="*:5";
-input string Stoch_Entry_DPeriod="*:3";
-input string Stoch_Entry_Slowing="*:3";
-input string Stoch_Entry_Method="*:3";
-input string Stoch_Entry_PriceField="*:0";
-input string Stoch_Entry_Shift="*:0";
-input string Stoch_Entry_BuySellZone="*:22.0";
+input string Lbl_Sentiment_Entry_Indi=""; // :
+input string Sentiment_Entry_Trigger="a:1";
+input string Sentiment_Entry_SzoPeriod="*:14";
+input string Sentiment_Entry_FilterPeriod="*:14";
+input string Sentiment_Entry_LevelPeriod="*:25";
+input string Sentiment_Entry_Shift="*:1";
 
-input string LbL_Stoch_Exit="---- Stoch Exit Settings ----"; // :
-input string Stoch_Exit_Modes="a:1";
-input string Stoch_Exit_Names="a:M15";
-input string Stoch_Exit_TimeFrame="a:15";
+input string LbL_Sentiment_Exit="---- Sentiment Exit Settings ----"; // :
+input string Sentiment_Exit_Modes="a:1";
+input string Sentiment_Exit_Names="a:H1";
+input string Sentiment_Exit_TimeFrame="a:60";
 
-input string Lbl_Stoch_Exit_Indi=""; // :
-input string Stoch_Exit_KPeriod="*:5";
-input string Stoch_Exit_DPeriod="*:3";
-input string Stoch_Exit_Slowing="*:3";
-input string Stoch_Exit_Method="*:3";
-input string Stoch_Exit_PriceField="*:0";
-input string Stoch_Exit_Shift="*:0";
-input string Stoch_Exit_BuySellZone="*:30.0";
+input string Lbl_Sentiment_Exit_Indi=""; // :
+input string Sentiment_Exit_Trigger="a:1";
+input string Sentiment_Exit_SzoPeriod="*:14";
+input string Sentiment_Exit_FilterPeriod="*:14";
+input string Sentiment_Exit_LevelPeriod="*:25";
+input string Sentiment_Exit_Shift="*:1";
 
 //+------------------------------------------------------------------+
 // 2. Add filters to LoadFilters() below and add settings [HOOKS]
@@ -133,17 +129,23 @@ void LoadFilters() {
     spread.addSubfilter(Spread_Value_Modes, Spread_Value_Names, Spread_Value_Hidden, SubfilterValue);
     Main.addFilter(spread);
         
-    FilterStoch* stoch = new FilterStoch();
-    stoch.addSubfilter(Stoch_Entry_Modes, Stoch_Entry_Names, NULL, SubfilterEntry
-        , Stoch_Entry_TimeFrame, Stoch_Entry_KPeriod, Stoch_Entry_DPeriod
-        , Stoch_Entry_Slowing, Stoch_Entry_Method, Stoch_Entry_PriceField
-        , Stoch_Entry_Shift, Stoch_Entry_BuySellZone
+    FilterSentiment* sentiment = new FilterSentiment();
+    sentiment.addSubfilter(Sentiment_Entry_Modes, Sentiment_Entry_Names, NULL, SubfilterEntry
+        , Sentiment_Entry_TimeFrame
+        , Sentiment_Entry_Trigger
+        , Sentiment_Entry_SzoPeriod
+        , Sentiment_Entry_FilterPeriod
+        , Sentiment_Entry_LevelPeriod
+        , Sentiment_Entry_Shift
         );
-    stoch.addSubfilter(Stoch_Exit_Modes, Stoch_Exit_Names, NULL, SubfilterExit
-        , Stoch_Exit_TimeFrame, Stoch_Exit_KPeriod, Stoch_Exit_DPeriod
-        , Stoch_Exit_Slowing, Stoch_Exit_Method, Stoch_Exit_PriceField
-        , Stoch_Exit_Shift, Stoch_Exit_BuySellZone
+    sentiment.addSubfilter(Sentiment_Exit_Modes, Sentiment_Exit_Names, NULL, SubfilterExit
+        , Sentiment_Exit_TimeFrame
+        , Sentiment_Exit_Trigger
+        , Sentiment_Exit_SzoPeriod
+        , Sentiment_Exit_FilterPeriod
+        , Sentiment_Exit_LevelPeriod
+        , Sentiment_Exit_Shift
         , true
         );
-    Main.addFilter(stoch);
+    Main.addFilter(sentiment);
 }

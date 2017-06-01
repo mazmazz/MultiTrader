@@ -9,11 +9,12 @@
 
 #define _ProjectName "MultiOp"
 #define _ProjectShortName "MMO"
-#define _ProjectVersion "v0.1 04/2017"
+#define _ProjectVersion "v0.1 05/2017"
 
-datetime ProjectExpiration = D'2017.06.04';
+datetime ProjectExpiration = D'2017.06.18';
 
 #define _NoExpiration
+#define _NoLiveRestriction
 //#define _EmulatedTicks
 //#define _Benchmark
 

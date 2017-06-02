@@ -110,7 +110,7 @@ class FilterSentiment : public Filter {
         , bool addToExisting = false
     );
     
-    int FilterSentiment::iSentiment(
+    int iSentiment(
         string symbol
         , ENUM_TIMEFRAMES tf
         , int szoPeriodIn = 14
@@ -124,6 +124,8 @@ class FilterSentiment : public Filter {
         , double levelUpIn = 90.0
         , double levelDownIn = 10.0
     );
+    
+    bool isSubfilterMatching(int compareIdx, int subIdx);
 
     bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
@@ -135,6 +137,7 @@ void FilterSentiment::init() {
     
     bufferSize = 3;
     shortName = "Sentiment";
+    consolidateHandles = true;
     
 #ifdef __MQL5__
     loadIndicatorHandles(iSentimentHandle);
@@ -254,6 +257,14 @@ void FilterSentiment::addSubfilter(string modeList, string nameList, string hidd
         MultiSettings::Parse(levelPeriodList, levelPeriod, count, addToExisting);
         MultiSettings::Parse(shiftList, shift, count, addToExisting);
     }
+}
+
+bool FilterSentiment::isSubfilterMatching(int compareIdx, int subIdx) {
+    return timeFrame[compareIdx] == timeFrame[subIdx]
+        && szoPeriod[compareIdx] == szoPeriod[subIdx]
+        && filterPeriod[compareIdx] == filterPeriod[subIdx]
+        && levelPeriod[compareIdx] == levelPeriod[subIdx]
+        ;
 }
 
 //+------------------------------------------------------------------+

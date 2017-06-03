@@ -15,8 +15,9 @@ enum SubfilterMode {
     SubfilterDisabled,
     SubfilterNormal,
     SubfilterOpposite,
-    SubfilterNotOpposite,
-    SubfilterViewOnly
+    SubfilterOrAgree,
+    SubfilterViewOnly,
+    SubfilterNotOpposite
 };
 
 enum SubfilterType {
@@ -194,7 +195,7 @@ void Filter::loadIndicatorHandles(ArrayDim<int> &buffer[]) {
 }
 
 int Filter::getExistingIndicatorHandle(ArrayDim<int> &buffer[], int symIdx,int subIdx) {
-    int size = MathMin(ArraySize(buffer), subIdx);
+    int size = MathMin(ArraySize(buffer[symIdx]._), subIdx);
     for(int i = 0; i < size; i++) {
         if(buffer[symIdx]._[i] == INVALID_HANDLE) { continue; }
         

@@ -373,12 +373,13 @@ void DataSymbol::updateSymbolSignal(int filterIdx, int subfilterIdx/*, bool subS
             }
             break;
             
+        case SubfilterOrAgree:
         case SubfilterNotOpposite:
             if(!subSignalStable) { break; }
             
             // todo: if compareSignalType == SignalNone && subSignalStable, then resultSignalType == matching signal?
             
-            if(compareSignalType == SignalNone) {
+            if(compareSignalType == SignalNone && subMode == SubfilterOrAgree) { // NotOpposite can't set signal on its own
                 switch(subSignalType) {
                     case SignalBuy: resultSignalType = SignalLong; break;
                     case SignalSell: resultSignalType = SignalShort; break;

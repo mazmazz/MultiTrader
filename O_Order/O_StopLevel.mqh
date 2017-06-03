@@ -88,10 +88,13 @@ bool OrderManager::getModifiedStopLevel(long ticket, int symIdx, double &stopLev
     
     double level = 0;
     string logMessage = NULL;
+    bool progressChecked = false;
     
-    if(!getJumpingStopLevel(ticket, symIdx, level, isPosition)) {
-        if(!getTrailingStopLevel(ticket, symIdx, level, isPosition)) {
-            if(!getBreakEvenStopLevel(ticket, symIdx, level, isPosition)) {
+    if(!getJumpingStopLevel(ticket, symIdx, level, isPosition, progressChecked)) {
+        if(!MoveStopOnlyIfProgressed && progressChecked) { return false; }
+        if(!getTrailingStopLevel(ticket, symIdx, level, isPosition, progressChecked)) {
+            if(!MoveStopOnlyIfProgressed && progressChecked) { return false; }
+            if(!getBreakEvenStopLevel(ticket, symIdx, level, isPosition, progressChecked)) {
                 return false;
             } else { logMessage = " Mod stop: Breakeven"; }
         } else { logMessage = " Mod stop: Trailing"; }
@@ -104,7 +107,8 @@ bool OrderManager::getModifiedStopLevel(long ticket, int symIdx, double &stopLev
     return true;
 }
 
-bool OrderManager::getTrailingStopLevel(long ticket, int symIdx, double &stopLevelOut, bool isPosition) {
+bool OrderManager::getTrailingStopLevel(long ticket, int symIdx, double &stopLevelOut, bool isPosition, bool &progressChecked) {
+    progressChecked = false;
     // level = oppositePrice - stopOffset
     // set only if level > currentStopLoss
     if(!TrailingStopEnabled) { return false; }
@@ -132,13 +136,15 @@ bool OrderManager::getTrailingStopLevel(long ticket, int symIdx, double &stopLev
         , SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_DIGITS)
         );
     
-    if(isStopLossProgressed(ticket, level, isPosition)) {
+    progressChecked = true;
+    if(isStopLossProgressed(ticket, symIdx, level, isPosition)) {
         stopLevelOut = level;
         return true;
     } else { return false; }
 }
 
-bool OrderManager::getJumpingStopLevel(long ticket, int symIdx, double &stopLevelOut, bool isPosition) {
+bool OrderManager::getJumpingStopLevel(long ticket, int symIdx, double &stopLevelOut, bool isPosition, bool &progressChecked, bool checkProgressed = true) {
+    progressChecked = false;
     // level = MathFloor(oppositePrice-openingPrice/jumpDistance)
     // check if jumping stop level exceeds breakeven enabled
     if(!JumpingStopEnabled) { return false; }
@@ -185,13 +191,15 @@ bool OrderManager::getJumpingStopLevel(long ticket, int symIdx, double &stopLeve
         , SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_DIGITS)
         );
     
-    if(isStopLossProgressed(ticket, level, isPosition)) {
+    progressChecked = true;
+    if(!checkProgressed || isStopLossProgressed(ticket, symIdx, level, isPosition)) {
         stopLevelOut = level;
         return true;
     } else { return false; }
 }
 
-bool OrderManager::getBreakEvenStopLevel(long ticket, int symIdx, double &stopLevelOut, bool isPosition) {
+bool OrderManager::getBreakEvenStopLevel(long ticket, int symIdx, double &stopLevelOut, bool isPosition, bool &progressChecked, bool checkProgressed = true) {
+    progressChecked = false;
     if(!BreakEvenStopEnabled) { return false; }
     if(!isBreakEvenPassed(ticket, symIdx, isPosition)) { return false; }
     if(!checkDoSelect(ticket, isPosition)) { return false; }
@@ -221,12 +229,11 @@ bool OrderManager::getBreakEvenStopLevel(long ticket, int symIdx, double &stopLe
         , SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_DIGITS)
         );
     
-    if(isStopLossProgressed(ticket, newStopLevel, isPosition)) {
+    progressChecked = true;
+    if(!checkProgressed || isStopLossProgressed(ticket, symIdx, newStopLevel, isPosition)) {
         stopLevelOut = newStopLevel;
         return true;
-    }
-    
-    return false;
+    } else { return false; }
 }
 
 bool OrderManager::isBreakEvenPassed(long ticket, int symIdx, bool isPosition) {
@@ -244,20 +251,55 @@ bool OrderManager::isBreakEvenPassed(long ticket, int symIdx, bool isPosition) {
     return breakEvenJumpDiff >= breakEvenJumpDistancePrice;
 }
 
-bool OrderManager::isStopLossProgressed(long ticket, double newStopLoss, bool isPosition) {
+bool OrderManager::isStopLossProgressed(long ticket, int symIdx, double &newStopLoss, bool isPosition) {
     if(!checkDoSelect(ticket, isPosition)) { return false; }
     if(newStopLoss == 0) { return false; }
     
     if(getOrderStopLoss(isPosition) == 0 && newStopLoss != 0) { return true; } // assume we want to set a modified stop loss when no SL was previously set
     
+    bool isLong = Common::OrderIsLong(getOrderType(isPosition));
     newStopLoss = NormalizeDouble(newStopLoss, SymbolInfoInteger(getOrderSymbol(isPosition), SYMBOL_DIGITS));
     double currentStopLoss = NormalizeDouble(getOrderStopLoss(isPosition), SymbolInfoInteger(getOrderSymbol(isPosition), SYMBOL_DIGITS));
     //if(!unOffsetStopLossFromOrder(getOrderTicket(isPosition), getOrderSymbol(isPosition), currentStopLoss, isPosition)) { return false; }
+    double stopThreshold = MathAbs(PipsToPrice(MainSymbolMan.getSymbolName(symIdx), MoveStopThreshold));
     
-    if(Common::OrderIsLong(getOrderType(isPosition))) {
-        return newStopLoss > currentStopLoss;
+    if(MoveStopOnlyIfProgressed) {
+        if(isLong) {
+            return newStopLoss > (currentStopLoss + stopThreshold);
+        } else {
+            return newStopLoss < (currentStopLoss - stopThreshold);
+        }
     } else {
-        return newStopLoss < currentStopLoss;
+        if(newStopLoss <= currentStopLoss+stopThreshold && newStopLoss >= currentStopLoss-stopThreshold) { return false; }
+        
+        string message = "";
+        double jumpSl = 0, breakevenSl = 0, initialSl = 0, initialTp = 0; bool doDrop = false, progressChecked = false;
+        if(JumpingStopEnabled && getJumpingStopLevel(ticket, symIdx, jumpSl, isPosition, progressChecked, false) && jumpSl != 0) {
+            if((isLong ? newStopLoss < jumpSl : newStopLoss > jumpSl)) {
+                message = MainSymbolMan.symbols[symIdx].name + " #" + ticket + " reset stop: jumping (old " + newStopLoss + ")";
+                newStopLoss = NormalizeDouble(jumpSl, SymbolInfoInteger(getOrderSymbol(isPosition), SYMBOL_DIGITS));
+                
+            }
+        } else 
+        if(BreakEvenStopEnabled /*&& isBreakEvenPassed(ticket, symIdx, isPosition) */&& getBreakEvenStopLevel(ticket, symIdx, breakevenSl, isPosition, progressChecked, false) && breakevenSl != 0) {
+            if((isLong ? newStopLoss < breakevenSl : newStopLoss > breakevenSl)) {
+                // set new stoploss to breakeven
+                message = MainSymbolMan.symbols[symIdx].name + " #" + ticket + " reset stop: breakeven (old " + newStopLoss + ")";
+                newStopLoss = NormalizeDouble(breakevenSl, SymbolInfoInteger(getOrderSymbol(isPosition), SYMBOL_DIGITS));
+            }
+        } else
+        if(StopLossInitialEnabled && getInitialStopLevels(isLong, symIdx, true, false, initialSl, initialTp, doDrop) && initialSl != 0) {
+            if((isLong ? newStopLoss < initialSl : newStopLoss > initialSl)) {
+                // set stop loss to initial sl
+                message = MainSymbolMan.symbols[symIdx].name + " #" + ticket + " reset stop: initial (old " + newStopLoss + ")";
+                newStopLoss = NormalizeDouble(initialSl, SymbolInfoInteger(getOrderSymbol(isPosition), SYMBOL_DIGITS));
+            }
+        } 
+        
+        if(newStopLoss > currentStopLoss+stopThreshold || newStopLoss < currentStopLoss-stopThreshold) {
+            if(StringLen(message) > 0) { Error::PrintInfo(message, NULL, NULL, true); }
+            return true;
+        } else { return false; }
     }
 }
 
@@ -328,7 +370,7 @@ void OrderManager::getStopLevelOffset(string symName, bool checkMinimum, double 
     if(StopLossMinimumAdd) { stoplossOffset -= minStop; }
     if(TakeProfitMinimumAdd) { takeprofitOffset += minStop; }
     
-    if(!checkMinimum) { return; }
+    if(!checkMinimum || minStop == 0) { return; }
     
     if(stoplossOffset > MathAbs(minStop)*(-1)) {
         switch(StopLossBelowMinimumAction) {
@@ -361,8 +403,12 @@ void OrderManager::getStopLevelDrop(string symName, double stoplossOffset, doubl
     if(StopLossMinimumAdd) { stoplossOffset -= minStop; }
     if(TakeProfitMinimumAdd) { takeprofitOffset += minStop; }
     
-    dropSlOut = (stoplossOffset > MathAbs(minStop)*-1);
-    dropTpOut = (takeprofitOffset < minStop);
+    if(minStop == 0) {
+        dropSlOut = dropTpOut = false;
+    } else {
+        dropSlOut = (stoplossOffset > MathAbs(minStop)*-1);
+        dropTpOut = (takeprofitOffset < minStop);
+    }
 }
 
 bool OrderManager::dropOrderByStopLoss(string symName, double stoplossOffset) {

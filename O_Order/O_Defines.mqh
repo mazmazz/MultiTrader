@@ -332,11 +332,11 @@ class OrderManager {
     bool checkDoExitStopLevels(long ticket, int symIdx, bool isPosition);
     
     bool getModifiedStopLevel(long ticket, int symIdx, double &stopLevelOut, bool isPosition);
-    bool getTrailingStopLevel(long ticket, int symIdx, double &stopLevelOut, bool isPosition);
-    bool getJumpingStopLevel(long ticket, int symIdx, double &stopLevelOut, bool isPosition);
-    bool getBreakEvenStopLevel(long ticket, int symIdx, double &stopLevelOut, bool isPosition);
+    bool getTrailingStopLevel(long ticket, int symIdx, double &stopLevelOut, bool isPosition, bool &progressChecked);
+    bool getJumpingStopLevel(long ticket, int symIdx, double &stopLevelOut, bool isPosition, bool &progressChecked, bool checkProgressed = true);
+    bool getBreakEvenStopLevel(long ticket, int symIdx, double &stopLevelOut, bool isPosition, bool &progressChecked, bool checkProgressed = true);
     bool isBreakEvenPassed(long ticket, int symIdx, bool isPosition);
-    bool isStopLossProgressed(long ticket, double newStopLoss, bool isPosition);
+    bool isStopLossProgressed(long ticket, int symIdx, double &newStopLoss, bool isPosition);
     
     void unOffsetStopLevels(string symName, bool isLong, double &stoplossOut, double &takeprofitOut);
     double unOffsetStopLoss(string symName, bool isLong, double stoploss);

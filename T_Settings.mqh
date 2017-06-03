@@ -134,6 +134,10 @@ input bool GridResetHedgeOnOpenSignal = false; // GridResetHedgeOnOpenSignal: Fo
 
 input string Lbl_Trade_StopLevels="********** Stop Level Settings **********"; // :
 
+//input bool MoveStopOnlyIfProgressed = true; // MoveStopOnlyIfProgressed: Moving stops only if they are higher than last stop
+bool MoveStopOnlyIfProgressed = true;
+input double MoveStopThreshold = 0.1; // MoveStopThreshold: Move stops that differ more than this amount
+
 input string Lbl_StopLoss="---- Stop Loss Settings ----"; // :
 input bool StopLossInitialEnabled=false;
 input bool StopLossInternal=true; // StopLossInternal: Track and fire SL using EA
@@ -165,6 +169,9 @@ input bool JumpingStopEnabled=false;
 input string JumpingStopCalc = "10.0";
 
 input string Lbl_Trade_Basket="********** Basket Settings **********"; // :
+
+//input bool BasketMoveStopOnlyIfProgressed = true; // BasketMoveStopOnlyIfProgressed: Move stops only if they are higher than last stop
+//input double BasketMoveStopThreshold = 0.1; // BasketMoveStopThreshold: Move stops that differ more than this amount
 
 //input bool BasketTotalPerDay = false; // BasketTotalPerDay: Add total of all profits during day, not just open orders
 bool BasketTotalPerDay = false; // dummied out for now

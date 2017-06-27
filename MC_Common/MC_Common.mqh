@@ -119,6 +119,9 @@ class Common {
     static color InvertColor(color target);
     
     static ENUM_TIMEFRAMES GetTimeFrameFromMinutes(int minutes);
+    
+    static string UrlEncode(string source);
+    static string UrlDecode(string source);
 };
 
 // https://github.com/dingmaotu/mql4-lib

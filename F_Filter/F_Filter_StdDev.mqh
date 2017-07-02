@@ -15,13 +15,35 @@
 
 class FilterStdDev : public Filter {
     private:
-    bool isInit;
     int timeFrame[];
     int period[];
     int shift[];
     int method[];
     int appliedPrice[];
     int periodShift[];
+    
+    public:
+    void addSubfilter(int mode, string name, bool hidden, SubfilterType type
+        , int timeFrameIn
+        , int periodIn
+        , int shiftIn
+        , int methodIn
+        , int appliedPriceIn
+        , int periodShiftIn
+    );
+    void addSubfilter(string modeList, string nameList, string hiddenList, string typeList
+        , string timeFrameList
+        , string periodList
+        , string shiftList
+        , string methodList
+        , string appliedPriceList
+        , string periodShiftList
+        , bool addToExisting = false
+    );
+
+    private:
+    bool isInit;
+    
 #ifdef __MQL5__
     ArrayDim<int> iStdDevHandle[];
 #endif
@@ -35,26 +57,49 @@ class FilterStdDev : public Filter {
     int getNewIndicatorHandle(int symIdx, int subIdx);
 #endif
 
-    void addSubfilter(int mode, string name, bool hidden, SubfilterType type
-        , int timeFrameIn
-        , int periodIn
-        , int shiftIn
-        , int methodIn
-        , int appliedPriceIn
-        , int periodShiftIn
-    );
-    void addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
-        , string timeFrameList
-        , string periodList
-        , string shiftList
-        , string methodList
-        , string appliedPriceList
-        , string periodShiftList
-        , bool addToExisting = false
-    );
-
     bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
+
+//+------------------------------------------------------------------+
+
+void FilterStdDev::addSubfilter(int mode, string name, bool hidden, SubfilterType type
+    , int timeFrameIn
+    , int periodIn
+    , int shiftIn
+    , int methodIn
+    , int appliedPriceIn
+    , int periodShiftIn
+) {
+    setupSubfilters(mode, name, hidden, type);
+    
+    Common::ArrayPush(timeFrame, timeFrameIn);
+    Common::ArrayPush(period, periodIn);
+    Common::ArrayPush(shift, shiftIn);
+    Common::ArrayPush(method, methodIn);
+    Common::ArrayPush(appliedPrice, appliedPriceIn);
+    Common::ArrayPush(periodShift, periodShiftIn);
+}
+
+void FilterStdDev::addSubfilter(string modeList, string nameList, string hiddenList, string typeList
+    , string timeFrameList
+    , string periodList
+    , string shiftList
+    , string methodList
+    , string appliedPriceList
+    , string periodShiftList
+    , bool addToExisting = false
+) {
+    int count = setupSubfilters(modeList, nameList, hiddenList, typeList); 
+    
+    if(count > 0) {
+        MultiSettings::Parse(timeFrameList, timeFrame, count, addToExisting);
+        MultiSettings::Parse(periodList, period, count, addToExisting);
+        MultiSettings::Parse(shiftList, shift, count, addToExisting);
+        MultiSettings::Parse(methodList, method, count, addToExisting);
+        MultiSettings::Parse(appliedPriceList, appliedPrice, count, addToExisting);
+        MultiSettings::Parse(periodShiftList, periodShift, count, addToExisting);
+    }
+}
 
 //+------------------------------------------------------------------+
 
@@ -96,48 +141,6 @@ int FilterStdDev::getNewIndicatorHandle(int symIdx, int subIdx) {
 }
 #endif
 #endif
-
-//+------------------------------------------------------------------+
-
-void FilterStdDev::addSubfilter(int mode, string name, bool hidden, SubfilterType type
-    , int timeFrameIn
-    , int periodIn
-    , int shiftIn
-    , int methodIn
-    , int appliedPriceIn
-    , int periodShiftIn
-) {
-    setupSubfilters(mode, name, hidden, type);
-    
-    Common::ArrayPush(timeFrame, timeFrameIn);
-    Common::ArrayPush(period, periodIn);
-    Common::ArrayPush(shift, shiftIn);
-    Common::ArrayPush(method, methodIn);
-    Common::ArrayPush(appliedPrice, appliedPriceIn);
-    Common::ArrayPush(periodShift, periodShiftIn);
-}
-
-void FilterStdDev::addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
-    , string timeFrameList
-    , string periodList
-    , string shiftList
-    , string methodList
-    , string appliedPriceList
-    , string periodShiftList
-    , bool addToExisting = false
-) {
-    setupSubfilters(modeList, nameList, hiddenList, typeName);
-    
-    int count = getSubfilterCount(typeName);
-    if(count > 0) {
-        MultiSettings::Parse(timeFrameList, timeFrame, count, addToExisting);
-        MultiSettings::Parse(periodList, period, count, addToExisting);
-        MultiSettings::Parse(shiftList, shift, count, addToExisting);
-        MultiSettings::Parse(methodList, method, count, addToExisting);
-        MultiSettings::Parse(appliedPriceList, appliedPrice, count, addToExisting);
-        MultiSettings::Parse(periodShiftList, periodShift, count, addToExisting);
-    }
-}
 
 //+------------------------------------------------------------------+
 

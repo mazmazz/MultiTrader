@@ -58,9 +58,10 @@ class Filter {
     protected:
     bool consolidateHandles;
     void clearSubfilters();
-    void setupSubfilters(int mode, string name, bool hidden, SubfilterType type);
-    void setupSubfilters(string pairList, string nameList, SubfilterType subfilterTypeIn, bool addToArray = true);
-    void setupSubfilters(string pairList, string nameList, string hiddenList, SubfilterType subfilterTypeIn, bool addToArray = true);
+    int setupSubfilters(int mode, string name, bool hidden, SubfilterType type);
+    int setupSubfilters(string pairList, string nameList, SubfilterType subfilterTypeIn, bool addToArray = true);
+    int setupSubfilters(string pairList, string nameList, string hiddenList, SubfilterType subfilterTypeIn, bool addToArray = true);
+    int setupSubfilters(string pairList, string nameList, string hiddenList, string subfilterTypeList, bool addToArray = true);
     bool checkSafe(int subfilterId);
     
 #ifdef __MQL5__
@@ -104,7 +105,7 @@ void Filter::clearSubfilters() {
     ArrayFree(valueSubfilterId);
 }
 
-void Filter::setupSubfilters(int mode, string name, bool hidden, SubfilterType type) {
+int Filter::setupSubfilters(int mode, string name, bool hidden, SubfilterType type) {
     int size = Common::ArrayPush(subfilterMode, (SubfilterMode)mode);
     Common::ArrayPush(subfilterName, name);
     Common::ArrayPush(subfilterHidden, false);
@@ -115,17 +116,19 @@ void Filter::setupSubfilters(int mode, string name, bool hidden, SubfilterType t
         case SubfilterExit: Common::ArrayPush(exitSubfilterId, size-1); break;
         case SubfilterValue: Common::ArrayPush(valueSubfilterId, size-1); break;
     }
+    
+    return 1;
 }
 
-void Filter::setupSubfilters(string pairList, string nameList, SubfilterType subfilterTypeIn, bool addToArray = true) {
-    setupSubfilters(pairList, nameList, NULL, subfilterTypeIn, addToArray);
+int Filter::setupSubfilters(string pairList, string nameList, SubfilterType subfilterTypeIn, bool addToArray = true) {
+    return setupSubfilters(pairList, nameList, NULL, subfilterTypeIn, addToArray);
 }
 
-void Filter::setupSubfilters(string pairList, string nameList, string hiddenList, SubfilterType subfilterTypeIn, bool addToArray = true) {
+int Filter::setupSubfilters(string pairList, string nameList, string hiddenList, SubfilterType subfilterTypeIn, bool addToArray = true) {
     int pairCount = MultiSettings::CountPairs(pairList);
     int oldSize = ArraySize(subfilterMode);
     
-    if(pairCount <= 0) { return; }
+    if(pairCount <= 0) { return 0; }
     
     switch(subfilterTypeIn) {
         case SubfilterEntry:
@@ -152,6 +155,34 @@ void Filter::setupSubfilters(string pairList, string nameList, string hiddenList
     for(int i = oldSize; i < oldSize + ArraySize(subfilterMode); i++) {
         Common::ArrayPush(subfilterType, subfilterTypeIn);
     }
+    
+    return pairCount;
+}
+
+int Filter::setupSubfilters(string pairList, string nameList, string hiddenList, string subfilterTypeList, bool addToArray = true) {
+    int pairCount = MultiSettings::CountPairs(pairList);
+    int oldSize = ArraySize(subfilterMode);
+    
+    if(pairCount <= 0) { return 0; }
+    
+    SubfilterType subfilterTypeIn[];
+    int subfilterModeIn[];
+    string subfilterNameIn[];
+    bool subfilterHiddenIn[];
+    
+    MultiSettings::Parse(subfilterTypeList, subfilterTypeIn, pairCount);
+    MultiSettings::Parse(pairList, subfilterModeIn, pairCount);
+    if(StringLen(nameList) > 0) { MultiSettings::Parse(nameList, subfilterNameIn, pairCount); }
+    else { ArrayResize(subfilterNameIn, pairCount); }
+    if(StringLen(hiddenList) > 0) { MultiSettings::Parse(hiddenList, subfilterHiddenIn, pairCount); }
+    else { ArrayResize(subfilterHiddenIn, pairCount); }
+    
+    int size = ArraySize(subfilterTypeIn);
+    for(int i = 0; i < size; i++) {
+        setupSubfilters(subfilterModeIn[i], subfilterNameIn[i], subfilterHiddenIn[i], subfilterTypeIn[i]);
+    }
+    
+    return pairCount;
 }
 
 bool Filter::checkSafe(int subfilterId) {

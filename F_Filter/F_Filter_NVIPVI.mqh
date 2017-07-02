@@ -36,9 +36,6 @@ enum ENUM_NVIPVI_BUFFER_TYPE {
 
 class FilterNVIPVI : public Filter {
     private:
-    bool isInit;
-    int bufferSize;
-    
     int timeFrame[];
     ENUM_NVIPVI_TRIGGER trigger[];
     bool calcNvi[];
@@ -56,21 +53,7 @@ class FilterNVIPVI : public Filter {
     double slopeThreshold[];
     ENUM_NVIPVI_BUFFER_TYPE slopeSource[];
     
-#ifdef __MQL5__
-    ArrayDim<int> iNVIPVIHandle[];
-#endif
-    
-    double calcSlope(int subIdx, int symIdx, int shift, int limit, /*int interval, */ ENUM_NVIPVI_BUFFER buffer);
-    double calcSlopeByPoints(double pointAy, double pointBy, double pointAx = 0, double pointBx = 1) ;
-    ENUM_NVIPVI_BUFFER getBufferIndexFromType(ENUM_NVIPVI_BUFFER_TYPE bufferType, bool isPvi = false);
-    
     public:
-    void init();
-    void deInit();
-#ifdef __MQL5__
-    int getNewIndicatorHandle(int symIdx, int subIdx);
-#endif
-
     void addSubfilter(int mode, string name, bool hidden, SubfilterType type
         , int timeFrameIn
         , ENUM_NVIPVI_TRIGGER triggerIn
@@ -87,7 +70,7 @@ class FilterNVIPVI : public Filter {
         , double slopeThresholdIn
         , ENUM_NVIPVI_BUFFER_TYPE slopeSourceIn
     );
-    void addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
+    void addSubfilter(string modeList, string nameList, string hiddenList, string typeList
         , string timeFrameList
         , string triggerList
         , string calcNviList
@@ -104,6 +87,25 @@ class FilterNVIPVI : public Filter {
         , string slopeSourceList
         , bool addToExisting = false
     );
+    
+    private:
+    bool isInit;
+    int bufferSize;
+    
+#ifdef __MQL5__
+    ArrayDim<int> iNVIPVIHandle[];
+#endif
+    
+    double calcSlope(int subIdx, int symIdx, int shift, int limit, /*int interval, */ ENUM_NVIPVI_BUFFER buffer);
+    double calcSlopeByPoints(double pointAy, double pointBy, double pointAx = 0, double pointBx = 1) ;
+    ENUM_NVIPVI_BUFFER getBufferIndexFromType(ENUM_NVIPVI_BUFFER_TYPE bufferType, bool isPvi = false);
+    
+    public:
+    void init();
+    void deInit();
+#ifdef __MQL5__
+    int getNewIndicatorHandle(int symIdx, int subIdx);
+#endif
     
     int iNVIPVI(
         string symbol
@@ -125,6 +127,79 @@ class FilterNVIPVI : public Filter {
 
     bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
+
+//+------------------------------------------------------------------+
+
+void FilterNVIPVI::addSubfilter(int mode, string name, bool hidden, SubfilterType type
+    , int timeFrameIn
+    , ENUM_NVIPVI_TRIGGER triggerIn
+    , bool calcNviIn
+    , int nviShortMaPeriodIn
+    , int nviLongMaPeriodIn
+    , bool calcPviIn
+    , int pviShortMaPeriodIn
+    , int pviLongMaPeriodIn
+    , bool calcCurrentIndexIn
+    , bool suppressAllBelowThresholdIn
+    , int shiftIn
+    , int limitIn
+    , double slopeThresholdIn
+    , ENUM_NVIPVI_BUFFER_TYPE slopeSourceIn
+) {
+    setupSubfilters(mode, name, hidden, type);
+    
+    Common::ArrayPush(timeFrame, timeFrameIn);
+    Common::ArrayPush(trigger, (ENUM_NVIPVI_TRIGGER)triggerIn);
+    Common::ArrayPush(calcNvi, calcNviIn);
+    Common::ArrayPush(nviShortMaPeriod, nviShortMaPeriodIn);
+    Common::ArrayPush(nviLongMaPeriod, nviLongMaPeriodIn);
+    Common::ArrayPush(calcPvi, calcPviIn);
+    Common::ArrayPush(pviShortMaPeriod, pviShortMaPeriodIn);
+    Common::ArrayPush(pviLongMaPeriod, pviLongMaPeriodIn);
+    Common::ArrayPush(calcCurrentIndex, calcCurrentIndexIn);
+    Common::ArrayPush(suppressAllBelowThreshold, suppressAllBelowThresholdIn);
+    Common::ArrayPush(shift, shiftIn);
+    Common::ArrayPush(limit, limitIn);
+    Common::ArrayPush(slopeThreshold, slopeThresholdIn);
+    Common::ArrayPush(slopeSource, (ENUM_NVIPVI_BUFFER_TYPE)slopeSourceIn);
+}
+
+void FilterNVIPVI::addSubfilter(string modeList, string nameList, string hiddenList, string typeList
+    , string timeFrameList
+    , string triggerList
+    , string calcNviList
+    , string nviShortMaPeriodList
+    , string nviLongMaPeriodList
+    , string calcPviList
+    , string pviShortMaPeriodList
+    , string pviLongMaPeriodList
+    , string calcCurrentIndexList
+    , string suppressAllBelowThresholdList
+    , string shiftList
+    , string limitList
+    , string slopeThresholdList
+    , string slopeSourceList
+    , bool addToExisting = false
+) {
+    int count = setupSubfilters(modeList, nameList, hiddenList, typeList);
+    
+    if(count > 0) {
+        MultiSettings::Parse(timeFrameList, timeFrame, count, addToExisting);
+        MultiSettings::Parse(triggerList, trigger, count, addToExisting);
+        MultiSettings::Parse(calcNviList, calcNvi, count, addToExisting);
+        MultiSettings::Parse(nviShortMaPeriodList, nviShortMaPeriod, count, addToExisting);
+        MultiSettings::Parse(nviLongMaPeriodList, nviLongMaPeriod, count, addToExisting);
+        MultiSettings::Parse(calcPviList, calcPvi, count, addToExisting);
+        MultiSettings::Parse(pviShortMaPeriodList, pviShortMaPeriod, count, addToExisting);
+        MultiSettings::Parse(pviLongMaPeriodList, pviLongMaPeriod, count, addToExisting);
+        MultiSettings::Parse(calcCurrentIndexList, calcCurrentIndex, count, addToExisting);
+        MultiSettings::Parse(suppressAllBelowThresholdList, suppressAllBelowThreshold, count, addToExisting);
+        MultiSettings::Parse(shiftList, shift, count, addToExisting);
+        MultiSettings::Parse(limitList, limit, count, addToExisting);
+        MultiSettings::Parse(slopeThresholdList, slopeThreshold, count, addToExisting);
+        MultiSettings::Parse(slopeSourceList, slopeSource, count, addToExisting);
+    }
+}
 
 //+------------------------------------------------------------------+
 
@@ -235,78 +310,6 @@ int FilterNVIPVI::iNVIPVI(
 }
 
 //+------------------------------------------------------------------+
-
-void FilterNVIPVI::addSubfilter(int mode, string name, bool hidden, SubfilterType type
-    , int timeFrameIn
-    , ENUM_NVIPVI_TRIGGER triggerIn
-    , bool calcNviIn
-    , int nviShortMaPeriodIn
-    , int nviLongMaPeriodIn
-    , bool calcPviIn
-    , int pviShortMaPeriodIn
-    , int pviLongMaPeriodIn
-    , bool calcCurrentIndexIn
-    , bool suppressAllBelowThresholdIn
-    , int shiftIn
-    , int limitIn
-    , double slopeThresholdIn
-    , ENUM_NVIPVI_BUFFER_TYPE slopeSourceIn
-) {
-    setupSubfilters(mode, name, hidden, type);
-    
-    Common::ArrayPush(timeFrame, timeFrameIn);
-    Common::ArrayPush(trigger, (ENUM_NVIPVI_TRIGGER)triggerIn);
-    Common::ArrayPush(calcNvi, calcNviIn);
-    Common::ArrayPush(nviShortMaPeriod, nviShortMaPeriodIn);
-    Common::ArrayPush(nviLongMaPeriod, nviLongMaPeriodIn);
-    Common::ArrayPush(calcPvi, calcPviIn);
-    Common::ArrayPush(pviShortMaPeriod, pviShortMaPeriodIn);
-    Common::ArrayPush(pviLongMaPeriod, pviLongMaPeriodIn);
-    Common::ArrayPush(calcCurrentIndex, calcCurrentIndexIn);
-    Common::ArrayPush(suppressAllBelowThreshold, suppressAllBelowThresholdIn);
-    Common::ArrayPush(shift, shiftIn);
-    Common::ArrayPush(limit, limitIn);
-    Common::ArrayPush(slopeThreshold, slopeThresholdIn);
-    Common::ArrayPush(slopeSource, (ENUM_NVIPVI_BUFFER_TYPE)slopeSourceIn);
-}
-
-void FilterNVIPVI::addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
-    , string timeFrameList
-    , string triggerList
-    , string calcNviList
-    , string nviShortMaPeriodList
-    , string nviLongMaPeriodList
-    , string calcPviList
-    , string pviShortMaPeriodList
-    , string pviLongMaPeriodList
-    , string calcCurrentIndexList
-    , string suppressAllBelowThresholdList
-    , string shiftList
-    , string limitList
-    , string slopeThresholdList
-    , string slopeSourceList
-    , bool addToExisting = false
-) {
-    setupSubfilters(modeList, nameList, hiddenList, typeName);
-    
-    int count = getSubfilterCount(typeName);
-    if(count > 0) {
-        MultiSettings::Parse(timeFrameList, timeFrame, count, addToExisting);
-        MultiSettings::Parse(triggerList, trigger, count, addToExisting);
-        MultiSettings::Parse(calcNviList, calcNvi, count, addToExisting);
-        MultiSettings::Parse(nviShortMaPeriodList, nviShortMaPeriod, count, addToExisting);
-        MultiSettings::Parse(nviLongMaPeriodList, nviLongMaPeriod, count, addToExisting);
-        MultiSettings::Parse(calcPviList, calcPvi, count, addToExisting);
-        MultiSettings::Parse(pviShortMaPeriodList, pviShortMaPeriod, count, addToExisting);
-        MultiSettings::Parse(pviLongMaPeriodList, pviLongMaPeriod, count, addToExisting);
-        MultiSettings::Parse(calcCurrentIndexList, calcCurrentIndex, count, addToExisting);
-        MultiSettings::Parse(suppressAllBelowThresholdList, suppressAllBelowThreshold, count, addToExisting);
-        MultiSettings::Parse(shiftList, shift, count, addToExisting);
-        MultiSettings::Parse(limitList, limit, count, addToExisting);
-        MultiSettings::Parse(slopeThresholdList, slopeThreshold, count, addToExisting);
-        MultiSettings::Parse(slopeSourceList, slopeSource, count, addToExisting);
-    }
-}
 
 bool FilterNVIPVI::isSubfilterMatching(int compareIdx, int subIdx) {
     return timeFrame[compareIdx] == timeFrame[subIdx]

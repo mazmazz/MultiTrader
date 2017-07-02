@@ -23,9 +23,6 @@ enum ENUM_VPCI_BUFFER {
 
 class FilterVPCI : public Filter {
     private:
-    bool isInit;
-    int bufferSize;
-    
     int timeFrame[];
     ENUM_VPCI_TRIGGER trigger[];
     
@@ -36,6 +33,33 @@ class FilterVPCI : public Filter {
     int limit[];
     double slopeThreshold[];
     ENUM_VPCI_BUFFER slopeSource[];
+    
+    public:
+    void addSubfilter(int mode, string name, bool hidden, SubfilterType type
+        , int timeFrameIn
+        , ENUM_VPCI_TRIGGER triggerIn
+        , int shortPeriodIn
+        , int longPeriodIn
+        , int shiftIn
+        , int limitIn
+        , double slopeThresholdIn
+        , ENUM_VPCI_BUFFER slopeSourceIn
+    );
+    void addSubfilter(string modeList, string nameList, string hiddenList, string typeList
+        , string timeFrameList
+        , string triggerList
+        , string shortPeriodList
+        , string longPeriodList
+        , string shiftList
+        , string limitList
+        , string slopeThresholdList
+        , string slopeSourceList
+        , bool addToExisting = false
+    );
+    
+    private:
+    bool isInit;
+    int bufferSize;
     
 #ifdef __MQL5__
     ArrayDim<int> iVPCIHandle[];
@@ -51,28 +75,6 @@ class FilterVPCI : public Filter {
 #ifdef __MQL5__
     int getNewIndicatorHandle(int symIdx, int subIdx);
 #endif
-
-    void addSubfilter(int mode, string name, bool hidden, SubfilterType type
-        , int timeFrameIn
-        , ENUM_VPCI_TRIGGER triggerIn
-        , int shortPeriodIn
-        , int longPeriodIn
-        , int shiftIn
-        , int limitIn
-        , double slopeThresholdIn
-        , ENUM_VPCI_BUFFER slopeSourceIn
-    );
-    void addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
-        , string timeFrameList
-        , string triggerList
-        , string shortPeriodList
-        , string longPeriodList
-        , string shiftList
-        , string limitList
-        , string slopeThresholdList
-        , string slopeSourceList
-        , bool addToExisting = false
-    );
     
     int iVPCI(
         string symbol
@@ -87,6 +89,55 @@ class FilterVPCI : public Filter {
 
     bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
+
+//+------------------------------------------------------------------+
+
+void FilterVPCI::addSubfilter(int mode, string name, bool hidden, SubfilterType type
+    , int timeFrameIn
+    , ENUM_VPCI_TRIGGER triggerIn
+    , int shortPeriodIn
+    , int longPeriodIn
+    , int shiftIn
+    , int limitIn
+    , double slopeThresholdIn
+    , ENUM_VPCI_BUFFER slopeSourceIn
+) {
+    setupSubfilters(mode, name, hidden, type);
+    
+    Common::ArrayPush(timeFrame, timeFrameIn);
+    Common::ArrayPush(trigger, (ENUM_VPCI_TRIGGER)triggerIn);
+    Common::ArrayPush(shortPeriod, shortPeriodIn);
+    Common::ArrayPush(longPeriod, longPeriodIn);
+    Common::ArrayPush(shift, shiftIn);
+    Common::ArrayPush(limit, limitIn);
+    Common::ArrayPush(slopeThreshold, slopeThresholdIn);
+    Common::ArrayPush(slopeSource, (ENUM_VPCI_BUFFER)slopeSourceIn);
+}
+
+void FilterVPCI::addSubfilter(string modeList, string nameList, string hiddenList, string typeList
+    , string timeFrameList
+    , string triggerList
+    , string shortPeriodList
+    , string longPeriodList
+    , string shiftList
+    , string limitList
+    , string slopeThresholdList
+    , string slopeSourceList
+    , bool addToExisting = false
+) {
+    int count = setupSubfilters(modeList, nameList, hiddenList, typeList);
+
+    if(count > 0) {
+        MultiSettings::Parse(timeFrameList, timeFrame, count, addToExisting);
+        MultiSettings::Parse(triggerList, trigger, count, addToExisting);
+        MultiSettings::Parse(shortPeriodList, shortPeriod, count, addToExisting);
+        MultiSettings::Parse(longPeriodList, longPeriod, count, addToExisting);
+        MultiSettings::Parse(shiftList, shift, count, addToExisting);
+        MultiSettings::Parse(limitList, limit, count, addToExisting);
+        MultiSettings::Parse(slopeThresholdList, slopeThreshold, count, addToExisting);
+        MultiSettings::Parse(slopeSourceList, slopeSource, count, addToExisting);
+    }
+}
 
 //+------------------------------------------------------------------+
 
@@ -157,54 +208,6 @@ int FilterVPCI::iVPCI(
 }
 
 //+------------------------------------------------------------------+
-
-void FilterVPCI::addSubfilter(int mode, string name, bool hidden, SubfilterType type
-    , int timeFrameIn
-    , ENUM_VPCI_TRIGGER triggerIn
-    , int shortPeriodIn
-    , int longPeriodIn
-    , int shiftIn
-    , int limitIn
-    , double slopeThresholdIn
-    , ENUM_VPCI_BUFFER slopeSourceIn
-) {
-    setupSubfilters(mode, name, hidden, type);
-    
-    Common::ArrayPush(timeFrame, timeFrameIn);
-    Common::ArrayPush(trigger, (ENUM_VPCI_TRIGGER)triggerIn);
-    Common::ArrayPush(shortPeriod, shortPeriodIn);
-    Common::ArrayPush(longPeriod, longPeriodIn);
-    Common::ArrayPush(shift, shiftIn);
-    Common::ArrayPush(limit, limitIn);
-    Common::ArrayPush(slopeThreshold, slopeThresholdIn);
-    Common::ArrayPush(slopeSource, (ENUM_VPCI_BUFFER)slopeSourceIn);
-}
-
-void FilterVPCI::addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
-    , string timeFrameList
-    , string triggerList
-    , string shortPeriodList
-    , string longPeriodList
-    , string shiftList
-    , string limitList
-    , string slopeThresholdList
-    , string slopeSourceList
-    , bool addToExisting = false
-) {
-    setupSubfilters(modeList, nameList, hiddenList, typeName);
-    
-    int count = getSubfilterCount(typeName);
-    if(count > 0) {
-        MultiSettings::Parse(timeFrameList, timeFrame, count, addToExisting);
-        MultiSettings::Parse(triggerList, trigger, count, addToExisting);
-        MultiSettings::Parse(shortPeriodList, shortPeriod, count, addToExisting);
-        MultiSettings::Parse(longPeriodList, longPeriod, count, addToExisting);
-        MultiSettings::Parse(shiftList, shift, count, addToExisting);
-        MultiSettings::Parse(limitList, limit, count, addToExisting);
-        MultiSettings::Parse(slopeThresholdList, slopeThreshold, count, addToExisting);
-        MultiSettings::Parse(slopeSourceList, slopeSource, count, addToExisting);
-    }
-}
 
 bool FilterVPCI::isSubfilterMatching(int compareIdx, int subIdx) {
     return timeFrame[compareIdx] == timeFrame[subIdx]

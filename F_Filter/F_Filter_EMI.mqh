@@ -23,9 +23,6 @@ enum ENUM_EMI_BUFFER {
 
 class FilterEMI : public Filter {
     private:
-    bool isInit;
-    int bufferSize;
-    
     int timeFrame[];
     ENUM_EMI_TRIGGER trigger[];
     int emiPeriod[];
@@ -34,6 +31,33 @@ class FilterEMI : public Filter {
     int limit[];
     double slopeThreshold[];
     ENUM_EMI_BUFFER slopeSource[];
+    
+    public:
+    void addSubfilter(int mode, string name, bool hidden, SubfilterType type
+        , int timeFrameIn
+        , ENUM_EMI_TRIGGER triggerIn
+        , int emiPeriodIn
+        , int emiMaPeriodIn
+        , int shiftIn
+        , int limitIn
+        , double slopeThresholdIn
+        , ENUM_EMI_BUFFER slopeSourceIn
+    );
+    void addSubfilter(string modeList, string nameList, string hiddenList, string typeList
+        , string timeFrameList
+        , string triggerList
+        , string emiPeriodList
+        , string emiMaPeriodList
+        , string shiftList
+        , string limitList
+        , string slopeThresholdList
+        , string slopeSourceList
+        , bool addToExisting = false
+    );
+    
+    private:
+    bool isInit;
+    int bufferSize;
     
 #ifdef __MQL5__
     ArrayDim<int> iEMIHandle[];
@@ -49,28 +73,6 @@ class FilterEMI : public Filter {
 #ifdef __MQL5__
     int getNewIndicatorHandle(int symIdx, int subIdx);
 #endif
-
-    void addSubfilter(int mode, string name, bool hidden, SubfilterType type
-        , int timeFrameIn
-        , ENUM_EMI_TRIGGER triggerIn
-        , int emiPeriodIn
-        , int emiMaPeriodIn
-        , int shiftIn
-        , int limitIn
-        , double slopeThresholdIn
-        , ENUM_EMI_BUFFER slopeSourceIn
-    );
-    void addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
-        , string timeFrameList
-        , string triggerList
-        , string emiPeriodList
-        , string emiMaPeriodList
-        , string shiftList
-        , string limitList
-        , string slopeThresholdList
-        , string slopeSourceList
-        , bool addToExisting = false
-    );
     
     int iEMI(
         string symbol
@@ -84,6 +86,55 @@ class FilterEMI : public Filter {
 
     bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
+
+//+------------------------------------------------------------------+
+
+void FilterEMI::addSubfilter(int mode, string name, bool hidden, SubfilterType type
+    , int timeFrameIn
+    , ENUM_EMI_TRIGGER triggerIn
+    , int emiPeriodIn
+    , int emiMaPeriodIn
+    , int shiftIn
+    , int limitIn
+    , double slopeThresholdIn
+    , ENUM_EMI_BUFFER slopeSourceIn
+) {
+    setupSubfilters(mode, name, hidden, type);
+    
+    Common::ArrayPush(timeFrame, timeFrameIn);
+    Common::ArrayPush(trigger, (ENUM_EMI_TRIGGER)triggerIn);
+    Common::ArrayPush(emiPeriod, emiPeriodIn);
+    Common::ArrayPush(emiMaPeriod, emiMaPeriodIn);
+    Common::ArrayPush(shift, shiftIn);
+    Common::ArrayPush(limit, limitIn);
+    Common::ArrayPush(slopeThreshold, slopeThresholdIn);
+    Common::ArrayPush(slopeSource, (ENUM_EMI_BUFFER)slopeSourceIn);
+}
+
+void FilterEMI::addSubfilter(string modeList, string nameList, string hiddenList, string typeList
+    , string timeFrameList
+    , string triggerList
+    , string emiPeriodList
+    , string emiMaPeriodList
+    , string shiftList
+    , string limitList
+    , string slopeThresholdList
+    , string slopeSourceList
+    , bool addToExisting = false
+) {
+    int count = setupSubfilters(modeList, nameList, hiddenList, typeList);
+    
+    if(count > 0) {
+        MultiSettings::Parse(timeFrameList, timeFrame, count, addToExisting);
+        MultiSettings::Parse(triggerList, trigger, count, addToExisting);
+        MultiSettings::Parse(emiPeriodList, emiPeriod, count, addToExisting);
+        MultiSettings::Parse(emiMaPeriodList, emiMaPeriod, count, addToExisting);
+        MultiSettings::Parse(shiftList, shift, count, addToExisting);
+        MultiSettings::Parse(limitList, limit, count, addToExisting);
+        MultiSettings::Parse(slopeThresholdList, slopeThreshold, count, addToExisting);
+        MultiSettings::Parse(slopeSourceList, slopeSource, count, addToExisting);
+    }
+}
 
 //+------------------------------------------------------------------+
 
@@ -148,54 +199,6 @@ int FilterEMI::iEMI(
 }
 
 //+------------------------------------------------------------------+
-
-void FilterEMI::addSubfilter(int mode, string name, bool hidden, SubfilterType type
-    , int timeFrameIn
-    , ENUM_EMI_TRIGGER triggerIn
-    , int emiPeriodIn
-    , int emiMaPeriodIn
-    , int shiftIn
-    , int limitIn
-    , double slopeThresholdIn
-    , ENUM_EMI_BUFFER slopeSourceIn
-) {
-    setupSubfilters(mode, name, hidden, type);
-    
-    Common::ArrayPush(timeFrame, timeFrameIn);
-    Common::ArrayPush(trigger, (ENUM_EMI_TRIGGER)triggerIn);
-    Common::ArrayPush(emiPeriod, emiPeriodIn);
-    Common::ArrayPush(emiMaPeriod, emiMaPeriodIn);
-    Common::ArrayPush(shift, shiftIn);
-    Common::ArrayPush(limit, limitIn);
-    Common::ArrayPush(slopeThreshold, slopeThresholdIn);
-    Common::ArrayPush(slopeSource, (ENUM_EMI_BUFFER)slopeSourceIn);
-}
-
-void FilterEMI::addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
-    , string timeFrameList
-    , string triggerList
-    , string emiPeriodList
-    , string emiMaPeriodList
-    , string shiftList
-    , string limitList
-    , string slopeThresholdList
-    , string slopeSourceList
-    , bool addToExisting = false
-) {
-    setupSubfilters(modeList, nameList, hiddenList, typeName);
-    
-    int count = getSubfilterCount(typeName);
-    if(count > 0) {
-        MultiSettings::Parse(timeFrameList, timeFrame, count, addToExisting);
-        MultiSettings::Parse(triggerList, trigger, count, addToExisting);
-        MultiSettings::Parse(emiPeriodList, emiPeriod, count, addToExisting);
-        MultiSettings::Parse(emiMaPeriodList, emiMaPeriod, count, addToExisting);
-        MultiSettings::Parse(shiftList, shift, count, addToExisting);
-        MultiSettings::Parse(limitList, limit, count, addToExisting);
-        MultiSettings::Parse(slopeThresholdList, slopeThreshold, count, addToExisting);
-        MultiSettings::Parse(slopeSourceList, slopeSource, count, addToExisting);
-    }
-}
 
 bool FilterEMI::isSubfilterMatching(int compareIdx, int subIdx) {
     return timeFrame[compareIdx] == timeFrame[subIdx]

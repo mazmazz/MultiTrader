@@ -22,7 +22,9 @@
 #include "F_Filter/F_Filter_ATR.mqh"
 #include "F_Filter/F_Filter_StdDev.mqh"
 #include "F_Filter/F_Filter_Spread.mqh"
-#include "F_Filter/F_Filter_Stoch.mqh"
+#include "F_Filter/F_Filter_NVIPVI.mqh"
+#include "F_Filter/F_Filter_VPCI.mqh"
+#include "F_Filter/F_Filter_EMI.mqh"
 
 //+------------------------------------------------------------------+
 
@@ -73,38 +75,130 @@ input string Spread_Value_Names="a:Cur";
 input string Spread_Value_Hidden="*:false";
 
 //+------------------------------------------------------------------+
-//| Stoch
+//| NVI-PVI
 //+------------------------------------------------------------------+
 
-input string Lbl_Stoch_1="________ Stoch Settings [Stoch] ________"; // :
+input string Lbl_NVIPVI_1="________ NVI-PVI Settings [NVIPVI] ________"; // :
 
-input string LbL_Stoch_Entry="---- Stoch Entry Settings ----"; // :
-input string Stoch_Entry_Modes="a:1|b:1|c:1";
-input string Stoch_Entry_Names="a:M15|b:M30|c:M60";
-input string Stoch_Entry_TimeFrame="a:15|b:30|c:60";
+input string LbL_NVIPVI_Entry="---- NVI-PVI Entry Settings ----"; // :
+input string NVIPVI_Entry_Modes="a:1";
+input string NVIPVI_Entry_Names="a:M60";
+input string NVIPVI_Entry_TimeFrame="a:60";
 
-input string Lbl_Stoch_Entry_Indi=""; // :
-input string Stoch_Entry_KPeriod="*:5";
-input string Stoch_Entry_DPeriod="*:3";
-input string Stoch_Entry_Slowing="*:3";
-input string Stoch_Entry_Method="*:3";
-input string Stoch_Entry_PriceField="*:0";
-input string Stoch_Entry_Shift="*:0";
-input string Stoch_Entry_BuySellZone="*:22.0";
+input string Lbl_NVIPVI_Entry_Indi=""; // :
+input string NVIPVI_Entry_Trigger="*:0"; // Trigger 0:Competing 1:Agree
+input string NVIPVI_Entry_CalcNvi="*:true";
+input string NVIPVI_Entry_NviShortMaPeriod="*:9";
+input string NVIPVI_Entry_NviLongMaPeriod="*:0";
+input string NVIPVI_Entry_CalcPvi="*:true";
+input string NVIPVI_Entry_PviShortMaPeriod="*:9";
+input string NVIPVI_Entry_PviLongMaPeriod="*:0";
 
-input string LbL_Stoch_Exit="---- Stoch Exit Settings ----"; // :
-input string Stoch_Exit_Modes="a:1";
-input string Stoch_Exit_Names="a:M15";
-input string Stoch_Exit_TimeFrame="a:15";
+input string Lbl_NVIPVI_Entry_Options=""; // :
+input string NVIPVI_Entry_CalcCurrentIndex="*:true";
+input string NVIPVI_Entry_SuppressAllBelowThreshold="*:true";
+input string NVIPVI_Entry_Shift="*:1";
+input string NVIPVI_Entry_Limit="*:1";
+input string NVIPVI_Entry_SlopeThreshold="*:0.4"; // SlopeThreshold: In pips
+input string NVIPVI_Entry_SlopeSource="*:2"; // SlopeSource: 0-IndexType 1-Real 2-ShortMA 3-LongMA
 
-input string Lbl_Stoch_Exit_Indi=""; // :
-input string Stoch_Exit_KPeriod="*:5";
-input string Stoch_Exit_DPeriod="*:3";
-input string Stoch_Exit_Slowing="*:3";
-input string Stoch_Exit_Method="*:3";
-input string Stoch_Exit_PriceField="*:0";
-input string Stoch_Exit_Shift="*:0";
-input string Stoch_Exit_BuySellZone="*:30.0";
+input string LbL_NVIPVI_Exit="---- NVI-PVI Exit Settings ----"; // :
+input string NVIPVI_Exit_Modes="a:0";
+input string NVIPVI_Exit_Names="a:M60";
+input string NVIPVI_Exit_TimeFrame="a:60";
+
+input string Lbl_NVIPVI_Exit_Indi=""; // :
+input string NVIPVI_Exit_Trigger="*:0"; // Trigger 0:Competing 1:Agree
+input string NVIPVI_Exit_CalcNvi="*:true";
+input string NVIPVI_Exit_NviShortMaPeriod="*:9";
+input string NVIPVI_Exit_NviLongMaPeriod="*:0";
+input string NVIPVI_Exit_CalcPvi="*:true";
+input string NVIPVI_Exit_PviShortMaPeriod="*:9";
+input string NVIPVI_Exit_PviLongMaPeriod="*:0";
+
+input string Lbl_NVIPVI_Exit_Options=""; // :
+input string NVIPVI_Exit_CalcCurrentIndex="*:true";
+input string NVIPVI_Exit_SuppressAllBelowThreshold="*:true";
+input string NVIPVI_Exit_Shift="*:1";
+input string NVIPVI_Exit_Limit="*:1";
+input string NVIPVI_Exit_SlopeThreshold="*:0.4"; // SlopeThreshold: In pips
+input string NVIPVI_Exit_SlopeSource="*:2"; // SlopeSource: 0-IndexType 1-Real 2-ShortMA 3-LongMA
+
+//+------------------------------------------------------------------+
+//| Ease of Movement
+//+------------------------------------------------------------------+
+
+input string Lbl_EMI_1="________ Ease of Movement Settings [EMI] ________"; // :
+
+input string LbL_EMI_Entry="---- Ease of Movement Entry Settings ----"; // :
+input string EMI_Entry_Modes="a:0";
+input string EMI_Entry_Names="a:M60";
+input string EMI_Entry_TimeFrame="a:60";
+
+input string Lbl_EMI_Entry_Indi=""; // :
+input string EMI_Entry_Trigger="*:0"; // Trigger 0:Slope
+input string EMI_Entry_EmiPeriod="*:14";
+input string EMI_Entry_EmiMaPeriod="*:9";
+
+input string Lbl_EMI_Entry_Options=""; // :
+input string EMI_Entry_Shift="*:1";
+input string EMI_Entry_Limit="*:1";
+input string EMI_Entry_SlopeThreshold="*:0.02";
+input string EMI_Entry_SlopeSource="*:1"; // Slope source 0:EMI 1:EMIMA
+
+input string LbL_EMI_Exit="---- Ease of Movement Exit Settings ----"; // :
+input string EMI_Exit_Modes="a:0";
+input string EMI_Exit_Names="a:M60";
+input string EMI_Exit_TimeFrame="a:60";
+
+input string Lbl_EMI_Exit_Indi=""; // :
+input string EMI_Exit_Trigger="*:0"; // Trigger 0:Slope
+input string EMI_Exit_EmiPeriod="*:14";
+input string EMI_Exit_EmiMaPeriod="*:9";
+
+input string Lbl_EMI_Exit_Options=""; // :
+input string EMI_Exit_Shift="*:1";
+input string EMI_Exit_Limit="*:1";
+input string EMI_Exit_SlopeThreshold="*:0.02";
+input string EMI_Exit_SlopeSource="*:1"; // Slope source 0:EMI 1:EMIMA
+
+//+------------------------------------------------------------------+
+//| VPCI
+//+------------------------------------------------------------------+
+
+input string Lbl_VPCI_1="________ Volume Price Confirmation Settings [VPCI] ________"; // :
+
+input string LbL_VPCI_Entry="---- Volume Price Confirmation Entry Settings ----"; // :
+input string VPCI_Entry_Modes="a:0";
+input string VPCI_Entry_Names="a:M60";
+input string VPCI_Entry_TimeFrame="a:60";
+
+input string Lbl_VPCI_Entry_Indi=""; // :
+input string VPCI_Entry_Trigger="*:0"; // Trigger 0:Slope
+input string VPCI_Entry_ShortPeriod="*:14";
+input string VPCI_Entry_LongPeriod="*:9";
+
+input string Lbl_VPCI_Entry_Options=""; // :
+input string VPCI_Entry_Shift="*:1";
+input string VPCI_Entry_Limit="*:1";
+input string VPCI_Entry_SlopeThreshold="*:0.4"; // SlopeThreshold: In pips
+input string VPCI_Entry_SlopeSource="*:0"; // Slope source 0:VPCI 1:VPCIS
+
+input string LbL_VPCI_Exit="---- Volume Price Confirmation Exit Settings ----"; // :
+input string VPCI_Exit_Modes="a:0";
+input string VPCI_Exit_Names="a:M60";
+input string VPCI_Exit_TimeFrame="a:60";
+
+input string Lbl_VPCI_Exit_Indi=""; // :
+input string VPCI_Exit_Trigger="*:0"; // Trigger 0:Slope
+input string VPCI_Exit_ShortPeriod="*:14";
+input string VPCI_Exit_LongPeriod="*:9";
+
+input string Lbl_VPCI_Exit_Options=""; // :
+input string VPCI_Exit_Shift="*:1";
+input string VPCI_Exit_Limit="*:1";
+input string VPCI_Exit_SlopeThreshold="*:0.4"; // SlopeThreshold: In pips
+input string VPCI_Exit_SlopeSource="*:0"; // Slope source 0:VPCI 1:VPCIS
 
 //+------------------------------------------------------------------+
 // 2. Add filters to LoadFilters() below and add settings [HOOKS]
@@ -133,17 +227,49 @@ void LoadFilters() {
     spread.addSubfilter(Spread_Value_Modes, Spread_Value_Names, Spread_Value_Hidden, SubfilterValue);
     Main.addFilter(spread);
         
-    FilterStoch* stoch = new FilterStoch();
-    stoch.addSubfilter(Stoch_Entry_Modes, Stoch_Entry_Names, NULL, SubfilterEntry
-        , Stoch_Entry_TimeFrame, Stoch_Entry_KPeriod, Stoch_Entry_DPeriod
-        , Stoch_Entry_Slowing, Stoch_Entry_Method, Stoch_Entry_PriceField
-        , Stoch_Entry_Shift, Stoch_Entry_BuySellZone
+    FilterNVIPVI* nvipvi = new FilterNVIPVI();
+    nvipvi.addSubfilter(NVIPVI_Entry_Modes, NVIPVI_Entry_Names, NULL, SubfilterEntry
+        , NVIPVI_Entry_TimeFrame, NVIPVI_Entry_Trigger
+        , NVIPVI_Entry_CalcNvi, NVIPVI_Entry_NviShortMaPeriod, NVIPVI_Entry_NviLongMaPeriod
+        , NVIPVI_Entry_CalcPvi, NVIPVI_Entry_PviShortMaPeriod, NVIPVI_Entry_PviLongMaPeriod
+        , NVIPVI_Entry_CalcCurrentIndex, NVIPVI_Entry_SuppressAllBelowThreshold
+        , NVIPVI_Entry_Shift, NVIPVI_Entry_Limit, NVIPVI_Entry_SlopeThreshold, NVIPVI_Entry_SlopeSource
         );
-    stoch.addSubfilter(Stoch_Exit_Modes, Stoch_Exit_Names, NULL, SubfilterExit
-        , Stoch_Exit_TimeFrame, Stoch_Exit_KPeriod, Stoch_Exit_DPeriod
-        , Stoch_Exit_Slowing, Stoch_Exit_Method, Stoch_Exit_PriceField
-        , Stoch_Exit_Shift, Stoch_Exit_BuySellZone
+    nvipvi.addSubfilter(NVIPVI_Exit_Modes, NVIPVI_Exit_Names, NULL, SubfilterExit
+        , NVIPVI_Exit_TimeFrame, NVIPVI_Exit_Trigger
+        , NVIPVI_Exit_CalcNvi, NVIPVI_Exit_NviShortMaPeriod, NVIPVI_Exit_NviLongMaPeriod
+        , NVIPVI_Exit_CalcPvi, NVIPVI_Exit_PviShortMaPeriod, NVIPVI_Exit_PviLongMaPeriod
+        , NVIPVI_Exit_CalcCurrentIndex, NVIPVI_Exit_SuppressAllBelowThreshold
+        , NVIPVI_Exit_Shift, NVIPVI_Exit_Limit, NVIPVI_Exit_SlopeThreshold, NVIPVI_Entry_SlopeSource
         , true
         );
-    Main.addFilter(stoch);
+    Main.addFilter(nvipvi);
+    
+    FilterEMI* emi = new FilterEMI();
+    emi.addSubfilter(EMI_Entry_Modes, EMI_Entry_Names, NULL, SubfilterEntry
+        , EMI_Entry_TimeFrame, EMI_Entry_Trigger
+        , EMI_Entry_EmiPeriod, EMI_Entry_EmiMaPeriod
+        , EMI_Entry_Shift, EMI_Entry_Limit, EMI_Entry_SlopeThreshold, EMI_Entry_SlopeSource
+        );
+    emi.addSubfilter(EMI_Exit_Modes, EMI_Exit_Names, NULL, SubfilterExit
+        , EMI_Exit_TimeFrame, EMI_Exit_Trigger
+        , EMI_Exit_EmiPeriod, EMI_Exit_EmiMaPeriod
+        , EMI_Exit_Shift, EMI_Exit_Limit, EMI_Exit_SlopeThreshold, EMI_Exit_SlopeSource
+        , true
+        );
+    Main.addFilter(emi);
+    
+    FilterVPCI* vpci = new FilterVPCI();
+    vpci.addSubfilter(VPCI_Entry_Modes, VPCI_Entry_Names, NULL, SubfilterEntry
+        , VPCI_Entry_TimeFrame, VPCI_Entry_Trigger
+        , VPCI_Entry_ShortPeriod, VPCI_Entry_LongPeriod
+        , VPCI_Entry_Shift, VPCI_Entry_Limit, VPCI_Entry_SlopeThreshold, VPCI_Entry_SlopeSource
+        );
+    vpci.addSubfilter(VPCI_Exit_Modes, VPCI_Exit_Names, NULL, SubfilterExit
+        , VPCI_Exit_TimeFrame, VPCI_Exit_Trigger
+        , VPCI_Exit_ShortPeriod, VPCI_Exit_LongPeriod
+        , VPCI_Exit_Shift, VPCI_Exit_Limit, VPCI_Exit_SlopeThreshold, VPCI_Exit_SlopeSource
+        , true
+        );
+    Main.addFilter(vpci);
 }

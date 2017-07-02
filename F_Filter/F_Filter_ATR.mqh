@@ -15,10 +15,26 @@
 
 class FilterAtr : public Filter {
     private:
-    bool isInit;
     int timeFrame[];
     int period[];
     int shift[];
+    
+    public:
+    void addSubfilter(int mode, string name, bool hidden, SubfilterType type
+        , int timeFrameIn
+        , int periodIn
+        , int shiftIn
+    );
+    void addSubfilter(string modeList, string nameList, string hiddenList, string typeList
+        , string timeFrameList
+        , string periodList
+        , string shiftList
+        , bool addToExisting = false
+    );
+    
+    private:
+    bool isInit;
+    
 #ifdef __MQL5__
     ArrayDim<int> iAtrHandle[];
 #endif
@@ -32,20 +48,37 @@ class FilterAtr : public Filter {
     int getNewIndicatorHandle(int symIdx, int subIdx);
 #endif
 
-    void addSubfilter(int mode, string name, bool hidden, SubfilterType type
-        , int timeFrameIn
-        , int periodIn
-        , int shiftIn
-    );
-    void addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
-        , string timeFrameList
-        , string periodList
-        , string shiftList
-        , bool addToExisting = false
-    );
-
     bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
+
+//+------------------------------------------------------------------+
+
+void FilterAtr::addSubfilter(int mode, string name, bool hidden, SubfilterType type
+    , int timeFrameIn
+    , int periodIn
+    , int shiftIn
+) {
+    setupSubfilters(mode, name, hidden, type);
+    
+    Common::ArrayPush(timeFrame, timeFrameIn);
+    Common::ArrayPush(period, periodIn);
+    Common::ArrayPush(shift, shiftIn);
+}
+
+void FilterAtr::addSubfilter(string modeList, string nameList, string hiddenList, string typeList
+    , string timeFrameList
+    , string periodList
+    , string shiftList
+    , bool addToExisting = false
+) {
+    int count = setupSubfilters(modeList, nameList, hiddenList, typeList);
+    
+    if(count > 0) {
+        MultiSettings::Parse(timeFrameList, timeFrame, count, addToExisting);
+        MultiSettings::Parse(periodList, period, count, addToExisting);
+        MultiSettings::Parse(shiftList, shift, count, addToExisting);
+    }
+}
 
 //+------------------------------------------------------------------+
 
@@ -80,36 +113,6 @@ int FilterAtr::getNewIndicatorHandle(int symIdx, int subIdx) {
 }
 #endif
 #endif
-
-//+------------------------------------------------------------------+
-
-void FilterAtr::addSubfilter(int mode, string name, bool hidden, SubfilterType type
-    , int timeFrameIn
-    , int periodIn
-    , int shiftIn
-) {
-    setupSubfilters(mode, name, hidden, type);
-    
-    Common::ArrayPush(timeFrame, timeFrameIn);
-    Common::ArrayPush(period, periodIn);
-    Common::ArrayPush(shift, shiftIn);
-}
-
-void FilterAtr::addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
-    , string timeFrameList
-    , string periodList
-    , string shiftList
-    , bool addToExisting = false
-) {
-    setupSubfilters(modeList, nameList, hiddenList, typeName);
-    
-    int count = getSubfilterCount(typeName);
-    if(count > 0) {
-        MultiSettings::Parse(timeFrameList, timeFrame, count, addToExisting);
-        MultiSettings::Parse(periodList, period, count, addToExisting);
-        MultiSettings::Parse(shiftList, shift, count, addToExisting);
-    }
-}
 
 //+------------------------------------------------------------------+
 

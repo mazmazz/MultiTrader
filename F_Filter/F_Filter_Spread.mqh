@@ -14,19 +14,32 @@
 #include "../depends/PipFactor.mqh"
 
 class FilterSpread : public Filter {
+    public:
+    void addSubfilter(int mode, string name, bool hidden, SubfilterType type);
+    void addSubfilter(string modeList, string nameList, string hiddenList, string typeList
+        , bool addToExisting = false
+    );
+    
     private:
     bool isInit;
     
     public:
     void init();
 
-    void addSubfilter(int mode, string name, bool hidden, SubfilterType type);
-    void addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
-        , bool addToExisting = false
-    );
-
     bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
 };
+
+//+------------------------------------------------------------------+
+
+void FilterSpread::addSubfilter(int mode, string name, bool hidden, SubfilterType type) {
+    setupSubfilters(mode, name, hidden, type);
+}
+
+void FilterSpread::addSubfilter(string modeList, string nameList, string hiddenList, string typeList
+    , bool addToExisting = false
+) {
+    setupSubfilters(modeList, nameList, hiddenList, typeList);
+}
 
 //+------------------------------------------------------------------+
 
@@ -36,18 +49,6 @@ void FilterSpread::init() {
     shortName = "Spread";
     
     isInit = true;
-}
-
-//+------------------------------------------------------------------+
-
-void FilterSpread::addSubfilter(int mode, string name, bool hidden, SubfilterType type) {
-    setupSubfilters(mode, name, hidden, type);
-}
-
-void FilterSpread::addSubfilter(string modeList, string nameList, string hiddenList, SubfilterType typeName
-    , bool addToExisting = false
-) {
-    setupSubfilters(modeList, nameList, hiddenList, typeName);
 }
 
 //+------------------------------------------------------------------+

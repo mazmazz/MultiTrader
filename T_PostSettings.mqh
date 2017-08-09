@@ -20,6 +20,9 @@ enum CycleType {
 };
 
 input string LblRuntime="********** Runtime Settings **********"; // :
+input string Lbl_AlertSettings="---- Alert Settings ----"; // :
+input bool EnableActionAlerts = false; // EnableActionAlerts: Show alert upon entering or exiting trade
+input bool EnableSignalAlerts = false; // EnableSignalAlerts: Show signal alerts
 input string Lbl_ErrorSettings="---- Error Settings ----"; // :
 input ErrorLevelConfig ErrorTerminalLevel=ErrorConfigFatalNormal; // ErrorTerminalLevel: Errors to show in terminal
 input ErrorLevelConfig ErrorFileLevel=ErrorConfigNone; // ErrorFileLevel: Errors to write to log file (Hide=Disable)

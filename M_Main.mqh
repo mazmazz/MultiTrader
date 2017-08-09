@@ -7,6 +7,7 @@
 #include "D_Data/D_Data.mqh"
 #include "O_Order/O_OrderManager.mqh"
 #include "H_Dashboard.mqh"
+#include "H_Alerts.mqh"
 
 //+------------------------------------------------------------------+
 
@@ -54,6 +55,7 @@ int MainMultiTrader::onInit() {
     MainDataMan = new DataManager(MainSymbolMan.getSymbolCount(), MainFilterMan.getFilterCount());
     MainOrderMan = new OrderManager();
     MainDashboardMan = new DashboardManager();
+    MainAlertMan = new AlertManager();
     
     return INIT_SUCCEEDED;
 }
@@ -81,6 +83,8 @@ void MainMultiTrader::doCycle() {
     
     MainDashboardMan.updateDashboard();
     
+    MainAlertMan.updateAlerts();
+    
     // MainDataWriterMan.writeStuff();
     
 #ifdef _Benchmark
@@ -94,6 +98,7 @@ void MainMultiTrader::onDeinit(const int reason) {
 }
 
 void MainMultiTrader::~MainMultiTrader() {
+    Common::SafeDelete(MainAlertMan);
     Common::SafeDelete(MainDashboardMan);
     Common::SafeDelete(MainFilterMan);
     Common::SafeDelete(MainOrderMan);

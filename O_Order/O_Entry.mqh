@@ -11,6 +11,8 @@
 
 #include "O_Defines.mqh"
 
+#include "../H_Alerts.mqh"
+
 bool OrderManager::isEntrySafe(int symIdx) {
     if(!TradeEntryEnabled) { return false; }
     if(!IsTradeAllowed()) { return false; }
@@ -173,6 +175,7 @@ long OrderManager::checkDoEntrySignals(int symIdx) {
             )
     ) {
         Error::PrintInfo("Open " + MainSymbolMan.symbols[symIdx].name + ": Entry signal - " + EnumToString(checkUnit.type));
+        MainAlertMan.alertByTradeAction(symIdx, true);
         checkUnit.fulfilled = true;
         setLastTimePoint(symIdx, true);
     }

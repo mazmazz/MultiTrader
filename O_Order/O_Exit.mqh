@@ -11,6 +11,8 @@
 
 #include "O_Defines.mqh"
 
+#include "../H_Alerts.mqh"
+
 bool OrderManager::isExitSafe(int symIdx) {
     if(!IsTradeAllowed()) { return false; }
     if(SymbolInfoInteger(MainSymbolMan.symbols[symIdx].name, SYMBOL_TRADE_MODE) != SYMBOL_TRADE_MODE_FULL
@@ -91,6 +93,7 @@ bool OrderManager::checkDoExitSignals(long ticket, int symIdx, bool isPosition) 
     bool result = sendClose(ticket, symIdx, isPosition);
     if(result) {
         Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": " + (exitIsTrigger ? "Exit signal - " + EnumToString(exitCheckUnit.type) : entryIsTrigger ? "Entry signal - " + EnumToString(entryCheckUnit.type) : "No trigger"), true);
+        MainAlertMan.alertByTradeAction(symIdx, false);
 
         if(!isTradeModeGrid()) { 
             if(exitIsTrigger) { Common::ArrayPush(exitSignalsToFulfill, exitCheckUnit); } // fulfill after exit cycle is done // do not set opposite entry fulfilled; that's set by entry action

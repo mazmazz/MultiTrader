@@ -297,7 +297,7 @@ void MultiSettings::FillDestArrayByValue(bool &destArray[],int keyAddrInt,bool v
 
 template<typename T>
 void MultiSettings::GetDefaultUndefinedValue(T &out) {
-    out = 0;
+    out = (T)0;
 }
 
 // workaround for string because 0 does not convert implicitly

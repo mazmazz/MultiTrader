@@ -15,6 +15,7 @@
 enum ENUM_NVIPVI_TRIGGER {
     TRIGGER_COMPETE_SLOPE
     , TRIGGER_AGREE_SLOPE
+    , TRIGGER_SELF_SLOPE
 };
 
 enum ENUM_NVIPVI_BUFFER {
@@ -229,17 +230,17 @@ int FilterNVIPVI::getNewIndicatorHandle(int symIdx, int subIdx) {
     return iNVIPVI(
         MainSymbolMan.symbols[symIdx].name
         , GetMql5TimeFrame(timeFrame[subIdx])
-        , calcNvi[symIdx]
-        , nviShortMaPeriod[symIdx]
-        , nviLongMaPeriod[symIdx]
-        , calcPvi[symIdx]
-        , pviShortMaPeriod[symIdx]
-        , pviLongMaPeriod[symIdx]
-        , calcCurrentIndex[symIdx]
-        // , normalizeVolume[symIdx]
-        // , normalPeriod[symIdx]
-        // , lowVolumeThreshold[symIdx]
-        // , volumeType[symIdx]
+        , calcNvi[subIdx]
+        , nviShortMaPeriod[subIdx]
+        , nviLongMaPeriod[subIdx]
+        , calcPvi[subIdx]
+        , pviShortMaPeriod[subIdx]
+        , pviLongMaPeriod[subIdx]
+        , calcCurrentIndex[subIdx]
+        // , normalizeVolume[subIdx]
+        // , normalPeriod[subIdx]
+        // , lowVolumeThreshold[subIdx]
+        // , volumeType[subIdx]
         );
 }
 #endif
@@ -380,6 +381,35 @@ bool FilterNVIPVI::calculate(int subfilterId, int symbolIndex, DataUnit *dataOut
             }
             
             statusText = DoubleToString(PriceToPips(symbol, nviSlope), 1) + "/" + DoubleToString(PriceToPips(symbol, pviSlope), 1);
+            break;
+        }
+        
+        case TRIGGER_SELF_SLOPE: {
+            double slope = 0;
+            if(calcNvi[subfilterId] == calcPvi[subfilterId]) {
+                signal = SignalNone;
+                break;
+            } else if(calcNvi[subfilterId]) {
+                slope = calcSlope(subfilterId, symbolIndex, shift[subfilterId], limit[subfilterId], getBufferIndexFromType(slopeSource[subfilterId], false));
+            } else {
+                slope = calcSlope(subfilterId, symbolIndex, shift[subfilterId], limit[subfilterId], getBufferIndexFromType(slopeSource[subfilterId], true));
+            }
+            
+            double slopeThresholdPrice = PipsToPrice(symbol, slopeThreshold[subfilterId]);
+                
+            if(suppressAllBelowThreshold[subfilterId]
+                && ((slope >= slopeThresholdPrice*-1 && slope <= slopeThresholdPrice))
+            ) {
+                signal = SignalNone;
+            } else if(slope < slopeThresholdPrice*-1) {
+                signal = SignalSell;
+            } else if(slope > slopeThresholdPrice) {
+                signal = SignalBuy;
+            } else {
+                signal = SignalNone;
+            }
+            
+            statusText = DoubleToString(PriceToPips(symbol, slope), 1);
             break;
         }
     }

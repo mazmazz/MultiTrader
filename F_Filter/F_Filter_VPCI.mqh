@@ -167,10 +167,10 @@ int FilterVPCI::getNewIndicatorHandle(int symIdx, int subIdx) {
     return iVPCI(
         MainSymbolMan.symbols[symIdx].name
         , GetMql5TimeFrame(timeFrame[subIdx])
-        , shortPeriod[symIdx]
-        , longPeriod[symIdx]
-        // , priceType[symIdx]
-        // , volumeType[symIdx]
+        , shortPeriod[subIdx]
+        , longPeriod[subIdx]
+        // , priceType[subIdx]
+        // , volumeType[subIdx]
         );
 }
 #endif

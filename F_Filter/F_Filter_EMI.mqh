@@ -164,9 +164,9 @@ int FilterEMI::getNewIndicatorHandle(int symIdx, int subIdx) {
     return iEMI(
         MainSymbolMan.symbols[symIdx].name
         , GetMql5TimeFrame(timeFrame[subIdx])
-        , emiPeriod[symIdx]
-        , emiMaPeriod[symIdx]
-        // , volumeType[symIdx]
+        , emiPeriod[subIdx]
+        , emiMaPeriod[subIdx]
+        // , volumeType[subIdx]
         );
 }
 #endif

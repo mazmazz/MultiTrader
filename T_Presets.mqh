@@ -37,40 +37,43 @@ input string Lbl_Format3="Do not add a trailing |";
 //+------------------------------------------------------------------+
 
 input string Lbl_ATR="________ ATR Settings [ATR] ________"; // :
-input string ATR_Value_Modes="a:1";
-input string ATR_Value_Names="a:H1";
-input string ATR_Value_Hidden="*:false";
+input string ATR_Modes="a:1";
+input string ATR_Types="*:3";
+input string ATR_Names="a:H1";
+input string ATR_Hidden="*:false";
 
-input string Lbl_ATR_Value_Indi=""; // :
-input string ATR_Value_TimeFrame="a:60";
-input string ATR_Value_Period="*:20";
-input string ATR_Value_Shift="*:0";
+input string Lbl_ATR_Indi=""; // :
+input string ATR_TimeFrame="a:60";
+input string ATR_Period="*:20";
+input string ATR_Shift="*:0";
 
 //+------------------------------------------------------------------+
 //| StdDev
 //+------------------------------------------------------------------+
 
 input string Lbl_StdDev="________ StdDev Settings [StdDev] ________"; // :
-input string StdDev_Value_Modes="a:1";
-input string StdDev_Value_Names="a:H1";
-input string StdDev_Value_Hidden="*:false";
+input string StdDev_Modes="a:1";
+input string StdDev_Types="*:3";
+input string StdDev_Names="a:H1";
+input string StdDev_Hidden="*:false";
 
-input string Lbl_StdDev_Value_Indi=""; // :
-input string StdDev_Value_TimeFrame="a:60";
-input string StdDev_Value_Period="*:20";
-input string StdDev_Value_Shift="*:0";
-input string StdDev_Value_Method="*:0";
-input string StdDev_Value_AppliedPrice="*:0";
-input string StdDev_Value_PeriodShift="*:0";
+input string Lbl_StdDev_Indi=""; // :
+input string StdDev_TimeFrame="a:60";
+input string StdDev_Period="*:20";
+input string StdDev_Shift="*:0";
+input string StdDev_Method="*:0";
+input string StdDev_AppliedPrice="*:0";
+input string StdDev_PeriodShift="*:0";
 
 //+------------------------------------------------------------------+
 //| StdDev
 //+------------------------------------------------------------------+
 
 input string Lbl_Spread="________ Spread Settings [Spread] ________"; // :
-input string Spread_Value_Modes="a:1";
-input string Spread_Value_Names="a:Cur";
-input string Spread_Value_Hidden="*:false";
+input string Spread_Modes="a:1";
+input string Spread_Types="*:3";
+input string Spread_Names="a:Cur";
+input string Spread_Hidden="*:false";
 
 //+------------------------------------------------------------------+
 //| Stoch
@@ -117,20 +120,20 @@ void LoadFilters() {
     // Main = new MainManager();
     
     FilterAtr* atr = new FilterAtr();
-    atr.addSubfilter(ATR_Value_Modes, ATR_Value_Names, ATR_Value_Hidden, SubfilterValue
-        , ATR_Value_TimeFrame, ATR_Value_Period, ATR_Value_Shift
+    atr.addSubfilter(ATR_Modes, ATR_Names, ATR_Hidden, ATR_Types
+        , ATR_TimeFrame, ATR_Period, ATR_Shift
         );
     Main.addFilter(atr);
         
     FilterStdDev* stdDev = new FilterStdDev();
-    stdDev.addSubfilter(StdDev_Value_Modes, StdDev_Value_Names, StdDev_Value_Hidden, SubfilterValue
-        , StdDev_Value_TimeFrame, StdDev_Value_Period, StdDev_Value_Shift
-        , StdDev_Value_Method, StdDev_Value_AppliedPrice, StdDev_Value_PeriodShift
+    stdDev.addSubfilter(StdDev_Modes, StdDev_Names, StdDev_Hidden, StdDev_Types
+        , StdDev_TimeFrame, StdDev_Period, StdDev_Shift
+        , StdDev_Method, StdDev_AppliedPrice, StdDev_PeriodShift
         );
     Main.addFilter(stdDev);
         
     FilterSpread* spread = new FilterSpread();
-    spread.addSubfilter(Spread_Value_Modes, Spread_Value_Names, Spread_Value_Hidden, SubfilterValue);
+    spread.addSubfilter(Spread_Modes, Spread_Names, Spread_Hidden, Spread_Types);
     Main.addFilter(spread);
         
     FilterStoch* stoch = new FilterStoch();
@@ -145,5 +148,4 @@ void LoadFilters() {
         , Stoch_Exit_Shift, Stoch_Exit_BuySellZone
         , true
         );
-    Main.addFilter(stoch);
 }

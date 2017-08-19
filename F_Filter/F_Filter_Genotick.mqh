@@ -8,6 +8,10 @@
 #property strict
 
 #property tester_file "Genotick_Data.csv"
+#property tester_file "Genotick_Data2.csv"
+#property tester_file "Genotick_Data3.csv"
+#property tester_file "Genotick_Data4.csv"
+#property tester_file "Genotick_Data5.csv"
 
 #include "F_Filter.mqh"
 #include "../MC_Common/MC_MultiSettings.mqh"
@@ -19,12 +23,14 @@ class FilterGeno : public Filter {
     public:
     void addSubfilter(int mode, string name, bool hidden, SubfilterType type
         , string fileNameIn
-        , bool resetOnSameSignalIn
+        , bool useGMTIn
+        , bool resetOnNewTimePointIn
         , bool closeOnMissingSignalIn
         );
     void addSubfilter(string modeList, string nameList, string hiddenList, string typeList
         , string fileNameList
-        , string resetOnSameSignalList
+        , string useGMTList
+        , string resetOnNewTimePointList
         , string closeOnMissingSignalIn
         , bool addToExisting = false
     );
@@ -32,7 +38,8 @@ class FilterGeno : public Filter {
     private:
     bool isInit;
     string fileNames[];
-    bool resetOnSameSignal[];
+    bool useGMT[];
+    bool resetOnNewTimePoint[];
     bool closeOnMissingSignal[];
     
     int fileHandles[]; // indexed by unique file loaded
@@ -49,6 +56,8 @@ class FilterGeno : public Filter {
     datetime nextDatetime[];
     ArrayDim<int> nextSymIndex[];
     ArrayDim<int> nextPrediction[];
+    
+    ArrayDim<bool> isNewTimePoint[];
     
     void loadFiles();
     
@@ -72,18 +81,21 @@ class FilterGeno : public Filter {
 
 void FilterGeno::addSubfilter(int mode, string name, bool hidden, SubfilterType type
     , string fileNameIn
-    , bool resetOnSameSignalIn
+    , bool useGMTIn
+    , bool resetOnNewTimePointIn
     , bool closeOnMissingSignalIn
 ) {
     setupSubfilters(mode, name, hidden, type);
     Common::ArrayPush(fileNames, fileNameIn);
-    Common::ArrayPush(resetOnSameSignal, resetOnSameSignalIn);
+    Common::ArrayPush(useGMT, useGMTIn);
+    Common::ArrayPush(resetOnNewTimePoint, resetOnNewTimePointIn);
     Common::ArrayPush(closeOnMissingSignal, closeOnMissingSignalIn);
 }
 
 void FilterGeno::addSubfilter(string modeList, string nameList, string hiddenList, string typeList
     , string fileNameList
-    , string resetOnSameSignalList
+    , string useGMTList
+    , string resetOnNewTimePointList
     , string closeOnMissingSignalList
     , bool addToExisting = false
 ) {
@@ -91,7 +103,8 @@ void FilterGeno::addSubfilter(string modeList, string nameList, string hiddenLis
     
     if(count > 0) {
         MultiSettings::Parse(fileNameList, fileNames, count, addToExisting);
-        MultiSettings::Parse(resetOnSameSignalList, resetOnSameSignal, count, addToExisting);
+        MultiSettings::Parse(useGMTList, useGMT, count, addToExisting);
+        MultiSettings::Parse(resetOnNewTimePointList, resetOnNewTimePoint, count, addToExisting);
         MultiSettings::Parse(closeOnMissingSignalList, closeOnMissingSignal, count, addToExisting);
     }
 }
@@ -102,6 +115,12 @@ void FilterGeno::init() {
     if(isInit) { return; }
     
     shortName = "Geno";
+    
+    ArrayResize(isNewTimePoint, ArraySize(subfilterMode));
+    for(int i = 0; i < ArraySize(isNewTimePoint); i++) {
+        ArrayResize(isNewTimePoint[i]._, ArraySize(MainSymbolMan.symbols));
+        ArrayInitialize(isNewTimePoint[i]._, false);
+    }
     
     loadFiles();
     
@@ -146,12 +165,23 @@ void FilterGeno::deInit() {
 bool FilterGeno::calculate(int subIdx, int symIdx, DataUnit *dataOut) {
     if(!checkSafe(subIdx)) { return false; }
     string symbol = MainSymbolMan.symbols[symIdx].name;
+    //bool newTimePoint = false;
     
-    if(!isTimeInCurrent(subIdx)) { loadTimePointData(subIdx, symIdx); }
+    if(!isTimeInCurrent(subIdx)) { 
+        if(resetOnNewTimePoint[subIdx]) { ArrayInitialize(isNewTimePoint[subIdx]._, true); } //newTimePoint = true;
+        loadTimePointData(subIdx, symIdx); 
+    }
     int prediction = 0;
+    
     if(!isTimeInCurrent(subIdx) || !getPrediction(subIdx, symIdx, prediction)) {
         dataOut.setRawValue(0, closeOnMissingSignal[subIdx] ? SignalClose : SignalNone, "-");
         return true;
+    }
+    
+    if(resetOnNewTimePoint[subIdx] && isNewTimePoint[subIdx]._[symIdx]) { // signal will revert to normal after first occurrence of new time point
+        // todo: force this despite signal stability. for now, stability must be 0 for this to work.
+        dataOut.setRawValue(0, SignalClose, "-");
+        isNewTimePoint[subIdx]._[symIdx] = false;
     }
     
     switch(prediction) {
@@ -173,7 +203,7 @@ bool FilterGeno::calculate(int subIdx, int symIdx, DataUnit *dataOut) {
 }
 
 bool FilterGeno::isTimeInCurrent(int subIdx, datetime sampleTime = 0) {
-    if(sampleTime <= 0) { sampleTime = TimeGMT(); }
+    if(sampleTime <= 0) { sampleTime = useGMT[subIdx] ? TimeGMT() : TimeCurrent(); }
     
     return (lastDatetime[fileSubIndex[subIdx]] > 0 && sampleTime > lastDatetime[fileSubIndex[subIdx]]
         && currentDatetime[fileSubIndex[subIdx]] > 0 && sampleTime >= currentDatetime[fileSubIndex[subIdx]]
@@ -187,7 +217,7 @@ void FilterGeno::seekTimePoint(int subIdx, int pointOffset = 0) {
     
     ulong pointOffsets[];
     int offsetCount = MathMax(3, MathAbs(pointOffset)+2);
-    datetime currentTime = 0, nextTime = 0, testTime = TimeGMT();
+    datetime currentTime = 0, nextTime = 0, testTime = useGMT[subIdx] ? TimeGMT() : TimeCurrent();
     
     Common::ArrayPush(pointOffsets, FileTell(fileHandles[fileSubIdx]), offsetCount);
     

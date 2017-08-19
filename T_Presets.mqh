@@ -88,7 +88,8 @@ input string Geno_Hidden="*:false";
 
 input string Geno_Params_Sep = ""; // : 
 input string Geno_FileName="*:Genotick_Data.csv";
-input string Geno_ResetOnSameSignal="*:true"; // ResetOnSameSignal: True, reset trades every period if same signal; False, persist current trades
+input string Geno_UseGMT="*:false"; // UseGMT: Data is in GMT, otherwise use broker current time
+input string Geno_ResetOnNewTimePoint="*:true"; // ResetOnNewTimePoint: True, reset trades every period if same signal; False, persist current trades
 input string Geno_CloseOnMissingSignal="*:true"; // CloseOnMissingSignal: Close trades if there is no signal
 
 //+------------------------------------------------------------------+
@@ -120,7 +121,7 @@ void LoadFilters() {
         
     FilterGeno* geno = new FilterGeno();
     geno.addSubfilter(Geno_Modes, Geno_Names, Geno_Hidden, Geno_Types
-        , Geno_FileName, Geno_ResetOnSameSignal, Geno_CloseOnMissingSignal
+        , Geno_FileName, Geno_UseGMT, Geno_ResetOnNewTimePoint, Geno_CloseOnMissingSignal
         );
     Main.addFilter(geno);
 }

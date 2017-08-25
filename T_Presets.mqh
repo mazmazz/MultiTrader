@@ -22,7 +22,7 @@
 #include "F_Filter/F_ATR.mqh"
 #include "F_Filter/F_StdDev.mqh"
 #include "F_Filter/F_Spread.mqh"
-#include "F_Filter/F_Filter_Genotick.mqh"
+#include "F_Filter/FG_Genotick/FG_Genotick.mqh"
   
 //+------------------------------------------------------------------+
 
@@ -81,16 +81,21 @@ input string Spread_Hidden="*:false";
 
 input string Lbl_Genotick_1="________ Genotick Settings [Geno] ________"; // :
 
-input string Geno_Modes="a:1|b:1";
+input string Geno_Modes="a:2|b:2";
 input string Geno_Types="a:1|b:2";
 input string Geno_Names="a:Open|b:Close";
 input string Geno_Hidden="*:false";
 
 input string Geno_Params_Sep = ""; // : 
-//input string Geno_TimeFrame="*:120";
-input string Geno_FileName="*:Genotick_Data.csv";
+input string Geno_TimeFrame="*:H2";
+input string Geno_LookbackCount="*:256";
+input string Geno_IncludeCurrent="*:false";
+input string Geno_DataSource="*:oanda";
+
+input string Geno_Params_Sep2 = ""; // : 
 input string Geno_UseGMT="*:true"; // UseGMT: Data is in GMT, otherwise use broker current time
-input string Geno_ResetOnNewTimePoint="*:false"; // ResetOnNewTimePoint: True, reset trades every period if same signal; False, persist current trades
+//input string Geno_ResetOnNewTimePoint="*:false"; // ResetOnNewTimePoint: True, reset trades every period if same signal; False, persist current trades
+string Geno_ResetOnNewTimePoint="*:false"; // todo: we can't support this until we track timeframes separately per api set
 input string Geno_CloseOnMissingSignal="*:false"; // CloseOnMissingSignal: Close trades if there is no signal
 
 //+------------------------------------------------------------------+
@@ -122,7 +127,8 @@ void LoadFilters() {
         
     FilterGeno* geno = new FilterGeno();
     geno.addSubfilter(Geno_Modes, Geno_Names, Geno_Hidden, Geno_Types
-        , Geno_FileName, Geno_UseGMT, Geno_ResetOnNewTimePoint, Geno_CloseOnMissingSignal
+        , Geno_TimeFrame, Geno_LookbackCount, Geno_IncludeCurrent, Geno_DataSource
+        , Geno_UseGMT, Geno_ResetOnNewTimePoint, Geno_CloseOnMissingSignal
         );
     Main.addFilter(geno);
 }

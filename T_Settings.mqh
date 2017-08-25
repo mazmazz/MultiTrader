@@ -86,21 +86,21 @@ input int MaxTradesPerAccount=200;
 input int MaxTradesPerSymbol=0;
 // input int MaxTradesTimeframe=60;
 input double TradeMinMarginLevel=200; // MinTradeMarginLevel (percent)
-input string MaxSpreadCalc = "4.0";
+input string MaxSpreadCalc = "9.0";
 input string MaxSlippageCalc = "4.0";
 input string LotSizeCalc = "0.01";
 //input LosingMode BlockOrderByLosing = LosingBlockNone;
 
-input string Lbl_TradeSignal="---- Trade Signal Settings ----"; // :
-input bool CloseOrderOnOppositeSignal=true; // CloseOrderOnOppositeSignal: Close when entry signal is opposite
-input bool SignalRetraceOpenAfterExit=true; // SignalRetraceOpenAfterExit: Enter on retrace after exit or SL/TP
-input bool SignalRetraceOpenAfterDelay=false; // SignalRetraceOpenAfterDelay: Enter on retrace after delay
-input int SignalRetraceDelay=1800; // SignalRetraceDelay: Open position, stated in TimeSettingUnits below
+//input string Lbl_TradeSignal="---- Trade Signal Settings ----"; // :
+//input bool CloseOrderOnOppositeSignal=true; // CloseOrderOnOppositeSignal: Close when entry signal is opposite
+//input bool SignalRetraceOpenAfterExit=true; // SignalRetraceOpenAfterExit: Enter on retrace after exit or SL/TP
+//input bool SignalRetraceOpenAfterDelay=false; // SignalRetraceOpenAfterDelay: Enter on retrace after delay
+//input int SignalRetraceDelay=7200; // SignalRetraceDelay: Open position, stated in TimeSettingUnits below
 
 input string Lbl_TradeDelays="---- Trade Delay Settings ----"; // :
 input TimeUnits TimeSettingUnit=UnitSeconds; // TimeSettingUnit: Unit for values below
-input int EntryStableTime=5;
-input int ExitStableTime=5;
+input int EntryStableTime=0;
+input int ExitStableTime=0;
 input int TradeBetweenDelay=0; // TradeBetweenDelay: Wait between trades
 input int ValueBetweenDelay=0; // ValueBetweenDelay: Wait between value changes
 
@@ -109,64 +109,64 @@ input int ValueBetweenDelay=0; // ValueBetweenDelay: Wait between value changes
 //input bool ExpireTrades=false;
 //input int Exit_expirySeconds=900;
 //
-input string Lbl_Trade_Grid="********** Grid Settings **********"; // :
+//input string Lbl_Trade_Grid="********** Grid Settings **********"; // :
 
-//input string LbL_Grid="---- Grid Settings ----";
-input string GridNote = "Set TradeModeType above to enable grids."; // :
-input bool GridSetStopOrders = true;
-input bool GridSetHedgeStopOrders = false;
-input bool GridSetLimitOrders = false;
-input bool GridSetHedgeLimitOrders = true;
-input bool GridOpenMarketInitial=false; // GridOpenMarketInitial: Place market order immediately on signal
-input int GridCount=5; // GridCount: # of pendings per direction
-input string GridDistanceCalc = "10.0";
+////input string LbL_Grid="---- Grid Settings ----";
+//input string GridNote = "Set TradeModeType above to enable grids."; // :
+//input bool GridSetStopOrders = true;
+//input bool GridSetHedgeStopOrders = false;
+//input bool GridSetLimitOrders = false;
+//input bool GridSetHedgeLimitOrders = true;
+//input bool GridOpenMarketInitial=false; // GridOpenMarketInitial: Place market order immediately on signal
+//input int GridCount=5; // GridCount: # of pendings per direction
+//input string GridDistanceCalc = "10.0";
+//
+//input string Lbl_GridReset="---- Grid Reset Settings ----";
+//input bool GridClosePendingOnSignal = false; // GridClosePendingOnSignal: Close pending orders upon signal
+//input bool GridCloseMarketOnSignal = false; // GridCloseMarketOnSignal: Close market orders upon signal
+//input bool GridClosePendingByDistance = false;
+//input string GridCloseDistanceCalc = "-40.0";
+//input bool GridOpenIfPendingsOpen = false; // GridOpenIfPendingsOpen: Open new grids even if pendings exist
+//input int GridStopThreshold = 2; // GridStopThreshold: # of stops to trigger reset per direction
+//input bool GridOpenIfPositionsOpen = false; // GridOpenIfPositionsOpen: Open new grids even if market orders exist
+//input int GridMarketThreshold = 0; // GridMarketThreshold: # of market pos to trigger reset per direction
+//input bool GridResetHedgeOnOpenSignal = false; // GridResetHedgeOnOpenSignal: Force reset hedge if opening new direction
 
-input string Lbl_GridReset="---- Grid Reset Settings ----";
-input bool GridClosePendingOnSignal = false; // GridClosePendingOnSignal: Close pending orders upon signal
-input bool GridCloseMarketOnSignal = false; // GridCloseMarketOnSignal: Close market orders upon signal
-input bool GridClosePendingByDistance = false;
-input string GridCloseDistanceCalc = "-40.0";
-input bool GridOpenIfPendingsOpen = false; // GridOpenIfPendingsOpen: Open new grids even if pendings exist
-input int GridStopThreshold = 2; // GridStopThreshold: # of stops to trigger reset per direction
-input bool GridOpenIfPositionsOpen = false; // GridOpenIfPositionsOpen: Open new grids even if market orders exist
-input int GridMarketThreshold = 0; // GridMarketThreshold: # of market pos to trigger reset per direction
-input bool GridResetHedgeOnOpenSignal = false; // GridResetHedgeOnOpenSignal: Force reset hedge if opening new direction
-
-input string Lbl_Trade_StopLevels="********** Stop Level Settings **********"; // :
-
-//input bool MoveStopOnlyIfProgressed = true; // MoveStopOnlyIfProgressed: Moving stops only if they are higher than last stop
-bool MoveStopOnlyIfProgressed = true;
-input double MoveStopThreshold = 0.1; // MoveStopThreshold: Move stops that differ more than this amount
-
-input string Lbl_StopLoss="---- Stop Loss Settings ----"; // :
-input bool StopLossInitialEnabled=false;
-input bool StopLossInternal=true; // StopLossInternal: Track and fire SL using EA
-input bool StopLossMinimumAdd=false; // StopLossMinimumAdd: Add broker's minimum to all SL
-input StopLevelMinAdjust StopLossBelowMinimumAction=MinAdjustDrop;
-input double StopLossBrokerOffset=0.0; // StopLossBrokerOffset: Offset broker SL if Internal enabled
-input string StopLossCalc = "-30.0";
-
-input string Lbl_TakeProfit="---- Take Profit Settings ----"; // :
-input bool TakeProfitInitialEnabled=false;
-input bool TakeProfitInternal=true; // TakeProfitInternal: Track and fire TP using EA
-input bool TakeProfitMinimumAdd=false; // TakeProfitMinimumAdd: Add broker's minimum to all TP
-input StopLevelMinAdjust TakeProfitBelowMinimumAction=MinAdjustDrop;
-input double TakeProfitBrokerOffset=0.0; // TakeProfitBrokerOffset: Offset broker TP if Internal enabled
-input string TakeProfitCalc = "30.0";
-
-input string Lbl_BreakEven="---- Break Even Settings ----"; // :
-input bool BreakEvenStopEnabled=false;
-input double BreakEvenProfit=1.5; // BreakEvenProfit: Offset from opening price
-input string BreakEvenJumpDistanceCalc = "10.0"; // BreakEvenJumpDistanceCalc: Pip distance from opening to trigger
-
-input string Lbl_ITSL="---- Trailing Stop Loss Settings ----"; // :
-input bool TrailingStopEnabled=false;
-input TrailStopMode TrailByBreakEven=TrailAlways;
-input string TrailingStopCalc = "10.0";
-
-input string Lbl_JSL="---- Jumping stop loss settings ----"; // :
-input bool JumpingStopEnabled=false;
-input string JumpingStopCalc = "10.0";
+//input string Lbl_Trade_StopLevels="********** Stop Level Settings **********"; // :
+//
+////input bool MoveStopOnlyIfProgressed = true; // MoveStopOnlyIfProgressed: Moving stops only if they are higher than last stop
+//bool MoveStopOnlyIfProgressed = true;
+//input double MoveStopThreshold = 0.1; // MoveStopThreshold: Move stops that differ more than this amount
+//
+//input string Lbl_StopLoss="---- Stop Loss Settings ----"; // :
+//input bool StopLossInitialEnabled=false;
+//input bool StopLossInternal=true; // StopLossInternal: Track and fire SL using EA
+//input bool StopLossMinimumAdd=false; // StopLossMinimumAdd: Add broker's minimum to all SL
+//input StopLevelMinAdjust StopLossBelowMinimumAction=MinAdjustDrop;
+//input double StopLossBrokerOffset=0.0; // StopLossBrokerOffset: Offset broker SL if Internal enabled
+//input string StopLossCalc = "-30.0";
+//
+//input string Lbl_TakeProfit="---- Take Profit Settings ----"; // :
+//input bool TakeProfitInitialEnabled=false;
+//input bool TakeProfitInternal=true; // TakeProfitInternal: Track and fire TP using EA
+//input bool TakeProfitMinimumAdd=false; // TakeProfitMinimumAdd: Add broker's minimum to all TP
+//input StopLevelMinAdjust TakeProfitBelowMinimumAction=MinAdjustDrop;
+//input double TakeProfitBrokerOffset=0.0; // TakeProfitBrokerOffset: Offset broker TP if Internal enabled
+//input string TakeProfitCalc = "30.0";
+//
+//input string Lbl_BreakEven="---- Break Even Settings ----"; // :
+//input bool BreakEvenStopEnabled=false;
+//input double BreakEvenProfit=1.5; // BreakEvenProfit: Offset from opening price
+//input string BreakEvenJumpDistanceCalc = "10.0"; // BreakEvenJumpDistanceCalc: Pip distance from opening to trigger
+//
+//input string Lbl_ITSL="---- Trailing Stop Loss Settings ----"; // :
+//input bool TrailingStopEnabled=false;
+//input TrailStopMode TrailByBreakEven=TrailAlways;
+//input string TrailingStopCalc = "10.0";
+//
+//input string Lbl_JSL="---- Jumping stop loss settings ----"; // :
+//input bool JumpingStopEnabled=false;
+//input string JumpingStopCalc = "10.0";
 
 input string Lbl_Trade_Basket="********** Basket Settings **********"; // :
 
@@ -263,7 +263,7 @@ input string SchedCustom = "-23:00|-00:00|+01:00"; // SchedCustom: Specify times
 input ScheduleTimeType SchedCustomType = TimeTypeGmt; // SchedCustomType: Is SchedCustom in GMT, broker, or local time?
 input bool SchedCloseCustom = false; // SchedCloseCustom: Exit trades following custom schedule
 input bool SchedCloseDaily = false; // SchedCloseDaily: Exit trades before day close to prevent swap
-input bool SchedClose3DaySwap = true; // SchedClose3DaySwap: Exit trades before 3-day swap per symbol
+input bool SchedClose3DaySwap = false; // SchedClose3DaySwap: Exit trades before 3-day swap per symbol
 input bool SchedCloseWeekend = true; // SchedCloseWeekend: Exit trades before weekend
 input bool SchedCloseSession = false; // SchedCloseSession: Exit trades before current day session is closed
 input int SchedGapIgnoreMinutes = 15; // SchedGapIgnoreMinutes: Ignore session gaps of X mins
@@ -281,7 +281,7 @@ input int SchedCloseMinutes = 5; // SchedCloseMinutes: Exit X mins before sessio
 //input int SchedOpenLastMinutes = 60; // SchedOpenLastMinutes: Open up to X mins before session close
 input int SchedOpenMinutesDaily = 0; 
 input int SchedOpenMinutesSession = 0; 
-input int SchedOpenMinutesWeekend = 180;
+input int SchedOpenMinutesWeekend = 0;
 
 //input string Lbl_TradeSchedSwap="-- Minimum Swap Closing Settings --"; // :
 //input CalcSource SchedMinSwapLongMethod=CalcValue; // SchedMinSwapLong: Minimum swap to close long

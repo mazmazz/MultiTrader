@@ -19,9 +19,9 @@
 // 1. Include filter includes here [INCLUDES]
 //+------------------------------------------------------------------+
 
-#include "F_Filter/F_Filter_ATR.mqh"
-#include "F_Filter/F_Filter_StdDev.mqh"
-#include "F_Filter/F_Filter_Spread.mqh"
+#include "F_Filter/F_ATR.mqh"
+#include "F_Filter/F_StdDev.mqh"
+#include "F_Filter/F_Spread.mqh"
 #include "F_Filter/F_Filter_Genotick.mqh"
   
 //+------------------------------------------------------------------+

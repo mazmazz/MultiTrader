@@ -7,6 +7,10 @@
 #property link      "https://github.com/mazmazz"
 #property strict
 
+#ifdef __MQL5__
+#include "Mql4Shim.mqh"
+#endif
+
 enum StringType {
     Type_Empty,
     Type_Alphanumeric,
@@ -69,7 +73,7 @@ class Common {
     static int AddrAbcToInt(string addrAbc, bool zeroBased=true);
     static string AddrIntToAbc(int addrInt, bool zeroBased=true);
     static string ConcatStringFromArray(string& strArray[], string delimiter = ";");
-    static StringType GetStringType(string test, bool checkSymbols = false);
+    static StringType GetStringType(string test);
     
     //uuid
     static string GetUuid();
@@ -109,6 +113,9 @@ class Common {
     
     static datetime StripDateFromDatetime(datetime target);
     static datetime StripTimeFromDatetime(datetime target);
+    static datetime OffsetDatetimeByZone(datetime value, int offsetHours);
+    static datetime UnoffsetDatetimeByZone(datetime value, int offsetHours);
+    static datetime AlignCandleDatetimeByOffset(datetime value, ENUM_TIMEFRAMES period, int alignOffsetHours=0);
     
 #ifdef __MQL5__
     static double GetSingleValueFromBuffer(int indiHandle, int shift=0, int bufferNum=0);
@@ -119,9 +126,9 @@ class Common {
     static color InvertColor(color target);
     
     static ENUM_TIMEFRAMES GetTimeFrameFromMinutes(int minutes);
-    
-    static string UrlEncode(string source);
-    static string UrlDecode(string source);
+    static int GetMinutesFromTimeFrame(ENUM_TIMEFRAMES tf);
+    static ENUM_TIMEFRAMES GetTimeFrameFromString(string tfStr);
+    static string GetStringFromTimeFrame(ENUM_TIMEFRAMES tf);
 };
 
 // https://github.com/dingmaotu/mql4-lib
@@ -287,12 +294,12 @@ string Common::ConcatStringFromArray(string& strArray[], string delimiter = ";")
     return finalString;
 }
 
-StringType Common::GetStringType(string test, bool checkSymbols = false) {
+StringType Common::GetStringType(string test) {
     test = StringTrim(test);
     int len = StringLen(test);
     if(len <= 0) { return Type_Empty; }
     
-    bool uppercase = false; bool lowercase = false; bool numeric = false; bool symbol = false;
+    bool uppercase = false; bool lowercase = false; bool numeric = false;
     ushort code = 0;
     
     for(int i= 0; i < len; i++) {
@@ -300,10 +307,9 @@ StringType Common::GetStringType(string test, bool checkSymbols = false) {
         if(code >= 65 && code <= 90) { uppercase = true; }
         else if(code >= 97 && code <= 122) { lowercase = true; }
         else if(code >= 48 && code <= 57) { numeric = true; }
-        else if(checkSymbols) { symbol = true; }
     }
 
-    if((uppercase||lowercase||symbol)&&numeric){ return Type_Alphanumeric; }
+    if((uppercase||lowercase)&&numeric){ return Type_Alphanumeric; }
     else if(uppercase||lowercase) { return Type_Alpha; }
     else if(numeric) { return Type_Numeric; }
     else return Type_Symbol;
@@ -618,6 +624,29 @@ datetime Common::StripTimeFromDatetime(datetime target) {
     }
 }
 
+datetime Common::OffsetDatetimeByZone(datetime value, int offsetHours) {
+    // todo: what if broker time is changed due to DST?
+    int offset = -1*offsetHours * 60 * 60;
+    return value += offset;
+}
+
+datetime Common::UnoffsetDatetimeByZone(datetime value, int offsetHours) {
+    // todo: what if broker time is changed due to DST?
+    int offset = offsetHours * 60 * 60;
+    return value += offset;
+}
+
+datetime Common::AlignCandleDatetimeByOffset(datetime value, ENUM_TIMEFRAMES period, int alignOffsetHours=0) {
+    int adjustSeconds = MathMod(value, Common::GetMinutesFromTimeFrame(period)*60);
+    int offsetSeconds = alignOffsetHours*60;
+    datetime dtOffsetted = value-adjustSeconds+offsetSeconds;
+    return dtOffsetted;
+}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+
 #ifdef __MQL5__
 bool Common::IsAccountHedging() {
     return AccountInfoInteger(ACCOUNT_MARGIN_MODE) == ACCOUNT_MARGIN_MODE_RETAIL_HEDGING;
@@ -656,16 +685,107 @@ ENUM_TIMEFRAMES Common::GetTimeFrameFromMinutes(int minutes) {
       case 10: return(PERIOD_M10);
       case 12: return(PERIOD_M12);
       case 16385: return(PERIOD_H1);
-      case 16386: return(PERIOD_H2);
-      case 16387: return(PERIOD_H3);
+      case 16386: case 120: return(PERIOD_H2);
+      case 16387: case 180: return(PERIOD_H3);
       case 16388: return(PERIOD_H4);
-      case 16390: return(PERIOD_H6);
-      case 16392: return(PERIOD_H8);
-      case 16396: return(PERIOD_H12);
+      case 16390: case 360: return(PERIOD_H6);
+      case 16392: case 480: return(PERIOD_H8);
+      case 16396: case 720: return(PERIOD_H12);
       case 16408: return(PERIOD_D1);
       case 32769: return(PERIOD_W1);
       case 49153: return(PERIOD_MN1); 
  #endif     
       default: return(PERIOD_CURRENT);
      }
+}
+
+int Common::GetMinutesFromTimeFrame(ENUM_TIMEFRAMES tf) {
+    switch(tf) {
+        case PERIOD_M1: return 1;
+        case PERIOD_M5: return 5;
+        case PERIOD_M15: return 15;
+        case PERIOD_M30: return 30;
+        case PERIOD_H1: return 60;
+        case PERIOD_H4: return 240;
+        case PERIOD_D1: return 1440;
+        case PERIOD_W1: return 10080;
+        case PERIOD_MN1: return 43200;
+#ifdef __MQL5__     
+        case PERIOD_M2: return 2;
+        case PERIOD_M3: return 3;
+        case PERIOD_M4: return 4;
+        case PERIOD_M6: return 6;
+        case PERIOD_M10: return 10;
+        case PERIOD_M12: return 12;
+        case PERIOD_H2: return 120;
+        case PERIOD_H3: return 180;
+        case PERIOD_H6: return 360;
+        case PERIOD_H8: return 480;
+        case PERIOD_H12: return 720; 
+        case PERIOD_CURRENT: return GetMinutesFromTimeFrame(_Period);
+#endif
+        default: return 0;
+    }
+}
+
+string Common::GetStringFromTimeFrame(ENUM_TIMEFRAMES tf) {
+    switch(tf)
+    {
+        case PERIOD_M1: return "M1";
+        case PERIOD_M5: return "M5";
+        case PERIOD_M15: return "M15";
+        case PERIOD_M30: return "M30";
+        case PERIOD_H1: return "H1";
+        case PERIOD_H4: return "H4";
+        case PERIOD_D1: return "D1";
+        case PERIOD_W1: return "W1";
+        case PERIOD_MN1: return "MN1";
+#ifdef __MQL5__     
+        case PERIOD_M2: return "M2";
+        case PERIOD_M3: return "M3";
+        case PERIOD_M4: return "M4";
+        case PERIOD_M6: return "M6";
+        case PERIOD_M10: return "M10";
+        case PERIOD_M12: return "M12";
+        case PERIOD_H2: return "H2";
+        case PERIOD_H3: return "H3";
+        case PERIOD_H6: return "H6";
+        case PERIOD_H8: return "H8";
+        case PERIOD_H12: return "H12"; 
+        case PERIOD_CURRENT: return GetStringFromTimeFrame(_Period);
+#endif
+        default: {
+            string tfStr = EnumToString(tf);
+            StringReplace(tfStr, "PERIOD_", "");
+            return tfStr;
+        }
+    }
+}
+
+ENUM_TIMEFRAMES Common::GetTimeFrameFromString(string tfStr) {
+    StringToUpper(tfStr);
+    StringReplace(tfStr, "PERIOD_", "");
+    if(tfStr == "M1") { return PERIOD_M1; }
+    else if(tfStr == "M5") { return PERIOD_M5; }
+    else if(tfStr == "M15") { return PERIOD_M15; }
+    else if(tfStr == "M30") { return PERIOD_M30; }
+    else if(tfStr == "H1") { return PERIOD_H1; }
+    else if(tfStr == "H4") { return PERIOD_H4; }
+    else if(tfStr == "D1") { return PERIOD_D1; }
+    else if(tfStr == "W1") { return PERIOD_W1; }
+    else if(tfStr == "MN1") { return PERIOD_MN1; }
+#ifdef __MQL5__
+    else if(tfStr == "M2") { return PERIOD_M2; }
+    else if(tfStr == "M3") { return PERIOD_M3; }
+    else if(tfStr == "M4") { return PERIOD_M4; }
+    else if(tfStr == "M6") { return PERIOD_M6; }
+    else if(tfStr == "M10") { return PERIOD_M10; }
+    else if(tfStr == "M12") { return PERIOD_M12; }
+    else if(tfStr == "H2") { return PERIOD_H2; }
+    else if(tfStr == "H3") { return PERIOD_H3; }
+    else if(tfStr == "H6") { return PERIOD_H6; }
+    else if(tfStr == "H8") { return PERIOD_H8; }
+    else if(tfStr == "H12") { return PERIOD_H12; }
+#endif
+    else { return PERIOD_CURRENT; }
 }

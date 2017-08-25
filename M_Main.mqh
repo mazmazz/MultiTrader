@@ -75,6 +75,8 @@ void MainMultiTrader::doCycle() {
     Benchmark_WorkMilCounter = GetTickCount();
 #endif
     
+    MainFilterMan.doFilterPreCycleWork();
+    
     MainDataMan.retrieveDataFromFilters();
         // iterates through symbols, calls filters and subs on all of them
         // filters feed data

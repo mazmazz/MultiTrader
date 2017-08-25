@@ -34,6 +34,8 @@ class FilterManager {
     void calculateFilterByIndex(int index, int symbolIndex);
     void calculateFilters(int symbolIndex);
     
+    void doFilterPreCycleWork();
+    
     private:
     static string DualNameDelimiter;
     static string DualIdDelimiter;
@@ -175,6 +177,13 @@ void FilterManager::calculateFilters(int symbolIndex) {
     
     for(int i = 0; i < size; i++) {
         calculateFilterByIndex(i, symbolIndex);
+    }
+}
+
+void FilterManager::doFilterPreCycleWork() {
+    int size = ArraySize(filters);
+    for(int i = 0; i < size; i++) {
+        filters[i].doPreCycleWork();
     }
 }
 

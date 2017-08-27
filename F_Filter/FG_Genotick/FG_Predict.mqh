@@ -71,7 +71,7 @@ bool FilterGeno::getApiPredict(int apiSetIdx, CsvString &predictCsv) {
         , apiSetTimeframeLists[apiSetIdx]
         , apiSetSymbolLists[apiSetIdx]
         , 0 // startPoint
-        , 0 // endPoint
+        , IsTesting() ? Common::OffsetDatetimeByZone(TimeCurrent(), BrokerGmtOffset) : 0 // endPoint
         , 1 //predictCount[apiSetTargetSub[apiSetIdx]]
         , lookbackCount[apiSetTargetSub[apiSetIdx]]
         , includeCurrent[apiSetTargetSub[apiSetIdx]]
@@ -152,6 +152,8 @@ bool FilterGeno::processPredict(int apiSetIdx, CsvString &predictCsv) {
             int predIn = (int)(predictCsv.readNumber());
             
             int tfIdx = getApiSetTimeframeIndex(apiSetIdx, tfIn), symIdx = getApiSetSymbolIndex(apiSetIdx, symbolIn);
+            if(tfIdx < 0 || symIdx < 0) { continue; }
+            
             lastDatetime[apiSetIdx]._[tfIdx]._[symIdx] = dtIn;
             //lastProcessedDatetime is handled in Calculate
             lastPrediction[apiSetIdx]._[tfIdx]._[symIdx] = predIn;

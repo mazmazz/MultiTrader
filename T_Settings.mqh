@@ -79,6 +79,7 @@ input TradeMode TradeModeType=TradeMarket; // TradeModeType: Type of trades to e
 input bool SetStopsOnPendings=true; // SetStopsOnPendings: Set SLTP on pending orders
 input bool BrokerTwoStep=true; // IsTwoStep: Broker is ECN and needs two-step order sending for SL/TP
 input int BrokerPipDecimal = 1; // BrokerPoints: # of pip decimals, e.g. 0 if 4-point broker, 1 if 5-point.
+input int BrokerGmtOffset = 3; // BrokerGmtOffset: Time zone offset from GMT to Broker time
 input string OrderComment_=""; // OrderComment: Comment to attach to orders
 
 input string Lbl_TradeParams="---- Trade Parameters ----"; // :

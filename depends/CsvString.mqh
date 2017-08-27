@@ -61,6 +61,7 @@ public:
 
    bool              isLineEnding(bool seekIfEnding = false)
      {
+        if(m_charIndex >= ArraySize(m_char)) { return true; }
         if(m_char[m_charIndex] == '\r' || m_char[m_charIndex] == '\n') {
             if(seekIfEnding) {
                 if(m_char[m_charIndex] == '\r') { m_charIndex++; }
@@ -98,6 +99,7 @@ public:
                     resultChar[ArraySize(resultChar)-1] = m_char[m_charIndex];
                     break;
             }
+            if(breakLoop) { break; }
         }
         string resultString = CharArrayToString(resultChar, 0, WHOLE_ARRAY, m_codepage);
         StringTrimLeft(resultString);

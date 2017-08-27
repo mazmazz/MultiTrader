@@ -7,69 +7,59 @@
 #property link      "https://github.com/mazmazz"
 #property strict
 
-#include "depends/mql4-http.mqh"
+#include "depends/internetlib.mqh"
 #include "depends/mql4-systemdatetime.mqh"
 
+#include "MC_Common/MC_Common.mqh"
+
 //#define _ApiLocal
-
-//+------------------------------------------------------------------+
-
-// api subkey: current version + string, see mc-rest-validate
-int ApiVersion = 1;
 #ifdef _ApiLocal
-string ApiBasePath = "http://localhost:8080/";
+string ApiBasePath = "localhost";
+int ApiBasePort = 8080;
 #else
-string ApiBasePath = "https://mc-validation.appspot.com/";
+string ApiBasePath = "mc-validation.appspot.com";
+int ApiBasePort = 80;
 #endif
-string ApiSubkeyRequest = "815476971d3fb14be87f39336c2cef9ef7c923ccf22c790bb5470fa923223409";
-string ApiSubkeyResult = "d6636dcbccc186882aef68f6594ff78b8fd809a69632d4f3b846cdccce5c8ab4";
-int ApiTimeout = 5;
-// api key: unix time, most recent minute, + "|" + apiSubkey
-
-int GetApiDatetime() {
-    return TimeSystemGMT()-MathMod(TimeSystemGMT(), 60);
-}
-
-string MakeApiKey(int apiDatetime, bool isRequest) {
-    uchar apiKeyBase[], apiKeyResult[], apiKeyKey[];
-    
-    // python hashlib takes a utf-8 string not null-terminated
-    // also make sure apiDatetime is stringed as an int, not a double/float
-    StringToCharArray(IntegerToString(apiDatetime) + "|" + (isRequest ? ApiSubkeyRequest : ApiSubkeyResult), apiKeyBase, 0, WHOLE_ARRAY, CP_UTF8);
-    ArrayResize(apiKeyBase, ArraySize(apiKeyBase)-1); // drop null byte
-    
-    CryptEncode(CRYPT_HASH_SHA256, apiKeyBase, apiKeyKey, apiKeyResult);
-    
-    string apiKey = NULL;
-    int apiKeyHashSize = ArraySize(apiKeyResult);
-    for(int i = 0; i < apiKeyHashSize; i++) {
-        apiKey += StringFormat("%.2x", apiKeyResult[i]); // lowercase
-    }
-    
-    return apiKey;
-}
-
-bool ValidateKey(string testKey, bool isRequest) {
-    int apiDatetimeBase = GetApiDatetime();
-    for(int i = ApiTimeout * -1; i < ApiTimeout+1; i++) {
-        int apiDatetime = apiDatetimeBase+(i*60);
-        string apiKey = MakeApiKey(apiDatetime, isRequest);
-        if(apiKey == testKey) { return true; }
-    }
-
-    return false;
-}
 
 //+------------------------------------------------------------------+
 
 int GetServerDatetime() {
     string result = NULL;
-    if(httpGet(ApiBasePath + "date", "mc-validate-key: " + MakeApiKey(GetApiDatetime(), true) + "\r\nmc-api-version: " + ApiVersion, result) 
-        && Common::GetStringType(result) == Type_Numeric
-    ) {
-        return StringToInteger(result);
+    
+    MqlNet net;
+    tagRequest request;
+    
+    request.stVerb = "GET";
+    request.stObject = "/date";
+    //request.stHead = "Content-Type: application/x-www-form-urlencoded";
+    request.stData = NULL;
+    
+    request.fromFile = false;
+    request.toFile = false;
+    Common::ArrayPush(request.stHeaderNamesIn, "Mmc-Api-Version");
+    Common::ArrayPush(request.stHeaderDataIn, "1");
+    Common::ArrayPush(request.stHeaderNamesOut, "Mmc-Api-Success");
+    Common::ArrayPush(request.stHeaderDataOut, "");
+
+#ifndef _ApiDev
+    Common::ArrayPush(request.stHeaderNamesIn, "Mmc-Api-Request-Key");
+    Common::ArrayPush(request.stHeaderDataIn, MakeApiKey(GetApiDatetime(), true));
+    Common::ArrayPush(request.stHeaderNamesOut, "Mmc-Api-Response-Key");
+    Common::ArrayPush(request.stHeaderDataOut, "");
+#endif
+    
+    if(net.Open(ApiBasePath, ApiBasePort, NULL, NULL, INTERNET_SERVICE_HTTP)) {
+        net.Request(request);
+        if(request.stHeaderDataOut[0] != "true") { return -1; }
+#ifndef _ApiDev
+        if(request.stHeaderDataOut[1] == NULL || !ValidateApiKey(request.stHeaderDataOut[1], false)) { return false; }
+#endif
+    }
+    
+    if(Common::GetStringType(request.stOut) == Type_Numeric) {
+        return StringToInteger(request.stOut);
     } else {
-        Error::PrintNormal("GetServerDatetime error: " + result);
+        Error::PrintNormal("GetServerDatetime error");
         return -1;
     }
 }

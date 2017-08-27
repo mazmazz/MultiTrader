@@ -64,6 +64,15 @@ class Common {
     template <typename T>
     static int ArrayFind(T &array[], T needle);
     
+    template <typename T>
+    static void ResetArrayBySize(T &arr[], int size);
+    template <typename T>
+    static void ResetArrayBySize(bool force, T &arr[], int size);
+    template <typename T>
+    static void ResetArrayBySize(T &arr[], int size, T defaultVal);
+    template <typename T>
+    static void ResetArrayBySize(bool force, T &arr[], int size, T defaultVal);
+    
     // string
     static string StringTrim(string inputStr);
     //template<typename T>
@@ -116,6 +125,7 @@ class Common {
     static datetime OffsetDatetimeByZone(datetime value, int offsetHours);
     static datetime UnoffsetDatetimeByZone(datetime value, int offsetHours);
     static datetime AlignCandleDatetimeByOffset(datetime value, ENUM_TIMEFRAMES period, int alignOffsetHours=0);
+    static datetime AlignCandleDatetimeByOffset(datetime value, int periodMinutes, int alignOffsetHours=0);
     
 #ifdef __MQL5__
     static double GetSingleValueFromBuffer(int indiHandle, int shift=0, int bufferNum=0);
@@ -215,6 +225,34 @@ int Common::ArrayTsearch(string &array[], string value, int count=-1, int start=
 
     return -1;
 }
+
+template<typename T>
+void Common::ResetArrayBySize(T &arr[], int size) {
+    ResetArrayBySize(false, arr, size);
+}
+
+template<typename T>
+void Common::ResetArrayBySize(T &arr[], int size, T defaultVal) {
+    ResetArrayBySize(false, arr, size, defaultVal);
+}
+
+template<typename T>
+void Common::ResetArrayBySize(bool force, T &arr[], int size) {
+    if(force || ArraySize(arr) != size) {
+        ArrayFree(arr);
+        ArrayResize(arr, size);
+    }
+}
+
+template<typename T>
+void Common::ResetArrayBySize(bool force, T &arr[], int size, T defaultVal) {
+    if(force || ArraySize(arr) != size) {
+        ArrayFree(arr);
+        ArrayResize(arr, size);
+        ArrayInitialize(arr, defaultVal);
+    }
+}
+
 
 string Common::StringTrim(string inputStr) {
 #ifdef __MQL5__
@@ -637,7 +675,11 @@ datetime Common::UnoffsetDatetimeByZone(datetime value, int offsetHours) {
 }
 
 datetime Common::AlignCandleDatetimeByOffset(datetime value, ENUM_TIMEFRAMES period, int alignOffsetHours=0) {
-    int adjustSeconds = MathMod(value, Common::GetMinutesFromTimeFrame(period)*60);
+    return AlignCandleDatetimeByOffset(value, Common::GetMinutesFromTimeFrame(period), alignOffsetHours);
+}
+
+datetime Common::AlignCandleDatetimeByOffset(datetime value, int periodMinutes, int alignOffsetHours=0) {
+    int adjustSeconds = MathMod(value, periodMinutes*60);
     int offsetSeconds = alignOffsetHours*60;
     datetime dtOffsetted = value-adjustSeconds+offsetSeconds;
     return dtOffsetted;

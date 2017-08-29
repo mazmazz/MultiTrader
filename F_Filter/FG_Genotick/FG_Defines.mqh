@@ -15,6 +15,7 @@
 
 #include "../F_Filter.mqh"
 #include "../../depends/CsvString.mqh"
+#include "../../depends/CsvFile.mqh"
 //+------------------------------------------------------------------+
 
 class FilterGeno : public Filter {
@@ -61,6 +62,7 @@ class FilterGeno : public Filter {
     int apiSetTargetSub[]; // indexed by set: value is the source sub where settings exist
     int apiSetSubRef[]; // indexed by subfilters: api set idx of subfilter
     bool apiSetFirstRun[];
+    CsvFile apiSetCsvFiles[];
     
     // defined below
     //int apiIntervalMins[]; // indexed by api set
@@ -99,6 +101,7 @@ class FilterGeno : public Filter {
     string formatDatetimeToGenoTime(datetime value);
     
     bool processPredict(int apiSetIdx, CsvString &predictCsv);
+    bool processPredictFile(int apiSetIdx, datetime testTime);
     void resetLastData();
     
     //+------------------------------------------------------------------+

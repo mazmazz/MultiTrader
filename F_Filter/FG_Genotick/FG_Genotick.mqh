@@ -99,10 +99,16 @@ void FilterGeno::initApiSets() {
             Common::ArrayPush(apiSetSymbolLists, symbolList);
             ArrayResize(apiSetTimeframes, ArraySize(apiSetTimeframes)+1);
             updateListUnits(apiSetTimeframes[newSetIndex]._, timeFrame[i]);
+            
             Common::ArrayPush(apiIntervalMins, 0);
             Common::ArrayPush(apiLastProcessedInterval, (datetime)0);
             updateApiInterval(apiIntervalMins[newSetIndex], timeFrame[i]);
             Common::ArrayPush(apiSetFirstRun, true);
+            
+            if(dataSource[apiSetTargetSub[newSetIndex]] == "filePredClient") {
+                ArrayResize(apiSetCsvFiles, newSetIndex+1);
+                apiSetCsvFiles[newSetIndex].reopen("Genotick_Data.csv", FILE_CSV|FILE_READ|FILE_ANSI);
+            } 
         }
     }
     

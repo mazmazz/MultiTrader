@@ -36,12 +36,18 @@ void FilterGeno::doPreCycleWork() {
         if(!isTimeInCurrent(i, testTime)) { // todo: throttling on client side?
             CsvString predictCsv(NULL, 0);
             if(getApiPredict(i, predictCsv)) {
-                if(processPredict(i, predictCsv)) {
-                    // todo: don't update until we verify we have new candles
-                    // BUT: What if it's initial execution, and the very first
-                    // candle is old?
+                if(dataSource[apiSetTargetSub[i]] == "filePredClient") {
+                    processPredictFile(i, testTime);
                     apiLastProcessedInterval[i] = testTime;
-                    apiSetFirstRun[i] = false;
+                    apiSetFirstRun[i] = false;                    
+                } else {
+                    if(processPredict(i, predictCsv)) {
+                        // todo: don't update until we verify we have new candles
+                        // BUT: What if it's initial execution, and the very first
+                        // candle is old?
+                        apiLastProcessedInterval[i] = testTime;
+                        apiSetFirstRun[i] = false;
+                    }
                 }
             }
         }
@@ -74,19 +80,23 @@ bool FilterGeno::getApiPredict(int apiSetIdx, CsvString &predictCsv) {
     double timeDiff = MathMod(testTime, apiIntervalMins[apiSetIdx]*60);
     if(timeDiff > 0) { return false; } // only do even hours
     
-    return sendServerRequest(
-        predictCsv
-        , apiSetTimeframeLists[apiSetIdx]
-        , apiSetSymbolLists[apiSetIdx]
-        , 0 // startPoint
-        , IsTesting() ? Common::OffsetDatetimeByZone(TimeCurrent(), BrokerGmtOffset) : 0 // endPoint
-        , 1 //predictCount[apiSetTargetSub[apiSetIdx]]
-        , lookbackCount[apiSetTargetSub[apiSetIdx]]
-        , includeCurrent[apiSetTargetSub[apiSetIdx]]
-        , dataSource[apiSetTargetSub[apiSetIdx]]
-        , NULL // broker input data
-        , apiSetFirstRun[apiSetIdx]
-    );
+    if(dataSource[apiSetTargetSub[apiSetIdx]] == "filePredClient") {
+        return true; // let processPredict do the seeking
+    } else {
+        return sendServerRequest(
+            predictCsv
+            , apiSetTimeframeLists[apiSetIdx]
+            , apiSetSymbolLists[apiSetIdx]
+            , 0 // startPoint
+            , IsTesting() ? Common::OffsetDatetimeByZone(TimeCurrent(), BrokerGmtOffset) : 0 // endPoint
+            , 1 //predictCount[apiSetTargetSub[apiSetIdx]]
+            , lookbackCount[apiSetTargetSub[apiSetIdx]]
+            , includeCurrent[apiSetTargetSub[apiSetIdx]]
+            , dataSource[apiSetTargetSub[apiSetIdx]]
+            , NULL // broker input data
+            , apiSetFirstRun[apiSetIdx]
+        );
+    }
 }
 
 bool FilterGeno::sendServerRequest(CsvString &predictCsvOut, string periodList, string symbolList, datetime startPoint=0, datetime endPoint=0, int predictCount=-1, int lookbackCount=-1, bool includeCurrent=false, string source=NULL, string candleCsvInput = NULL, bool firstRun = false) {
@@ -170,6 +180,45 @@ bool FilterGeno::processPredict(int apiSetIdx, CsvString &predictCsv) {
         }
     }
 
+    return true;
+}
+
+bool FilterGeno::processPredictFile(int apiSetIdx, datetime testTime) {
+    testTime = Common::OffsetDatetimeByZone(TimeCurrent(), BrokerGmtOffset); // needs to be offset by timezone, was not previously
+    Error::PrintInfo("Reading file for API set " + apiSetIdx + " for testTime " + testTime);
+    while(!apiSetCsvFiles[apiSetIdx].isFileEnding()) {
+        ulong rowPos = apiSetCsvFiles[apiSetIdx].tell();
+        bool endSearch = false;
+        
+        // order is different from API data:
+        // datetime,symbol,prediction
+        //string tfIn = apiSetCsvFiles[apiSetIdx].readString();
+        datetime dtIn = apiSetCsvFiles[apiSetIdx].readDateTime(); // todo: must correct to broker time zone? does this matter?
+        string symbolIn = apiSetCsvFiles[apiSetIdx].readString();
+        int predIn = (int)(apiSetCsvFiles[apiSetIdx].readNumber());
+        while(!apiSetCsvFiles[apiSetIdx].isLineEnding() && !apiSetCsvFiles[apiSetIdx].isFileEnding()) {
+            apiSetCsvFiles[apiSetIdx].readString(); // skip remaining columns
+        }
+        
+        if(
+            (includeCurrent[apiSetTargetSub[apiSetIdx]] && dtIn > testTime)
+            || (!includeCurrent[apiSetTargetSub[apiSetIdx]] && dtIn >= testTime)
+        ) {
+            apiSetCsvFiles[apiSetIdx].seek(rowPos);
+            break; 
+        }
+        
+        string timeframe = timeFrame[apiSetTargetSub[apiSetIdx]]; // default to the first timeframe, since it's not supplied in csv
+        int tfIdx = getApiSetTimeframeIndex(apiSetIdx, timeframe), symIdx = getApiSetSymbolIndex(apiSetIdx, symbolIn);
+        if(tfIdx < 0 || symIdx < 0) { continue; }
+        
+        lastDatetime[apiSetIdx]._[tfIdx]._[symIdx] = dtIn;
+        //lastProcessedDatetime is handled in Calculate
+        lastPrediction[apiSetIdx]._[tfIdx]._[symIdx] = predIn;
+    }
+    
+    Error::PrintInfo("Current: " + TimeCurrent() + " | Test: " + testTime + " | Candle: " + lastDatetime[apiSetIdx]._[0]._[0]);
+    
     return true;
 }
 

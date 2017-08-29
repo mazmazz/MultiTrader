@@ -41,6 +41,7 @@ void FilterGeno::doPreCycleWork() {
                     // BUT: What if it's initial execution, and the very first
                     // candle is old?
                     apiLastProcessedInterval[i] = testTime;
+                    apiSetFirstRun[i] = false;
                 }
             }
         }
@@ -66,6 +67,13 @@ bool FilterGeno::isTimeInCurrent(int apiSetIdx, datetime &testTime) {
 //+------------------------------------------------------------------+
 
 bool FilterGeno::getApiPredict(int apiSetIdx, CsvString &predictCsv) {
+    datetime testTime = Common::OffsetDatetimeByZone(TimeCurrent(), BrokerGmtOffset);
+    testTime = testTime - MathMod(testTime, 3600); // round to lowest hour
+    //MqlDateTime testMdt = {};
+    //TimeToStruct(testTime, testMdt);
+    double timeDiff = MathMod(testTime, apiIntervalMins[apiSetIdx]*60);
+    if(timeDiff > 0) { return false; } // only do even hours
+    
     return sendServerRequest(
         predictCsv
         , apiSetTimeframeLists[apiSetIdx]
@@ -76,11 +84,12 @@ bool FilterGeno::getApiPredict(int apiSetIdx, CsvString &predictCsv) {
         , lookbackCount[apiSetTargetSub[apiSetIdx]]
         , includeCurrent[apiSetTargetSub[apiSetIdx]]
         , dataSource[apiSetTargetSub[apiSetIdx]]
-        // , // broker input data
+        , NULL // broker input data
+        , apiSetFirstRun[apiSetIdx]
     );
 }
 
-bool FilterGeno::sendServerRequest(CsvString &predictCsvOut, string periodList, string symbolList, datetime startPoint=0, datetime endPoint=0, int predictCount=-1, int lookbackCount=-1, bool includeCurrent=false, string source=NULL, string candleCsvInput = NULL) {
+bool FilterGeno::sendServerRequest(CsvString &predictCsvOut, string periodList, string symbolList, datetime startPoint=0, datetime endPoint=0, int predictCount=-1, int lookbackCount=-1, bool includeCurrent=false, string source=NULL, string candleCsvInput = NULL, bool firstRun = false) {
     MqlNet net;
     tagRequest request;
     
@@ -97,6 +106,7 @@ bool FilterGeno::sendServerRequest(CsvString &predictCsvOut, string periodList, 
     if(lookbackCount > -1) { request.stData += "&lookbackCount=" + lookbackCount; }
     if(includeCurrent) { request.stData += "&includeCurrent=true"; }
     if(source != NULL && StringLen(source) > 0) { request.stData += "&source=" + net.UrlEncode(source); }
+    if(firstRun) { request.stData += "&resetCache=true"; }
     if(candleCsvInput != NULL && StringLen(candleCsvInput) > 0) { request.stData += "&data=" + net.UrlEncode(candleCsvInput); }
     
     request.fromFile = false;

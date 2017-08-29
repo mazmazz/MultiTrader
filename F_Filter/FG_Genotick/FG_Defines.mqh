@@ -60,6 +60,7 @@ class FilterGeno : public Filter {
     string apiSetTimeframeLists[]; //[]; indexed by set: timeframe list of set
     int apiSetTargetSub[]; // indexed by set: value is the source sub where settings exist
     int apiSetSubRef[]; // indexed by subfilters: api set idx of subfilter
+    bool apiSetFirstRun[];
     
     // defined below
     //int apiIntervalMins[]; // indexed by api set
@@ -94,7 +95,7 @@ class FilterGeno : public Filter {
     // void doPreCycleWork(); // defined below
     bool isTimeInCurrent(int apiSetIdx, datetime &testTime);
     bool getApiPredict(int apiSetIdx, CsvString &predictCsv);
-    bool sendServerRequest(CsvString &predictCsvOut, string periodList, string symbolList, datetime startPoint=0, datetime endPoint=0, int predictCount=-1, int lookbackCount=-1, bool includeCurrent=false, string source=NULL, string candleCsvInput = NULL);   
+    bool sendServerRequest(CsvString &predictCsvOut, string periodList, string symbolList, datetime startPoint=0, datetime endPoint=0, int predictCount=-1, int lookbackCount=-1, bool includeCurrent=false, string source=NULL, string candleCsvInput = NULL, bool firstRun = false);
     string formatDatetimeToGenoTime(datetime value);
     
     bool processPredict(int apiSetIdx, CsvString &predictCsv);

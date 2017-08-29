@@ -79,7 +79,7 @@ void FilterGeno::init() {
 
 void FilterGeno::initApiSets() {
     int subfilterCount = getSubfilterCount();
-    ArrayFree(apiSetTargetSub); ArrayFree(apiSetSymbolLists); ArrayFree(apiSetTimeframeLists);
+    ArrayFree(apiSetTargetSub); ArrayFree(apiSetSymbolLists); ArrayFree(apiSetTimeframeLists); ArrayFree(apiSetFirstRun);
     ArrayResize(apiSetSubRef, subfilterCount);
     string symbolList = getSymbolList();
 
@@ -102,6 +102,7 @@ void FilterGeno::initApiSets() {
             Common::ArrayPush(apiIntervalMins, 0);
             Common::ArrayPush(apiLastProcessedInterval, (datetime)0);
             updateApiInterval(apiIntervalMins[newSetIndex], timeFrame[i]);
+            Common::ArrayPush(apiSetFirstRun, true);
         }
     }
     

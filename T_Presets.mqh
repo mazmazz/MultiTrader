@@ -94,8 +94,8 @@ input string Geno_DataSource="*:oanda";
 
 input string Geno_Params_Sep2 = ""; // : 
 input string Geno_UseGMT="*:true"; // UseGMT: Data is in GMT, otherwise use broker current time
-//input string Geno_ResetOnNewTimePoint="*:false"; // ResetOnNewTimePoint: True, reset trades every period if same signal; False, persist current trades
-string Geno_ResetOnNewTimePoint="*:false"; // todo: we can't support this until we track timeframes separately per api set
+input string Geno_ResetOnNewTimePoint="*:false"; // ResetOnNewTimePoint: True, reset trades every period if same signal; False, persist current trades
+//string Geno_ResetOnNewTimePoint="*:false"; // todo: we can't support this until we track timeframes separately per api set
 input string Geno_CloseOnMissingSignal="*:false"; // CloseOnMissingSignal: Close trades if there is no signal
 
 //+------------------------------------------------------------------+

@@ -13,8 +13,9 @@
 
 //+------------------------------------------------------------------+
 
-bool FilterGeno::calculate(int subIdx, int symIdx, DataUnit *dataOut) {
+bool FilterGeno::calculate(int subIdx, int symIdx, DataUnit *dataOut, bool &forceAddOut) {
     if(!checkSafe(subIdx)) { return false; }
+    forceAddOut = false;
     string symbol = MainSymbolMan.symbols[symIdx].name;
     int apiSetIdx = apiSetSubRef[subIdx];
     int timeFrameIdx = getApiSetTimeframeIndex(apiSetIdx, timeFrame[subIdx]);
@@ -27,6 +28,7 @@ bool FilterGeno::calculate(int subIdx, int symIdx, DataUnit *dataOut) {
     
     if(lastDatetime[apiSetIdx]._[timeFrameIdx]._[symIdx] > lastProcessedDatetime[apiSetIdx]._[timeFrameIdx]._[symIdx]) {
         // new candle, do something?
+        if(resetOnNewTimePoint[apiSetTargetSub[apiSetIdx]]) { forceAddOut = true; }
         lastProcessedDatetime[apiSetIdx]._[timeFrameIdx]._[symIdx] = lastDatetime[apiSetIdx]._[timeFrameIdx]._[symIdx];
     }
     

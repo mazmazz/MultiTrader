@@ -84,6 +84,8 @@ void FilterGeno::initApiSets() {
     string symbolList = getSymbolList();
 
     for(int i = 0; i < subfilterCount; i++) {
+        if(subfilterMode[i] == SubfilterDisabled) { continue; }
+        
         int existingSetIndex = getApiSetMatchingIndex(i);
         if(existingSetIndex >= 0) {
             apiSetSubRef[i] = existingSetIndex;

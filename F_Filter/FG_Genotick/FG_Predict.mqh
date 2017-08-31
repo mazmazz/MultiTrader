@@ -36,18 +36,34 @@ void FilterGeno::doPreCycleWork() {
         if(!isTimeInCurrent(i, testTime)) { // todo: throttling on client side?
             CsvString predictCsv(NULL, 0);
             if(getApiPredict(i, predictCsv)) {
+                int symIdxNewList[];
                 if(dataSource[apiSetTargetSub[i]] == "filePredClient") {
-                    processPredictFile(i, testTime);
+                    processPredictFile(i, testTime, symIdxNewList); // always returns true
                     apiLastProcessedInterval[i] = testTime;
                     apiSetFirstRun[i] = false;                    
                 } else {
-                    if(processPredict(i, predictCsv)) {
+                    if(processPredict(i, predictCsv, symIdxNewList)) {
                         // todo: don't update until we verify we have new candles
                         // BUT: What if it's initial execution, and the very first
                         // candle is old?
+                        
+                        // Plan:
+                        // Candles older than [timeframe/24?] hours are discarded
+                        // * Weekends and holidays (Jan 3 - Oanda is closed but market ran all day)
+                        // * To allow weekends not holidays: last candle is 48 hours apart
+                        // * Track day of week? Allow 48 hours on Sunday, but not on weekdays?
+                        // If new candle is not returned after a check: return "Out"? Try again?
+                        // * Test if "Out" works without the exit interval
+                        // GET YOUR TIMEZONES STRAIGHT! DOES FXTM CHANGE THEIRS??? Yes, +2 in non-DST
+                        
                         apiLastProcessedInterval[i] = testTime;
                         apiSetFirstRun[i] = false;
-                    }
+                    } else { return; } // do not fall through to candle exit
+                }
+                
+                // force exit candles
+                if(resetOnNewTimePoint[apiSetTargetSub[i]]) {
+                    MainOrderMan.forceExit(symIdxNewList);
                 }
             }
         }
@@ -163,7 +179,8 @@ string FilterGeno::formatDatetimeToGenoTime(datetime value) {
 //ArrayDim<ArrayDim<datetime>> lastProcessedDatetime[];
 //ArrayDim<ArrayDim<int>> lastPrediction[];
 
-bool FilterGeno::processPredict(int apiSetIdx, CsvString &predictCsv) {
+bool FilterGeno::processPredict(int apiSetIdx, CsvString &predictCsv, int &symIdxNewList[]) {
+    ArrayFree(symIdxNewList);
     while(!predictCsv.isDataEnding()) {
         while(!predictCsv.isLineEnding(true) && !predictCsv.isDataEnding()) {
             string tfIn = predictCsv.readString();
@@ -177,15 +194,18 @@ bool FilterGeno::processPredict(int apiSetIdx, CsvString &predictCsv) {
             lastDatetime[apiSetIdx]._[tfIdx]._[symIdx] = dtIn;
             //lastProcessedDatetime is handled in Calculate
             lastPrediction[apiSetIdx]._[tfIdx]._[symIdx] = predIn;
+            if(Common::ArrayFind(symIdxNewList, symIdx) < 0) { Common::ArrayPush(symIdxNewList, symIdx); }
         }
     }
 
     return true;
 }
 
-bool FilterGeno::processPredictFile(int apiSetIdx, datetime testTime) {
+bool FilterGeno::processPredictFile(int apiSetIdx, datetime testTime, int &symIdxNewList[]) {
     testTime = Common::OffsetDatetimeByZone(TimeCurrent(), BrokerGmtOffset); // needs to be offset by timezone, was not previously
     Error::PrintInfo("Reading file for API set " + apiSetIdx + " for testTime " + testTime);
+    ArrayFree(symIdxNewList);
+    
     while(!apiSetCsvFiles[apiSetIdx].isFileEnding()) {
         ulong rowPos = apiSetCsvFiles[apiSetIdx].tell();
         bool endSearch = false;
@@ -215,6 +235,7 @@ bool FilterGeno::processPredictFile(int apiSetIdx, datetime testTime) {
         lastDatetime[apiSetIdx]._[tfIdx]._[symIdx] = dtIn;
         //lastProcessedDatetime is handled in Calculate
         lastPrediction[apiSetIdx]._[tfIdx]._[symIdx] = predIn;
+        if(Common::ArrayFind(symIdxNewList, symIdx) < 0) { Common::ArrayPush(symIdxNewList, symIdx); }
     }
     
     Error::PrintInfo("Current: " + TimeCurrent() + " | Test: " + testTime + " | Candle: " + lastDatetime[apiSetIdx]._[0]._[0]);

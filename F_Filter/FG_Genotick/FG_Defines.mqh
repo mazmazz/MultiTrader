@@ -100,8 +100,8 @@ class FilterGeno : public Filter {
     bool sendServerRequest(CsvString &predictCsvOut, string periodList, string symbolList, datetime startPoint=0, datetime endPoint=0, int predictCount=-1, int lookbackCount=-1, bool includeCurrent=false, string source=NULL, string candleCsvInput = NULL, bool firstRun = false);
     string formatDatetimeToGenoTime(datetime value);
     
-    bool processPredict(int apiSetIdx, CsvString &predictCsv);
-    bool processPredictFile(int apiSetIdx, datetime testTime);
+    bool processPredict(int apiSetIdx, CsvString &predictCsv, int &symIdxNewList[]);
+    bool processPredictFile(int apiSetIdx, datetime testTime, int &symIdxNewList[]);
     void resetLastData();
     
     //+------------------------------------------------------------------+
@@ -113,7 +113,7 @@ class FilterGeno : public Filter {
 
     //+------------------------------------------------------------------+
 
-    bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut);
+    bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut, bool &forceAddOut);
     
     private:
     bool getPrediction(int subIdx, int symIdx, int &predictionOut);

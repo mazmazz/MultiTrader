@@ -147,9 +147,73 @@ bool OrderManager::getDistanceFromOpen(long ticket, int symIdx, double &distance
     return true;
 }
 
-void OrderManager::setFulfillExitSignals() {
-    int size = ArraySize(exitSignalsToFulfill);
+int OrderManager::forceExit() {
+    int result = 0;
+    int size = ArraySize(MainSymbolMan.symbols);
+    int symIdxList[];
+    ArrayResize(symIdxList, size);
     for(int i = 0; i < size; i++) {
-        exitSignalsToFulfill[i].fulfilled = true;
+        symIdxList[i] = i;
     }
+    return forceExit(symIdxList);
+}
+
+int OrderManager::forceExit(int &symIdxList[]) {
+    int result = 0;
+    
+#ifdef __MQL4__
+    result += forceExit(symIdxList, false);
+#else
+#ifdef __MQL5__
+    result += forceExit(symIdxList, true);
+    result += forceExit(symIdxList, false);
+#endif
+#endif
+
+    return result;
+}
+
+int OrderManager::forceExit(int &symIdxList[], bool isPosition) {
+    int result = 0;
+    
+    for(int i = 0; i < getOrdersTotal(isPosition); i++) {
+        getOrderSelect(i, SELECT_BY_POS, MODE_TRADES, isPosition);
+        
+        if(getOrderMagicNumber(isPosition) != MagicNumber) { 
+            continue; 
+        }
+        string symbolName = getOrderSymbol(isPosition);
+        int symIdx = MainSymbolMan.getSymbolId(symbolName);
+        if(symIdx < 0 || Common::ArrayFind(symIdxList, symIdx) < 0) { continue; }
+        
+        long ticket = getOrderTicket(isPosition); // in mql5 returns long, for native ulong ticket use OrderGetTicket(i)
+        double profit = getProfitPips(ticket, isPosition);
+        int type = getOrderType(isPosition);
+        
+        if(forceExit(ticket, symIdx, isPosition)) {
+            result++;
+            i--; // decrement because getOrdersTotal doesn't update
+        }
+    }
+    
+    return result;
+}
+
+bool OrderManager::forceExit(long ticket, int symIdx, bool isPosition) {
+    if(!isExitSafe(symIdx)) { return false; }
+    if(!checkDoSelect(ticket, isPosition)) { return false; }
+    
+    bool result = sendClose(ticket, symIdx, isPosition);
+    if(result) {
+        Error::PrintInfo("Close " + (isPosition ? "position " : "order ") + ticket + ": Forced exit", true);
+        MainAlertMan.alertByTradeAction(symIdx, false);
+
+        if(!isTradeModeGrid()) {
+            // HANDLE SIGNAL FULFILLMENT HERE
+        } else {
+            gridExitBySignal[symIdx] = true;
+            gridExitByOpposite[symIdx] = false;
+        }
+    }
+    return result;
 }

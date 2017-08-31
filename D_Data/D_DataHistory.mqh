@@ -27,10 +27,10 @@ class DataHistory {
     
     void setHistoryCount(int dataHistoryCountIn = -1, int signalHistoryCountIn = -1);
 
-    void addData(DataUnit *data);
+    void addData(DataUnit *data, bool force = false);
 
     template<typename T>
-    void addData(bool success, T value, SignalType signal = SignalNone, string debugValue = "", datetime lastUpdate = 0, bool forceIn = false);
+    void addData(bool success, T value, SignalType signal, string debugValue, datetime lastUpdate, bool force = false);
     
     DataUnit *getData(int index = 0) { 
         if(index >= ArraySize(data)) { return NULL; }
@@ -39,7 +39,7 @@ class DataHistory {
     
     void deleteAllData();
 
-    void addSubSignalUnit(SignalType curSignal/*, bool curForce = false*/, int checkIndex = 0);
+    void addSubSignalUnit(SignalType curSignal, bool force = false, int checkIndex = 0);
     
     template<typename T>
     void compareRawValues(DataUnit *unit, DataUnit *compareUnit);
@@ -89,18 +89,18 @@ void DataHistory::setHistoryCount(int dataHistoryCountIn = -1, int signalHistory
     ArrayResize(signal, size, signalHistoryCount-size); 
 }
 
-void DataHistory::addData(DataUnit *unit) {
-    addSubSignalUnit(unit.signal/*, unit.force*/, 0);
+void DataHistory::addData(DataUnit *unit, bool force = false) {
+    addSubSignalUnit(unit.signal, force, 0);
     
     Common::ArrayPush(data, unit, dataHistoryCount);
 }
 
 template<typename T>
-void DataHistory::addData(bool success, T value, SignalType signal = SignalNone, string debugValue = "", datetime lastUpdate = 0, bool forceIn = false) {
+void DataHistory::addData(bool success, T value, SignalType signal, string debugValue, datetime lastUpdate, bool force = false) {
     DataUnit *newData = NULL;
-    newData = new DataUnit(success, value, signal, debugValue, lastUpdate, forceIn);
+    newData = new DataUnit(success, value, signal, debugValue, lastUpdate);
     
-    addData(newData);
+    addData(newData, force);
 }
 
 void DataHistory::deleteAllData() {
@@ -113,14 +113,13 @@ SignalType DataHistory::getSubSignal(int unitIdx = 0) { // kept for compatibilit
     else { return data[unitIdx].signal; }
 }
 
-void DataHistory::addSubSignalUnit(SignalType curSignal/*, bool curForce = false*/, int checkIndex = 0) {
-    bool force = false;
+void DataHistory::addSubSignalUnit(SignalType curSignal, bool force = false, int checkIndex = 0) {
     SignalType compareSignal = SignalNone;
     SignalUnit *compareUnit = getSubSignalUnit(checkIndex);
     if(Common::IsInvalidPointer(compareUnit)) { force = true; }
     else { compareSignal = compareUnit.type; }
 
-    if (force /*|| curForce */|| (curSignal != compareSignal)) {
+    if (force || (curSignal != compareSignal)) {
         SignalUnit *signalUnit = new SignalUnit();
         signalUnit.timeMilliseconds = GetTickCount();
         signalUnit.timeDatetime = TimeCurrent();

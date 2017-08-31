@@ -33,7 +33,7 @@ void OrderManager::doPositions(bool firstRun) {
 #endif
 #endif
     
-    setFulfillExitSignals();
+    setFulfillSignals(exitSignalsToFulfill);
     updateBasketStopLevels();
     checkDoBasketExit();
     
@@ -193,5 +193,12 @@ void OrderManager::addOrderToProfitCount(int symbolIdx, int type, double profit,
             //basketBookedProfit += profit;
             //basketBookedProfitSymbol[symbolIdx] += profit;
         }
+    }
+}
+
+void OrderManager::setFulfillSignals(SignalUnit* &signalsToFulfill[]) {
+    int size = ArraySize(signalsToFulfill);
+    for(int i = 0; i < size; i++) {
+        signalsToFulfill[i].fulfilled = true;
     }
 }

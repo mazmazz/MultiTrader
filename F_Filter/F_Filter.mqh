@@ -54,6 +54,7 @@ class Filter {
     virtual void init() { Error::ThrowError(ErrorNormal, "Filter: init not implemented", FunctionTrace, shortName); }
     virtual void deInit() { }
     virtual bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut) { Error::ThrowError(ErrorNormal, "Filter: Calculate not implemented", FunctionTrace, shortName); return false; }
+    virtual bool calculate(int subfilterId, int symbolIndex, DataUnit *dataOut, bool &forceAddOut) { forceAddOut = false; return calculate(subfilterId, symbolIndex, dataOut); }
     
     virtual void doPreCycleWork() { }
     

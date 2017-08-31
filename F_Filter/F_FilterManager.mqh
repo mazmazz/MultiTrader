@@ -142,19 +142,20 @@ void FilterManager::deleteAllFilters() {
 
 void FilterManager::calculateSubfilterByIndex(int filterIndex, int subfilterId, int symbolIndex) {
     DataUnit *data = new DataUnit();
+    bool forceAdd = false;
     
-    if(filters[filterIndex].calculate(subfilterId, symbolIndex, data)) {
+    if(filters[filterIndex].calculate(subfilterId, symbolIndex, data, forceAdd)) {
         // todo: find a better place to put data processing
         // perhaps pass a dataunit as ref to this function
         // and put processing outside
         
         data.success = true;
         
-        MainDataMan.getDataHistory(symbolIndex, filterIndex, subfilterId).addData(data);
+        MainDataMan.getDataHistory(symbolIndex, filterIndex, subfilterId).addData(data, forceAdd);
         
         // also collate trade signals and stability in OrderMan here, iteratively
         // so we don't need to loop again in OrderMan to determine composite signal
-        MainDataMan.symbol[symbolIndex].updateSymbolSignal(filterIndex, subfilterId);
+        MainDataMan.symbol[symbolIndex].updateSymbolSignal(filterIndex, subfilterId, forceAdd);
     } else {
         delete(data);
     }

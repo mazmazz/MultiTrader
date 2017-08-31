@@ -205,6 +205,7 @@ class OrderManager {
     void addOrderToOpenCount(long ticket, int symIdx, bool isPosition, bool subtract);
     void addOrderToOpenCount(int symIdx, int orderType, bool subtract);
     void addOrderToProfitCount(int symbolIdx, int type, double profit, bool doBooked, bool subtract);
+    void setFulfillSignals(SignalUnit* &signalsToFulfill[]);
     
     //+------------------------------------------------------------------+
     // Exit
@@ -213,11 +214,17 @@ class OrderManager {
     bool checkDoExitSignals(long ticket, int symIdx, bool isPosition);
     bool checkDoExitByDistance(long ticket, int symIdx, double distancePips, bool byGrid, bool isPosition);
     bool getDistanceFromOpen(long ticket, int symIdx, double &distanceOut, bool byGrid, bool isPosition);
-    void setFulfillExitSignals();
+    
+    public:
+    int forceExit();
+    int forceExit(int &symIdxList[]);
+    int forceExit(int &symIdxList[], bool isPosition);
+    bool forceExit(long ticket, int symIdx, bool isPosition);
     
     //+------------------------------------------------------------------+
     // Modify
     
+    private:
     void doModifyPosition(long ticket, int symIdx, bool isPosition);
     
     //+------------------------------------------------------------------+

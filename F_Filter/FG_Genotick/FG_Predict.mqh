@@ -210,11 +210,10 @@ bool FilterGeno::processPredictFile(int apiSetIdx, datetime testTime, int &symId
         ulong rowPos = apiSetCsvFiles[apiSetIdx].tell();
         bool endSearch = false;
         
-        // order is different from API data:
-        // datetime,symbol,prediction
-        //string tfIn = apiSetCsvFiles[apiSetIdx].readString();
-        datetime dtIn = apiSetCsvFiles[apiSetIdx].readDateTime(); // todo: must correct to broker time zone? does this matter?
+        // timeframe, symbol, datetime, prediction
+        string tfIn = apiSetCsvFiles[apiSetIdx].readString();
         string symbolIn = apiSetCsvFiles[apiSetIdx].readString();
+        datetime dtIn = convertGenoTimeToDatetime(apiSetCsvFiles[apiSetIdx].readString()); //apiSetCsvFiles[apiSetIdx].readDateTime(); // todo: must correct to broker time zone? does this matter?
         int predIn = (int)(apiSetCsvFiles[apiSetIdx].readNumber());
         while(!apiSetCsvFiles[apiSetIdx].isLineEnding() && !apiSetCsvFiles[apiSetIdx].isFileEnding()) {
             apiSetCsvFiles[apiSetIdx].readString(); // skip remaining columns
@@ -241,6 +240,20 @@ bool FilterGeno::processPredictFile(int apiSetIdx, datetime testTime, int &symId
     Error::PrintInfo("Current: " + TimeCurrent() + " | Test: " + testTime + " | Candle: " + lastDatetime[apiSetIdx]._[0]._[0]);
     
     return true;
+}
+
+datetime FilterGeno::convertGenoTimeToDatetime(string genoTime) {
+    string yearG = StringSubstr(genoTime, 0, 4);
+    string monthG = StringSubstr(genoTime, 4, 2);
+    string dayG = StringSubstr(genoTime, 6, 2);
+    
+    if(StringLen(genoTime) > 8) {
+        string hourG = StringSubstr(genoTime, 8, 2);
+        string minuteG = StringSubstr(genoTime, 10, 2);
+        return StringToTime(StringFormat("%s.%s.%s %s:%s", yearG, monthG, dayG, hourG, minuteG));
+    } else {
+        return StringToTime(StringFormat("%s.%s.%s", yearG, monthG, dayG));
+    }
 }
 
 void FilterGeno::resetLastData() {

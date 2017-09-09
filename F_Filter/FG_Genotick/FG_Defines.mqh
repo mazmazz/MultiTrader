@@ -102,6 +102,7 @@ class FilterGeno : public Filter {
     
     bool processPredict(int apiSetIdx, CsvString &predictCsv, int &symIdxNewList[]);
     bool processPredictFile(int apiSetIdx, datetime testTime, int &symIdxNewList[]);
+    datetime convertGenoTimeToDatetime(string genoTime);
     void resetLastData();
     
     //+------------------------------------------------------------------+

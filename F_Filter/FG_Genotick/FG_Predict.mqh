@@ -33,7 +33,7 @@ void FilterGeno::doPreCycleWork() {
     int size = getApiSetCount();
     for(int i = 0; i < size; i++) {
         datetime testTime = 0;
-        if(!isTimeInCurrent(i, testTime)) { // todo: throttling on client side?
+        if(!isTimeInCurrent(i, testTime) && isTimeAlignedToInterval(i) && isTimeAfterLookupDelay(i)) { // todo: throttling on client side?
             CsvString predictCsv(NULL, 0);
             if(getApiPredict(i, predictCsv)) {
                 int symIdxNewList[];
@@ -84,18 +84,24 @@ bool FilterGeno::isTimeInCurrent(int apiSetIdx, datetime &testTime) {
     return apiLastProcessedInterval[apiSetIdx] >= testTime;
 }
 
+bool FilterGeno::isTimeAlignedToInterval(int apiSetIdx) {
+    datetime testTime = Common::OffsetDatetimeByZone(TimeCurrent(), BrokerGmtOffset);
+    testTime = testTime - MathMod(testTime, 3600); // round to lowest hour
+    double timeDiff = MathMod(testTime, apiIntervalMins[apiSetIdx]*60);
+    return !(timeDiff > 0);
+}
+
+bool FilterGeno::isTimeAfterLookupDelay(int apiSetIdx) {
+    datetime testTime = Common::OffsetDatetimeByZone(TimeCurrent(), BrokerGmtOffset);
+    double timeDiff = MathMod(testTime, apiIntervalMins[apiSetIdx]*60);
+    return timeDiff >= lookupDelay[apiSetIdx]*60;
+}
+
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 
 bool FilterGeno::getApiPredict(int apiSetIdx, CsvString &predictCsv) {
-    datetime testTime = Common::OffsetDatetimeByZone(TimeCurrent(), BrokerGmtOffset);
-    testTime = testTime - MathMod(testTime, 3600); // round to lowest hour
-    //MqlDateTime testMdt = {};
-    //TimeToStruct(testTime, testMdt);
-    double timeDiff = MathMod(testTime, apiIntervalMins[apiSetIdx]*60);
-    if(timeDiff > 0) { return false; } // only do even hours
-    
     if(dataSource[apiSetTargetSub[apiSetIdx]] == "filePredClient") {
         return true; // let processPredict do the seeking
     } else {

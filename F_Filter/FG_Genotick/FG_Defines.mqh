@@ -22,6 +22,7 @@ class FilterGeno : public Filter {
     public:
     void addSubfilter(int mode, string name, bool hidden, SubfilterType type
         , string timeFrameIn
+        , int lookupDelayIn
         , int lookbackCountIn
         , bool includeCurrentIn
         , string dataSourceIn
@@ -32,6 +33,7 @@ class FilterGeno : public Filter {
         );
     void addSubfilter(string modeList, string nameList, string hiddenList, string typeList
         , string timeFrameList
+        , string lookupDelayList
         , string lookbackCountList
         , string includeCurrentList
         , string dataSourceList
@@ -45,6 +47,7 @@ class FilterGeno : public Filter {
     private:
     bool isInit;
     string timeFrame[]; // timeframe by name (H2, H4, etc.)
+    int lookupDelay[]; // by minutes
     int lookbackCount[];
     bool includeCurrent[];
     string dataSource[];
@@ -96,6 +99,8 @@ class FilterGeno : public Filter {
     
     // void doPreCycleWork(); // defined below
     bool isTimeInCurrent(int apiSetIdx, datetime &testTime);
+    bool isTimeAlignedToInterval(int apiSetIdx);
+    bool isTimeAfterLookupDelay(int apiSetIdx);
     bool getApiPredict(int apiSetIdx, CsvString &predictCsv);
     bool sendServerRequest(CsvString &predictCsvOut, string periodList, string symbolList, datetime startPoint=0, datetime endPoint=0, int predictCount=-1, int lookbackCount=-1, bool includeCurrent=false, string source=NULL, string candleCsvInput = NULL, bool firstRun = false);
     string formatDatetimeToGenoTime(datetime value);

@@ -88,6 +88,7 @@ input string Geno_Hidden="*:false";
 
 input string Geno_Params_Sep = ""; // : 
 input string Geno_TimeFrame="*:H2";
+input string Geno_LookupDelay="*:0"; // LookupDelay: Minutes
 input string Geno_LookbackCount="*:256";
 input string Geno_IncludeCurrent="*:false";
 input string Geno_DataSource="*:oanda";
@@ -127,7 +128,7 @@ void LoadFilters() {
         
     FilterGeno* geno = new FilterGeno();
     geno.addSubfilter(Geno_Modes, Geno_Names, Geno_Hidden, Geno_Types
-        , Geno_TimeFrame, Geno_LookbackCount, Geno_IncludeCurrent, Geno_DataSource
+        , Geno_TimeFrame, Geno_LookupDelay, Geno_LookbackCount, Geno_IncludeCurrent, Geno_DataSource
         , Geno_UseGMT, Geno_ResetOnNewTimePoint, Geno_CloseOnMissingSignal
         );
     Main.addFilter(geno);

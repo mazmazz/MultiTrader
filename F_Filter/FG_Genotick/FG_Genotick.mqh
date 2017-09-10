@@ -21,6 +21,7 @@
 
 void FilterGeno::addSubfilter(int mode, string name, bool hidden, SubfilterType type
     , string timeFrameIn
+    , int lookupDelayIn
     , int lookbackCountIn
     , bool includeCurrentIn
     , string dataSourceIn
@@ -31,6 +32,7 @@ void FilterGeno::addSubfilter(int mode, string name, bool hidden, SubfilterType 
 ) {
     setupSubfilters(mode, name, hidden, type);
     Common::ArrayPush(timeFrame, timeFrameIn);
+    Common::ArrayPush(lookupDelay, lookupDelayIn);
     Common::ArrayPush(lookbackCount, lookbackCountIn);
     Common::ArrayPush(includeCurrent, includeCurrentIn);
     Common::ArrayPush(dataSource, dataSourceIn);
@@ -42,6 +44,7 @@ void FilterGeno::addSubfilter(int mode, string name, bool hidden, SubfilterType 
 
 void FilterGeno::addSubfilter(string modeList, string nameList, string hiddenList, string typeList
     , string timeFrameList
+    , string lookupDelayList
     , string lookbackCountList
     , string includeCurrentList
     , string dataSourceList
@@ -55,6 +58,7 @@ void FilterGeno::addSubfilter(string modeList, string nameList, string hiddenLis
     
     if(count > 0) {
         MultiSettings::Parse(timeFrameList, timeFrame, count, addToExisting);
+        MultiSettings::Parse(lookupDelayList, lookupDelay, count, addToExisting);
         MultiSettings::Parse(lookbackCountList, lookbackCount, count, addToExisting);
         MultiSettings::Parse(includeCurrentList, includeCurrent, count, addToExisting);
         MultiSettings::Parse(dataSourceList, dataSource, count, addToExisting);

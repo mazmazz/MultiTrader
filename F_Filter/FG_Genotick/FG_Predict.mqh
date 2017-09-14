@@ -208,34 +208,62 @@ bool FilterGeno::processPredict(int apiSetIdx, CsvString &predictCsv, int &symId
 }
 
 bool FilterGeno::processPredictFile(int apiSetIdx, datetime testTime, int &symIdxNewList[]) {
-    testTime = Common::OffsetDatetimeByZone(TimeCurrent(), BrokerGmtOffset); // needs to be offset by timezone, was not previously
-    Error::PrintInfo("Reading file for API set " + apiSetIdx + " for testTime " + testTime);
+    datetime brokerTestTime = testTime;
+    datetime offsetTestTime = Common::OffsetDatetimeByZone(testTime, BrokerGmtOffset); // needs to be offset by timezone, was not previously
+    Error::PrintInfo("Reading file for API set " + apiSetIdx + " for offsetTestTime " + offsetTestTime);
     ArrayFree(symIdxNewList);
+    bool foundTestCandle = false;
     
     while(!apiSetCsvFiles[apiSetIdx].isFileEnding()) {
         ulong rowPos = apiSetCsvFiles[apiSetIdx].tell();
         bool endSearch = false;
         
         // timeframe, symbol, datetime, prediction
+        // optional: upper open, high, low, close, volume
+        // optional 2: lower open, high, low, close, volume
         string tfIn = apiSetCsvFiles[apiSetIdx].readString();
         string symbolIn = apiSetCsvFiles[apiSetIdx].readString();
         datetime dtIn = convertGenoTimeToDatetime(apiSetCsvFiles[apiSetIdx].readString()); //apiSetCsvFiles[apiSetIdx].readDateTime(); // todo: must correct to broker time zone? does this matter?
         int predIn = (int)(apiSetCsvFiles[apiSetIdx].readNumber());
+        
+        string tailColumns[10]; int colI = 0;
         while(!apiSetCsvFiles[apiSetIdx].isLineEnding() && !apiSetCsvFiles[apiSetIdx].isFileEnding()) {
-            apiSetCsvFiles[apiSetIdx].readString(); // skip remaining columns
+            if(colI < 10) { tailColumns[colI++] = apiSetCsvFiles[apiSetIdx].readString(); }
+            else { apiSetCsvFiles[apiSetIdx].readString(); } // skip remaining columns
         }
         
         if(
-            (includeCurrent[apiSetTargetSub[apiSetIdx]] && dtIn > testTime)
-            || (!includeCurrent[apiSetTargetSub[apiSetIdx]] && dtIn >= testTime)
+            (includeCurrent[apiSetTargetSub[apiSetIdx]] && dtIn > offsetTestTime)
+            || (!includeCurrent[apiSetTargetSub[apiSetIdx]] && dtIn >= offsetTestTime)
         ) {
             apiSetCsvFiles[apiSetIdx].seek(rowPos);
             break; 
         }
         
-        string timeframe = timeFrame[apiSetTargetSub[apiSetIdx]]; // default to the first timeframe, since it's not supplied in csv
+        string timeframe = tfIn; //timeFrame[apiSetTargetSub[apiSetIdx]]; // default to the first timeframe, since it's not supplied in csv
         int tfIdx = getApiSetTimeframeIndex(apiSetIdx, timeframe), symIdx = getApiSetSymbolIndex(apiSetIdx, symbolIn);
         if(tfIdx < 0 || symIdx < 0) { continue; }
+        
+        int lastCandleOffset = includeCurrent[apiSetTargetSub[apiSetIdx]] ? 0 : Common::GetMinutesFromTimeFrame(Common::GetTimeFrameFromString(timeFrame[apiSetTargetSub[apiSetIdx]])) * 60;
+        
+        if(dtIn >= offsetTestTime-lastCandleOffset) { 
+            bool checkUpperCandle = colI >= 5;
+            MqlRates upperCandle = {0};
+            if(checkUpperCandle) {
+                upperCandle.time = convertGenoTimeToDatetime(tailColumns[0]);
+                upperCandle.open = StringToDouble(tailColumns[1]);
+                upperCandle.high = StringToDouble(tailColumns[2]);
+                upperCandle.low = StringToDouble(tailColumns[3]);
+                upperCandle.close = StringToDouble(tailColumns[4]);
+                upperCandle.tick_volume = (long)MathRound(StringToDouble(tailColumns[5]));
+            }
+            // get upper/lower candles here and verify if needed
+            if(checkUpperCandle && !checkCandleValid(symbolIn, Common::GetTimeFrameFromString(tfIn), brokerTestTime-lastCandleOffset, upperCandle)) {
+                Error::PrintInfo(StringFormat("Candle does not match | %s %s | Broker: %s | Test: %s", tfIn, symbolIn, TimeToString(brokerTestTime-lastCandleOffset), TimeToString(upperCandle.time)));
+                predIn = 0;
+            }
+            foundTestCandle = true;
+        } else { predIn = 0; } // candle doesn't match datetime, ignore pred
         
         lastDatetime[apiSetIdx]._[tfIdx]._[symIdx] = dtIn;
         //lastProcessedDatetime is handled in Calculate
@@ -243,9 +271,30 @@ bool FilterGeno::processPredictFile(int apiSetIdx, datetime testTime, int &symId
         if(Common::ArrayFind(symIdxNewList, symIdx) < 0) { Common::ArrayPush(symIdxNewList, symIdx); }
     }
     
-    Error::PrintInfo("Current: " + TimeCurrent() + " | Test: " + testTime + " | Candle: " + lastDatetime[apiSetIdx]._[0]._[0]);
+    if(!foundTestCandle) { Error::PrintInfo(StringFormat("Could not find test candle | Expected: %s | Last: %s", offsetTestTime, lastDatetime[apiSetIdx]._[0]._[0])); }
+    Error::PrintInfo("Current: " + TimeCurrent() + " | Test: " + offsetTestTime + " | Candle: " + lastDatetime[apiSetIdx]._[0]._[0]);
     
     return true;
+}
+
+bool checkCandleValid(string symbol, ENUM_TIMEFRAMES tf, datetime dt, MqlRates &checkCandle) {
+    MqlRates brokerCandles[], brokerCandle;
+    if(getUpperCandlesFromLowerTimeframe(symbol, tf, dt, brokerCandles) < 1) { return false; }
+    else { brokerCandle = brokerCandles[0]; }
+    
+    double 
+        openDelta = PriceToPips(symbol, MathAbs(brokerCandle.open-checkCandle.open))
+        , highDelta = PriceToPips(symbol, MathAbs(brokerCandle.high-checkCandle.high))
+        , lowDelta = PriceToPips(symbol, MathAbs(brokerCandle.low-checkCandle.low))
+        , closeDelta = PriceToPips(symbol, MathAbs(brokerCandle.close-checkCandle.close))
+    ;
+    bool result = 
+        openDelta <= 2
+        && highDelta <= 2
+        && lowDelta <= 2
+        && closeDelta <= 2
+    ;
+    return result;
 }
 
 datetime FilterGeno::convertGenoTimeToDatetime(string genoTime) {
@@ -296,51 +345,116 @@ void FilterGeno::resetLastData() {
 ////+------------------------------------------------------------------+
 ////|                                                                  |
 ////+------------------------------------------------------------------+
-//double getLowerToUpperPeriodFactor(ENUM_TIMEFRAMES lowerPeriod, ENUM_TIMEFRAMES upperPeriod) {
-//    int lowerSeconds = Common::GetMinutesFromTimeFrame(lowerPeriod)*60;
-//    int upperSeconds = Common::GetMinutesFromTimeFrame(upperPeriod)*60;
-//    
-//    return ((double)lowerSeconds)/((double)upperSeconds);
-//}
+double getLowerToUpperPeriodFactor(ENUM_TIMEFRAMES lowerPeriod, ENUM_TIMEFRAMES upperPeriod) {
+    int lowerSeconds = Common::GetMinutesFromTimeFrame(lowerPeriod)*60;
+    int upperSeconds = Common::GetMinutesFromTimeFrame(upperPeriod)*60;
+    
+    return ((double)lowerSeconds)/((double)upperSeconds);
+}
 ////+------------------------------------------------------------------+
 ////|                                                                  |
 ////+------------------------------------------------------------------+
-//ENUM_TIMEFRAMES getLowerPeriodFromUpperPeriod(ENUM_TIMEFRAMES upperPeriod) {
-//    switch(upperPeriod) {
-//        case PERIOD_MN1:
-//        case PERIOD_W1:
-//            return PERIOD_D1;
-//        case PERIOD_D1:
-//#ifdef __MQL5__
-//        case PERIOD_H12:
-//        case PERIOD_H8:
-//        case PERIOD_H6:
-//#endif
-//        case PERIOD_H4:
-//#ifdef __MQL5__
-//        case PERIOD_H3:
-//        case PERIOD_H2:
-//#endif
-//            return PERIOD_H1;
-//        case PERIOD_H1:
-//        case PERIOD_M30:
-//#ifdef __MQL5__        
-//        case PERIOD_M20:
-//#endif
-//        case PERIOD_M15:
-//#ifdef __MQL5__
-//        case PERIOD_M12:
-//        case PERIOD_M10:
-//        case PERIOD_M6:
-//#endif
-//        case PERIOD_M5:
-//#ifdef __MQL5__
-//        case PERIOD_M4:
-//        case PERIOD_M3:
-//        case PERIOD_M2:
-//#endif
-//            return PERIOD_M1;
-//        default:
-//            return upperPeriod;
+ENUM_TIMEFRAMES getLowerPeriodFromUpperPeriod(ENUM_TIMEFRAMES upperPeriod) {
+    switch(upperPeriod) {
+        case PERIOD_MN1:
+        case PERIOD_W1:
+            return PERIOD_D1;
+        case PERIOD_D1:
+#ifdef __MQL5__
+        case PERIOD_H12:
+        case PERIOD_H8:
+        case PERIOD_H6:
+#endif
+        case PERIOD_H4:
+#ifdef __MQL5__
+        case PERIOD_H3:
+        case PERIOD_H2:
+#endif
+            return PERIOD_H1;
+        case PERIOD_H1:
+        case PERIOD_M30:
+#ifdef __MQL5__        
+        case PERIOD_M20:
+#endif
+        case PERIOD_M15:
+#ifdef __MQL5__
+        case PERIOD_M12:
+        case PERIOD_M10:
+        case PERIOD_M6:
+#endif
+        case PERIOD_M5:
+#ifdef __MQL5__
+        case PERIOD_M4:
+        case PERIOD_M3:
+        case PERIOD_M2:
+#endif
+            return PERIOD_M1;
+        default:
+            return upperPeriod;
+    }
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+int getUpperCandlesFromLowerTimeframe(string symbol, ENUM_TIMEFRAMES upperPeriod, datetime startTime, MqlRates &ratesOut[], int timeOffsetHours=0, ENUM_TIMEFRAMES lowerPeriod = PERIOD_CURRENT) {
+    MqlRates lowerRates[];
+    if(lowerPeriod == PERIOD_CURRENT) { lowerPeriod = getLowerPeriodFromUpperPeriod(upperPeriod); }
+    double factor = (double)1/getLowerToUpperPeriodFactor(lowerPeriod, upperPeriod);
+    datetime reverseStartTime = startTime + Common::GetMinutesFromTimeFrame(lowerPeriod) * 60 * (factor-1);
+    CopyRates(symbol, lowerPeriod, reverseStartTime, (int)MathRound(factor), lowerRates);
+    
+    return combineCandles(lowerRates, lowerPeriod, upperPeriod, ratesOut, timeOffsetHours);
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+int combineCandles(MqlRates &rates[], ENUM_TIMEFRAMES lowerPeriod, ENUM_TIMEFRAMES upperPeriod, MqlRates &ratesOut[], int timeOffsetHours=0) {
+    // todo: how to handle truncated candles on weekends???
+    // H4
+    // Monday 00:00 but comes up as Sunday 21:00
+    // H2
+    // 2017/7/31 20:00 (shouldn't exist) and 22:00
+    // 2017/7/28 20:00 (correct exit)
+    double factor = (double)1/getLowerToUpperPeriodFactor(lowerPeriod, upperPeriod);
+    ArrayResize(ratesOut, ArraySize(ratesOut), MathRound((int)ArraySize(rates)/factor));
+    for(int i = 0; i < ArraySize(rates); i++) {
+        ArrayResize(ratesOut, ArraySize(ratesOut)+1);
+        int ratesOutI = ArraySize(ratesOut)-1;
+        for(int j = 0; j < factor && i+j < ArraySize(rates); j++) {
+            if(j == 0) {
+                ratesOut[ratesOutI].time = timeOffsetHours != 0 ? Common::OffsetDatetimeByZone(rates[i].time, timeOffsetHours) : rates[i].time;
+                ratesOut[ratesOutI].open = rates[i].open;
+                ratesOut[ratesOutI].high = rates[i].high;
+                ratesOut[ratesOutI].low = rates[i].low;
+                ratesOut[ratesOutI].tick_volume = 0;
+                ratesOut[ratesOutI].real_volume = 0;
+            }
+            ratesOut[ratesOutI].close = rates[i+j].close;
+            ratesOut[ratesOutI].tick_volume += rates[i+j].tick_volume;
+            ratesOut[ratesOutI].real_volume += rates[i+j].real_volume;
+            if(rates[i+j].high > ratesOut[ratesOutI].high) { ratesOut[ratesOutI].high = rates[i+j].high; }
+            if(rates[i+j].low < ratesOut[ratesOutI].low) { ratesOut[ratesOutI].low = rates[i+j].low; }
+        }
+        i += factor-1;
+    }
+    return ArraySize(ratesOut);
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+//void writeCandlesByRates(CsvString &candleCsv, MqlRates &rates[], string symbol, ENUM_TIMEFRAMES period) {
+//    ArraySetAsSeries(rates, false); // we want oldest to be first
+//    for(int i = 0; i < ArraySize(rates); i++) {
+//        string fields[8]; // Period, Instrument, Datetime, O, H, L, C, V
+//        fields[0] = Common::GetStringFromTimeFrame(period);
+//        fields[1] = symbol;
+//        fields[2] = FormatDatetimeToGenoTime(Common::OffsetDatetimeByZone(rates[i].time, BrokerGmtOffsetHours));
+//        fields[3] = rates[i].open;
+//        fields[4] = rates[i].high;
+//        fields[5] = rates[i].low;
+//        fields[6] = rates[i].close;
+//        fields[7] = rates[i].tick_volume;
+//        candleCsv.writeFields(fields);
+//        candleCsv.writeNewline();
 //    }
-//}
+//} 

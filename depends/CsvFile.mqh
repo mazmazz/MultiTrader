@@ -12,6 +12,7 @@ class CsvFile
 private:
    string            m_delimiter;
    int               m_handle;
+   int               m_error;
 public:
    //--- flags: FILE_READ | FILE_WRITE | FILE_SHARED_READ | FILE_SHARED_WRITE | FILE_COMMON | FILE_UNICODE
                      CsvFile(string name,int flags,ushort delimiter=',',int codepage=CP_ACP)
@@ -24,6 +25,7 @@ public:
      {
       close();
       m_handle=FileOpen(name,flags,delimiter,codepage);
+      m_error=GetLastError();
       StringSetCharacter(m_delimiter,0,delimiter);
      }
      

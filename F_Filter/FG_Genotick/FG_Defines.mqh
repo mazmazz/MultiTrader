@@ -28,6 +28,7 @@ class FilterGeno : public Filter {
         , string dataSourceIn
         
         , bool useGMTIn
+        , bool checkCandlesIn
         , bool resetOnNewTimePointIn
         , bool closeOnMissingSignalIn
         );
@@ -39,6 +40,7 @@ class FilterGeno : public Filter {
         , string dataSourceList
         
         , string useGMTList
+        , string checkCandlesList
         , string resetOnNewTimePointList
         , string closeOnMissingSignalList
         , bool addToExisting = false
@@ -53,6 +55,7 @@ class FilterGeno : public Filter {
     string dataSource[];
     
     bool useGMT[];
+    bool checkCandles[];
     bool resetOnNewTimePoint[];
     bool closeOnMissingSignal[];
     

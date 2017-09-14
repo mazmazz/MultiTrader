@@ -27,6 +27,7 @@ void FilterGeno::addSubfilter(int mode, string name, bool hidden, SubfilterType 
     , string dataSourceIn
     
     , bool useGMTIn
+    , bool checkCandlesIn
     , bool resetOnNewTimePointIn
     , bool closeOnMissingSignalIn
 ) {
@@ -38,6 +39,7 @@ void FilterGeno::addSubfilter(int mode, string name, bool hidden, SubfilterType 
     Common::ArrayPush(dataSource, dataSourceIn);
     
     Common::ArrayPush(useGMT, useGMTIn);
+    Common::ArrayPush(checkCandles, checkCandlesIn);
     Common::ArrayPush(resetOnNewTimePoint, resetOnNewTimePointIn);
     Common::ArrayPush(closeOnMissingSignal, closeOnMissingSignalIn);
 }
@@ -50,6 +52,7 @@ void FilterGeno::addSubfilter(string modeList, string nameList, string hiddenLis
     , string dataSourceList
     
     , string useGMTList
+    , string checkCandlesList
     , string resetOnNewTimePointList
     , string closeOnMissingSignalList
     , bool addToExisting = false
@@ -64,6 +67,7 @@ void FilterGeno::addSubfilter(string modeList, string nameList, string hiddenLis
         MultiSettings::Parse(dataSourceList, dataSource, count, addToExisting);
         
         MultiSettings::Parse(useGMTList, useGMT, count, addToExisting);
+        MultiSettings::Parse(checkCandlesList, checkCandles, count, addToExisting);
         MultiSettings::Parse(resetOnNewTimePointList, resetOnNewTimePoint, count, addToExisting);
         MultiSettings::Parse(closeOnMissingSignalList, closeOnMissingSignal, count, addToExisting);
     }

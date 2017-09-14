@@ -249,18 +249,18 @@ bool FilterGeno::processPredictFile(int apiSetIdx, datetime testTime, int &symId
         if(dtIn >= offsetTestTime-lastCandleOffset) { 
             bool checkUpperCandle = colI >= 5;
             MqlRates upperCandle = {0};
-            if(checkUpperCandle) {
+            if(checkUpperCandle && checkCandles[apiSetTargetSub[apiSetIdx]]) {
                 upperCandle.time = convertGenoTimeToDatetime(tailColumns[0]);
                 upperCandle.open = StringToDouble(tailColumns[1]);
                 upperCandle.high = StringToDouble(tailColumns[2]);
                 upperCandle.low = StringToDouble(tailColumns[3]);
                 upperCandle.close = StringToDouble(tailColumns[4]);
                 upperCandle.tick_volume = (long)MathRound(StringToDouble(tailColumns[5]));
-            }
-            // get upper/lower candles here and verify if needed
-            if(checkUpperCandle && !checkCandleValid(symbolIn, Common::GetTimeFrameFromString(tfIn), brokerTestTime-lastCandleOffset, upperCandle)) {
-                Error::PrintInfo(StringFormat("Candle does not match | %s %s | Broker: %s | Test: %s", tfIn, symbolIn, TimeToString(brokerTestTime-lastCandleOffset), TimeToString(upperCandle.time)));
-                predIn = 0;
+                
+                if(!checkCandleValid(symbolIn, Common::GetTimeFrameFromString(tfIn), brokerTestTime-lastCandleOffset, upperCandle)) {
+                    Error::PrintInfo(StringFormat("Candle does not match | %s %s | Broker: %s | Test: %s", tfIn, symbolIn, TimeToString(brokerTestTime-lastCandleOffset), TimeToString(upperCandle.time)));
+                    predIn = 0;
+                }
             }
             foundTestCandle = true;
         } else { predIn = 0; } // candle doesn't match datetime, ignore pred

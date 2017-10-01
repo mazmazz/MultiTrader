@@ -80,7 +80,7 @@ bool FilterGeno::isTimeInCurrent(int apiSetIdx, datetime &testTime) {
     // on next cycle, see if the result is same. if different, do api calls
     
     // todo: should we also take last candle into account? in case it returns an old candle
-    testTime = Common::AlignCandleDatetimeByOffset(TimeCurrent(), apiIntervalMins[apiSetIdx]);
+    testTime = Common::AlignCandleDatetimeByOffset(Common::OffsetDatetimeByZone(TimeCurrent(), BrokerGmtOffset), apiIntervalMins[apiSetIdx]);
     return apiLastProcessedInterval[apiSetIdx] >= testTime;
 }
 
@@ -208,8 +208,8 @@ bool FilterGeno::processPredict(int apiSetIdx, CsvString &predictCsv, int &symId
 }
 
 bool FilterGeno::processPredictFile(int apiSetIdx, datetime testTime, int &symIdxNewList[]) {
-    datetime brokerTestTime = testTime;
-    datetime offsetTestTime = Common::OffsetDatetimeByZone(testTime, BrokerGmtOffset); // needs to be offset by timezone, was not previously
+    datetime brokerTestTime = Common::AlignCandleDatetimeByOffset(TimeCurrent(), apiIntervalMins[apiSetIdx]); // align for use by validation
+    datetime offsetTestTime = testTime; // offsetted by timezone earlier, then aligned
     Error::PrintInfo("Reading file for API set " + apiSetIdx + " for offsetTestTime " + offsetTestTime);
     ArrayFree(symIdxNewList);
     bool foundTestCandle = false;
@@ -249,7 +249,7 @@ bool FilterGeno::processPredictFile(int apiSetIdx, datetime testTime, int &symId
         if(dtIn >= offsetTestTime-lastCandleOffset) { 
             bool checkUpperCandle = colI >= 5;
             MqlRates upperCandle = {0};
-            if(checkUpperCandle && checkCandles[apiSetTargetSub[apiSetIdx]]) {
+            if(checkUpperCandle && checkCandles[apiSetTargetSub[apiSetIdx]] && !includeCurrent[apiSetTargetSub[apiSetIdx]]) { // can't check current candle when it's not finished yet
                 upperCandle.time = convertGenoTimeToDatetime(tailColumns[0]);
                 upperCandle.open = StringToDouble(tailColumns[1]);
                 upperCandle.high = StringToDouble(tailColumns[2]);

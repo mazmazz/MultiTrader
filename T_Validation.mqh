@@ -42,15 +42,15 @@ int GetServerDatetime() {
     Common::ArrayPush(request.stHeaderDataOut, "");
 
 #ifndef _ApiDev
-    Common::ArrayPush(request.stHeaderNamesIn, "Mmc-Api-Request-Key");
+    Common::ArrayPush(request.stHeaderNamesIn, "mc-validate-key"); //"Mmc-Api-Request-Key");
     Common::ArrayPush(request.stHeaderDataIn, MakeApiKey(GetApiDatetime(), true));
-    Common::ArrayPush(request.stHeaderNamesOut, "Mmc-Api-Response-Key");
+    Common::ArrayPush(request.stHeaderNamesOut, "mc-validate-key"); //"Mmc-Api-Response-Key");
     Common::ArrayPush(request.stHeaderDataOut, "");
 #endif
     
     if(net.Open(ApiBasePath, ApiBasePort, NULL, NULL, INTERNET_SERVICE_HTTP)) {
         net.Request(request);
-        if(request.stHeaderDataOut[0] != "true") { return -1; }
+        //if(request.stHeaderDataOut[0] != "true") { return -1; }
 #ifndef _ApiDev
         if(request.stHeaderDataOut[1] == NULL || !ValidateApiKey(request.stHeaderDataOut[1], false)) { return false; }
 #endif

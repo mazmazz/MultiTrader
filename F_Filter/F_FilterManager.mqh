@@ -7,8 +7,8 @@
 #property link      "https://www.mql5.com"
 #property strict
 
-#include "../MC_Common/MC_Error.mqh"
-#include "../MC_Common/MC_MultiSettings.mqh"
+#include <MC_Common/MC_Error.mqh>
+#include <MC_Common/MC_MultiSettings.mqh>
 #include "F_Filter.mqh"
 #include "../D_Data/D_Data.mqh"
 #include "../O_Order/O_OrderManager.mqh"

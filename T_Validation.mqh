@@ -7,10 +7,10 @@
 #property link      "https://github.com/mazmazz"
 #property strict
 
-#include "depends/internetlib.mqh"
-#include "depends/mql4-systemdatetime.mqh"
+#include <MC_Common/depends/internetlib.mqh>
+#include <MC_Common/depends/mql4-systemdatetime.mqh>
 
-#include "MC_Common/MC_Common.mqh"
+#include <MC_Common/MC_Common.mqh>
 
 //#define _ApiLocal
 #ifdef _ApiLocal

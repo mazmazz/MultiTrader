@@ -8,8 +8,8 @@
 #property strict
 
 #include "T_Settings.mqh"
-#include "MC_Common/MC_Error.mqh"
-#include "MC_Common/MC_Common.mqh"
+#include <MC_Common/MC_Error.mqh>
+#include <MC_Common/MC_Common.mqh>
 #include "F_Filter/F_FilterManager.mqh"
 
 //+------------------------------------------------------------------+

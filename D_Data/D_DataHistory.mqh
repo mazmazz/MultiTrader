@@ -7,7 +7,7 @@
 #property link      "https://github.com/mazmazz"
 #property strict
 //+------------------------------------------------------------------+
-#include "../MC_Common/MC_Common.mqh"
+#include <MC_Common/MC_Common.mqh>
 #include "D_DataUnit.mqh"
 #include "../T_Settings.mqh"
 

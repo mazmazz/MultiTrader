@@ -23,7 +23,7 @@ datetime ProjectExpiration = D'2017.06.18';
 //+------------------------------------------------------------------+
 
 #ifdef __MQL5__
-#include "MC_Common/Mql4Shim.mqh"
+#include <MC_Common/Mql4Shim.mqh>
 //#define _X64 true
 #else
 #ifdef __MQL4__

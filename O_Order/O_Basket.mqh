@@ -8,12 +8,12 @@
 #property strict
 //+------------------------------------------------------------------+
 
-#include "../MC_Common/MC_Common.mqh"
-#include "../MC_Common/MC_Error.mqh"
+#include <MC_Common/MC_Common.mqh>
+#include <MC_Common/MC_Error.mqh>
 #include "../D_Data/D_Data.mqh"
 #include "../S_Symbol.mqh"
 //#include "../depends/OrderReliable.mqh"
-#include "../depends/PipFactor.mqh"
+#include <MC_Common/depends/PipFactor.mqh>
 
 #include "O_Defines.mqh"
 

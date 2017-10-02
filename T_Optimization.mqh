@@ -7,7 +7,7 @@
 #property link      "https://github.com/mazmazz"
 #property strict
 
-#include "MC_Common/MC_MultiSettings.mqh"
+#include <MC_Common/MC_MultiSettings.mqh>
 
 //+------------------------------------------------------------------+
 

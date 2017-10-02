@@ -8,11 +8,11 @@
 #property strict
 //+------------------------------------------------------------------+
 
-#include "../MC_Common/MC_Common.mqh"
+#include <MC_Common/MC_Common.mqh>
 #include "../S_Symbol.mqh"
 #include "../F_Filter/F_FilterManager.mqh"
 #include "../D_Data/D_DataHistory.mqh"
-#include "../MC_Common/MC_MultiSettings.mqh"
+#include <MC_Common/MC_MultiSettings.mqh>
 
 #include "O_Defines.mqh"
 

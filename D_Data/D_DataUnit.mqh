@@ -8,7 +8,7 @@
 #property strict
 //+------------------------------------------------------------------+
 
-#include "../MC_Common/MC_Common.mqh"
+#include <MC_Common/MC_Common.mqh>
 
 enum SignalType {
     SignalNone,

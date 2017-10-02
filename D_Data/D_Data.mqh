@@ -8,7 +8,7 @@
 #property strict
 
 #include "../T_Settings.mqh"
-#include "../MC_Common/MC_MultiSettings.mqh"
+#include <MC_Common/MC_MultiSettings.mqh>
 #include "../S_Symbol.mqh"
 #include "../F_Filter/F_FilterManager.mqh"
 #include "D_DataHistory.mqh"

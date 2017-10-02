@@ -7,8 +7,8 @@
 #property link      "https://www.mql5.com"
 #property strict
 
-#include "MC_Common/MC_Error.mqh"
-#include "MC_Common/MC_MultiSettings.mqh"
+#include <MC_Common/MC_Error.mqh>
+#include <MC_Common/MC_MultiSettings.mqh>
 
 enum TimeUnits {
     UnitSeconds // Seconds

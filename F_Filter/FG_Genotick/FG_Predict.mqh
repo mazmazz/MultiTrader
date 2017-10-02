@@ -12,9 +12,9 @@
 #include "../F_Filter.mqh"
 #include "../../D_Data/D_DataUnit.mqh"
 #include "../../S_Symbol.mqh"
-#include "../../depends/CsvString.mqh"
-#include "../../depends/ApiKey.mqh"
-#include "../../depends/internetlib.mqh"
+#include <MC_Common/depends/CsvString.mqh>
+#include <MC_Common/ApiKey.mqh>
+#include <MC_Common/depends/internetlib.mqh>
 
 //+------------------------------------------------------------------+
 
@@ -187,8 +187,8 @@ string FilterGeno::formatDatetimeToGenoTime(datetime value) {
 
 bool FilterGeno::processPredict(int apiSetIdx, CsvString &predictCsv, int &symIdxNewList[]) {
     ArrayFree(symIdxNewList);
-    while(!predictCsv.isDataEnding()) {
-        while(!predictCsv.isLineEnding(true) && !predictCsv.isDataEnding()) {
+    while(!predictCsv.isFileEnding()) {
+        while(!predictCsv.isLineEnding() && !predictCsv.isFileEnding()) {
             string tfIn = predictCsv.readString();
             string symbolIn = predictCsv.readString();
             datetime dtIn = predictCsv.readDateTime(); // todo: must correct to broker time zone? does this matter?

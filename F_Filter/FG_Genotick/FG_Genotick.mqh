@@ -12,10 +12,10 @@
 #include "FG_Calculate.mqh"
 
 #include "../F_Filter.mqh"
-#include "../../MC_Common/MC_MultiSettings.mqh"
+#include <MC_Common/MC_MultiSettings.mqh>
 #include "../../D_Data/D_DataUnit.mqh"
 #include "../../S_Symbol.mqh"
-#include "../../depends/PipFactor.mqh"
+#include <MC_Common/depends/PipFactor.mqh>
 
 //+------------------------------------------------------------------+
 

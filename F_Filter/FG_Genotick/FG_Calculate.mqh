@@ -9,7 +9,7 @@
 
 #include "FG_Defines.mqh"
 #include "../F_Filter.mqh"
-#include "../../MC_Common/MC_Common.mqh"
+#include <MC_Common/MC_Common.mqh>
 
 //+------------------------------------------------------------------+
 

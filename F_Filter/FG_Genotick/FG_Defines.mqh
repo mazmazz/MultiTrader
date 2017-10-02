@@ -14,8 +14,8 @@
 #property tester_file "Genotick_Data5.csv"
 
 #include "../F_Filter.mqh"
-#include "../../depends/CsvString.mqh"
-#include "../../depends/CsvFile.mqh"
+#include <MC_Common/depends/CsvString.mqh>
+#include <MC_Common/depends/CsvFile.mqh>
 //+------------------------------------------------------------------+
 
 class FilterGeno : public Filter {

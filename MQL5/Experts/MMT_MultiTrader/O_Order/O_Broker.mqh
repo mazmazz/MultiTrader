@@ -201,7 +201,7 @@ bool OrderManager::sendClose(int ticket, int symIdx, bool isPosition) {
     else { posPrice = SymbolInfoDouble(posSymName, SYMBOL_ASK); } // Sell order, odd idx
     
     int posSlippage = 0;
-    if(!getValuePoints(posSlippage, maxSlippageLoc, symIdx)) { return -1; }
+    if(!getValuePoints(posSlippage, maxSlippageLoc, symIdx)) { return false; }
     
 #ifdef _OrderReliable
     result = 
@@ -256,7 +256,7 @@ bool OrderManager::sendClose(ulong ticket, int symIdx, bool isPosition) {
         }
         
         int posSlippage = 0;
-        if(!getValuePoints(posSlippage, maxSlippageLoc, symIdx)) { return -1; }
+        if(!getValuePoints(posSlippage, maxSlippageLoc, symIdx)) { return false; }
         
         closeRequest.action = TRADE_ACTION_DEAL;
         closeRequest.symbol = PositionGetString(POSITION_SYMBOL);

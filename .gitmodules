@@ -1,0 +1,8 @@
+[submodule "MQL4/Include/MC_Common"]
+	path = MQL4/Include/MC_Common
+	url = https://github.com/marcolovescode/MC_Common
+	branch = submodule
+[submodule "MQL5/Include/MC_Common"]
+	path = MQL5/Include/MC_Common
+	url = https://github.com/marcolovescode/MC_Common
+	branch = submodule

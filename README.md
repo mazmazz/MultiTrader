@@ -30,3 +30,10 @@ plugin via interprocess communication.
 See LICENSE for the current license. The following files may have different licenses:
 
 * [/MQL/Experts/MMT_MultiTrader/depends](https://github.com/marcolovescode/MultiTrader/blob/master/MQL4/Experts/MMT_MultiTrader/depends) -- Order utility code. See files for authorship.
+
+## Other Projects
+
+This project is part of a suite of programs I wrote to guide a trading business strategy. The other programs are:
+
+* [AccountRecorder](https://github.com/marcolovescode/AccountRecorder) - Record FX transactions onto a SQL database.
+* [SkepticSystem](https://github.com/marcolovescode/SkepticSystem) - Generate trading algorithms by using a hyperparameter search to test for prediction accuracy.

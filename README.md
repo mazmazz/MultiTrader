@@ -19,6 +19,11 @@ This plugin supports the following scenarios:
 * Multiple filters and variants, e.g., track the Stochastic indicator on M15, M30, and H1 timeframes
 * Optimization of each filter and variant during backtesting
 
+## Docs
+
+* [MultiTrader User Manual](https://github.com/marcolovescode/MultiTrader/blob/master/docs/MultiOp%20User%20Manual.pdf) -- End user manual for operating this plugin.
+* [MultiTrader Code Reference](https://github.com/marcolovescode/MultiTrader/blob/master/docs/MultiOp%20Code%20Reference.pdf) -- Programmer's reference for this codebase. Incomplete.
+
 ## Author's Notes
 
 I built this plugin to support complex account management scenarios. If I continued development,
